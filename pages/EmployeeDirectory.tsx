@@ -20,6 +20,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { hrService } from '../services/hrService';
+import { emailService } from '../services/emailService';
 import { Employee } from '../types';
 
 const EmployeeDirectory: React.FC = () => {
@@ -112,18 +113,26 @@ const EmployeeDirectory: React.FC = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const finalAvatar = formState.avatar || `https://picsum.photos/seed/${formState.name}/200`;
+    
     if (editingId) {
       hrService.updateProfile(editingId, {
         ...formState,
-        avatar: formState.avatar || `https://picsum.photos/seed/${formState.name}/200`
+        avatar: finalAvatar
       } as any);
     } else {
-      hrService.addEmployee({
+      const newEmp: Employee = {
         ...formState,
-        avatar: formState.avatar || `https://picsum.photos/seed/${formState.name}/200`
-      } as any);
+        avatar: finalAvatar
+      } as any;
+      hrService.addEmployee(newEmp);
+      
+      // Auto-trigger welcome email
+      if (hrService.getConfig().smtp?.isActive) {
+        await emailService.sendWelcomeEmail(newEmp);
+      }
     }
     fetchEmployees();
     setShowModal(false);

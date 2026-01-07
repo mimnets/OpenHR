@@ -23,6 +23,7 @@ import {
   History as HistoryIcon
 } from 'lucide-react';
 import { hrService } from '../services/hrService';
+import { emailService } from '../services/emailService';
 import { LeaveRequest, LeaveBalance, Employee } from '../types';
 
 const Leave: React.FC<{ user: any }> = ({ user }) => {
@@ -100,13 +101,23 @@ const Leave: React.FC<{ user: any }> = ({ user }) => {
     setFormData({ type: 'ANNUAL', start: '', end: '', reason: '' });
   };
 
-  const handleAction = (request: LeaveRequest, action: 'APPROVED' | 'REJECTED') => {
+  const handleAction = async (request: LeaveRequest, action: 'APPROVED' | 'REJECTED') => {
     let decisionRole = user.role;
     if (request.status === 'PENDING_MANAGER' && !isAdmin) {
        decisionRole = 'MANAGER';
     }
 
     hrService.updateLeaveStatus(request.id, action, reviewRemarks, decisionRole);
+    
+    // Notify employee of the decision
+    const emp = allEmployees.find(e => e.id === request.employeeId);
+    if (emp && hrService.getConfig().smtp?.isActive) {
+      const updatedRequest = hrService.getLeaves().find(l => l.id === request.id);
+      if (updatedRequest && (updatedRequest.status === 'APPROVED' || updatedRequest.status === 'REJECTED')) {
+        await emailService.sendLeaveStatusAlert(updatedRequest, emp);
+      }
+    }
+
     refreshData();
     setShowReviewModal(null);
     setReviewRemarks('');

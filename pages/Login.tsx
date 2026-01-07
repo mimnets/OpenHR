@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
-import { Globe, ShieldCheck, Mail, Lock, ArrowRight, User as UserIcon } from 'lucide-react';
+import { Globe, ShieldCheck, Mail, Lock, ArrowRight, User as UserIcon, X } from 'lucide-react';
 import { hrService } from '../services/hrService';
+import { emailService } from '../services/emailService';
 
 interface LoginProps {
   onLoginSuccess: (user: any) => void;
@@ -13,6 +14,11 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const [roleMode, setRoleMode] = useState<'ADMIN' | 'EMPLOYEE'>('EMPLOYEE');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Forgot Password State
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,9 +36,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           return;
         }
         
-        // If they are Admin/HR and trying to use Employee tab, we allow it but notify them
-        // or just let them in as they have higher privileges. 
-        // For strict compliance as per previous requirement:
         if (roleMode === 'EMPLOYEE' && isAdminRole) {
           setError('System Policy: HR/Admin accounts must use the Administrative Login tab.');
           setIsLoading(false);
@@ -47,6 +50,23 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     }, 800);
   };
 
+  const handleForgotSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsResetting(true);
+    
+    // Check if SMTP is active
+    if (!hrService.getConfig().smtp?.isActive) {
+      alert('Password recovery is unavailable. SMTP system is offline. Please contact your system administrator.');
+      setIsResetting(false);
+      return;
+    }
+
+    await emailService.sendPasswordReset(forgotEmail);
+    setIsResetting(false);
+    setShowForgotModal(false);
+    alert('If the email is registered in our system, you will receive reset instructions shortly.');
+  };
+
   const handleDemoAccess = (demoEmail: string, mode: 'ADMIN' | 'EMPLOYEE') => {
     setEmail(demoEmail);
     setPassword('123'); // Demo accounts always use '123'
@@ -55,7 +75,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-slate-50 overflow-hidden">
+    <div className="min-h-screen w-full flex bg-slate-50 overflow-hidden relative">
       {/* Left Decoration */}
       <div className="hidden lg:flex w-1/2 bg-slate-900 relative items-center justify-center p-20">
         <div className="absolute top-10 left-10 flex items-center gap-2 text-white/80">
@@ -133,7 +153,10 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-widest px-1">Security Key</label>
+              <div className="flex justify-between items-center px-1">
+                <label className="text-xs font-black text-slate-500 uppercase tracking-widest">Security Key</label>
+                <button type="button" onClick={() => setShowForgotModal(true)} className="text-[10px] font-black text-indigo-600 uppercase hover:underline">Forgot Key?</button>
+              </div>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input 
@@ -185,6 +208,47 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[40px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in duration-300">
+            <div className="bg-slate-900 p-8 flex justify-between items-center text-white">
+              <div className="flex items-center gap-3">
+                <Lock size={24} className="text-indigo-400" />
+                <h3 className="text-xl font-black uppercase tracking-tight">Key Recovery</h3>
+              </div>
+              <button onClick={() => setShowForgotModal(false)} className="hover:bg-white/10 p-2 rounded-xl transition-all"><X size={28} /></button>
+            </div>
+            <div className="p-8 space-y-6">
+              <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                Enter the email associated with your account. We will send you a recovery link via our configured SMTP relay.
+              </p>
+              <form onSubmit={handleForgotSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Registered Email</label>
+                  <input 
+                    type="email" 
+                    required 
+                    autoFocus
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-50" 
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    placeholder="e.g. employee@company.com"
+                  />
+                </div>
+                <button 
+                  type="submit" 
+                  disabled={isResetting}
+                  className="w-full py-4 bg-indigo-600 text-white rounded-3xl font-black uppercase tracking-widest text-[10px] shadow-xl hover:bg-indigo-700 transition-all disabled:opacity-50"
+                >
+                  {isResetting ? 'Processing...' : 'Request Recovery Link'}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

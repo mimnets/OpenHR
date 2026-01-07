@@ -24,7 +24,7 @@ export interface Employee extends User {
   nid?: string;
   password?: string;
   lineManagerId?: string;
-  workType: WorkType; // OFFICE follows rules, FIELD is flexible
+  workType: WorkType;
 }
 
 export interface Attendance {
@@ -76,14 +76,29 @@ export interface Holiday {
   type: 'FESTIVAL' | 'ISLAMIC' | 'NATIONAL';
 }
 
+export interface SmtpConfig {
+  provider: 'GMAIL' | 'MICROSOFT' | 'MANUAL';
+  authType: 'BASIC' | 'OAUTH2';
+  host: string;
+  port: number;
+  username: string;
+  password?: string;
+  accessToken?: string;
+  encryption: 'SSL' | 'TLS' | 'NONE';
+  fromEmail: string;
+  fromName: string;
+  isActive: boolean;
+}
+
 export interface AppConfig {
   companyName: string;
   timezone: string;
   currency: string;
   dateFormat: string;
   workingDays: string[];
-  officeStartTime: string; // HH:mm
-  officeEndTime: string;   // HH:mm
-  lateGracePeriod: number; // minutes
-  earlyOutGracePeriod: number; // minutes
+  officeStartTime: string;
+  officeEndTime: string;
+  lateGracePeriod: number;
+  earlyOutGracePeriod: number;
+  smtp?: SmtpConfig;
 }

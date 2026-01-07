@@ -12,18 +12,32 @@ import {
   TrendingUp,
   ArrowRight
 } from 'lucide-react';
+import { emailService } from '../services/emailService';
 import { DEPARTMENTS } from '../constants.tsx';
 
 const Reports: React.FC = () => {
   const [reportType, setReportType] = useState('ATTENDANCE');
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const handleAction = (action: 'DOWNLOAD' | 'EMAIL') => {
+  const handleAction = async (action: 'DOWNLOAD' | 'EMAIL') => {
     setIsGenerating(true);
-    setTimeout(() => {
-      setIsGenerating(false);
-      alert(action === 'DOWNLOAD' ? 'Report downloaded successfully to your local storage.' : 'Report sent to HR Director email (admin@openhr.com)');
-    }, 2000);
+    
+    // Simulate generation delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    setIsGenerating(false);
+
+    if (action === 'DOWNLOAD') {
+      alert('Report downloaded successfully to your local storage.');
+    } else {
+      const reportName = reportOptions.find(o => o.id === reportType)?.label || 'Organization Report';
+      const success = await emailService.sendReport('admin@openhr.com', reportName);
+      if (success) {
+        alert(`Report sent successfully to admin@openhr.com via SMTP Relay.`);
+      } else {
+        alert(`Failed to send email. Check SMTP settings in System Configuration.`);
+      }
+    }
   };
 
   const reportOptions = [
