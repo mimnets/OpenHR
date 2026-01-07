@@ -15,6 +15,9 @@ const STORAGE_KEYS = {
   WORKFLOWS: 'hr_workflows',
 };
 
+type ChangeListener = () => void;
+const listeners: Set<ChangeListener> = new Set();
+
 const INITIAL_EMPLOYEES: Employee[] = [
   {
     id: 'EMP001',
@@ -60,6 +63,15 @@ const INITIAL_EMPLOYEES: Employee[] = [
 ];
 
 export const hrService = {
+  subscribe(listener: ChangeListener) {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  },
+
+  notify() {
+    listeners.forEach(l => l());
+  },
+
   initialize() {
     if (!localStorage.getItem(STORAGE_KEYS.EMPLOYEES)) {
       localStorage.setItem(STORAGE_KEYS.EMPLOYEES, JSON.stringify(INITIAL_EMPLOYEES));
@@ -120,9 +132,6 @@ export const hrService = {
     }
   },
 
-  /**
-   * Exports the entire application state into a single JSON string
-   */
   exportFullData(): string {
     const exportObj: Record<string, any> = {};
     Object.values(STORAGE_KEYS).forEach(key => {
@@ -131,9 +140,6 @@ export const hrService = {
     return JSON.stringify(exportObj);
   },
 
-  /**
-   * Imports application state from a JSON string and reloads the app
-   */
   importFullData(jsonString: string) {
     try {
       const data = JSON.parse(jsonString);
@@ -191,6 +197,7 @@ export const hrService = {
       SICK: 14
     };
     localStorage.setItem(STORAGE_KEYS.BALANCES, JSON.stringify(balances));
+    this.notify();
   },
 
   updateProfile(userId: string, updates: Partial<Employee>) {
@@ -203,6 +210,7 @@ export const hrService = {
       if (currentUser && currentUser.id === userId) {
         localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(employees[index]));
       }
+      this.notify();
       return employees[index];
     }
     return null;
@@ -212,6 +220,7 @@ export const hrService = {
     const employees = this.getEmployees();
     const filtered = employees.filter(e => e.id !== id);
     localStorage.setItem(STORAGE_KEYS.EMPLOYEES, JSON.stringify(filtered));
+    this.notify();
   },
 
   getDepartments(): string[] {
@@ -220,6 +229,7 @@ export const hrService = {
 
   setDepartments(depts: string[]) {
     localStorage.setItem(STORAGE_KEYS.DEPARTMENTS, JSON.stringify(depts));
+    this.notify();
   },
 
   getDesignations(): string[] {
@@ -228,6 +238,7 @@ export const hrService = {
 
   setDesignations(desigs: string[]) {
     localStorage.setItem(STORAGE_KEYS.DESIGNATIONS, JSON.stringify(desigs));
+    this.notify();
   },
 
   getConfig(): AppConfig {
@@ -236,6 +247,7 @@ export const hrService = {
 
   setConfig(config: AppConfig) {
     localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(config));
+    this.notify();
   },
 
   getHolidays(): Holiday[] {
@@ -244,6 +256,7 @@ export const hrService = {
 
   setHolidays(holidays: Holiday[]) {
     localStorage.setItem(STORAGE_KEYS.HOLIDAYS, JSON.stringify(holidays));
+    this.notify();
   },
 
   getWorkflows(): LeaveWorkflow[] {
@@ -252,6 +265,7 @@ export const hrService = {
 
   setWorkflows(workflows: LeaveWorkflow[]) {
     localStorage.setItem(STORAGE_KEYS.WORKFLOWS, JSON.stringify(workflows));
+    this.notify();
   },
 
   getAttendance(): Attendance[] {
@@ -291,6 +305,7 @@ export const hrService = {
       list.push(attendance);
     }
     localStorage.setItem(STORAGE_KEYS.ATTENDANCE, JSON.stringify(list));
+    this.notify();
   },
 
   updateAttendance(id: string, updates: Partial<Attendance>) {
@@ -311,8 +326,6 @@ export const hrService = {
         const offEndMinutes = offEndH * 60 + offEndM;
         
         if (outMinutes < offEndMinutes - config.earlyOutGracePeriod) {
-          // We prioritize LATE if they were late, but EARLY_OUT is also important.
-          // For now, if they are already LATE, keep it, otherwise mark EARLY_OUT.
           if (updated.status === 'PRESENT') {
             updated.status = 'EARLY_OUT';
           }
@@ -321,6 +334,7 @@ export const hrService = {
 
       list[index] = updated;
       localStorage.setItem(STORAGE_KEYS.ATTENDANCE, JSON.stringify(list));
+      this.notify();
       return list[index];
     }
     return undefined;
@@ -335,6 +349,7 @@ export const hrService = {
     request.status = 'PENDING_MANAGER';
     list.push(request);
     localStorage.setItem(STORAGE_KEYS.LEAVES, JSON.stringify(list));
+    this.notify();
   },
 
   modifyLeaveRequest(id: string, updates: Partial<LeaveRequest>) {
@@ -343,6 +358,7 @@ export const hrService = {
     if (index > -1) {
       list[index] = { ...list[index], ...updates };
       localStorage.setItem(STORAGE_KEYS.LEAVES, JSON.stringify(list));
+      this.notify();
     }
   },
 
@@ -374,6 +390,7 @@ export const hrService = {
         }
       }
       localStorage.setItem(STORAGE_KEYS.LEAVES, JSON.stringify(list));
+      this.notify();
     }
   },
 
@@ -393,6 +410,7 @@ export const hrService = {
         all[employeeId][type] = Math.max(0, all[employeeId][type] - days);
       }
       localStorage.setItem(STORAGE_KEYS.BALANCES, JSON.stringify(all));
+      this.notify();
     }
   },
 
@@ -403,6 +421,7 @@ export const hrService = {
         all[employeeId][type] += days;
       }
       localStorage.setItem(STORAGE_KEYS.BALANCES, JSON.stringify(all));
+      this.notify();
     }
   },
 

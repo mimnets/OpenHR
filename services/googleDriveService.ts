@@ -5,7 +5,8 @@
  */
 
 const CLIENT_ID = '879929245496-dc5pdfgbvt38ueotp4u52eh52pbffn8o.apps.googleusercontent.com'; // User needs to replace this
-const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.metadata.readonly';
+const SYNC_FILENAME = 'OpenHR_Cloud_Sync.json';
 
 let accessToken: string | null = null;
 
@@ -38,6 +39,8 @@ export const googleDriveService = {
   disconnect() {
     accessToken = null;
     localStorage.removeItem('google_drive_token');
+    localStorage.removeItem('google_drive_folder_id');
+    localStorage.removeItem('google_drive_folder_name');
   },
 
   isConnected() {
@@ -48,16 +51,48 @@ export const googleDriveService = {
     return accessToken || localStorage.getItem('google_drive_token');
   },
 
+  setSelectedFolder(id: string, name: string) {
+    localStorage.setItem('google_drive_folder_id', id);
+    localStorage.setItem('google_drive_folder_name', name);
+  },
+
+  getSelectedFolder() {
+    return {
+      id: localStorage.getItem('google_drive_folder_id') || 'root',
+      name: localStorage.getItem('google_drive_folder_name') || 'Root Drive',
+    };
+  },
+
   /**
-   * Upload a JSON blob to Google Drive
+   * List folders from Drive
    */
-  async uploadFile(content: string, filename: string) {
+  async listFolders() {
+    const token = this.getAccessToken();
+    if (!token) return [];
+
+    const response = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id, name)&pageSize=100`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    if (!response.ok) return [];
+    const data = await response.json();
+    return data.files as { id: string; name: string }[];
+  },
+
+  /**
+   * Upload a JSON blob to Google Drive (Creates a new file)
+   */
+  async uploadFile(content: string, filename: string, folderId: string = 'root') {
     const token = this.getAccessToken();
     if (!token) throw new Error('Not connected to Google');
 
     const metadata = {
       name: filename,
       mimeType: 'application/json',
+      parents: [folderId],
     };
 
     const form = new FormData();
@@ -66,9 +101,7 @@ export const googleDriveService = {
 
     const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
       body: form,
     });
 
@@ -81,20 +114,72 @@ export const googleDriveService = {
   },
 
   /**
-   * List JSON backup files from Drive
+   * Updates an existing file's content
    */
-  async listBackups() {
+  async updateFileContent(fileId: string, content: string) {
     const token = this.getAccessToken();
     if (!token) throw new Error('Not connected to Google');
 
-    const response = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=mimeType='application/json' and trashed=false&fields=files(id, name, createdTime)`,
+    const response = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: content,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || 'Failed to update file on Google Drive');
+    }
+
+    return await response.json();
+  },
+
+  /**
+   * Syncs data to a single persistent file within the chosen folder
+   */
+  async syncToSingleFile(content: string) {
+    const folder = this.getSelectedFolder();
+    const token = this.getAccessToken();
+    if (!token) throw new Error('No access token');
+
+    // Find the file specifically in the selected folder
+    const searchResponse = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=name='${SYNC_FILENAME}' and '${folder.id}' in parents and trashed=false&fields=files(id, name)`,
       {
         headers: { Authorization: `Bearer ${token}` },
       }
     );
 
-    if (!response.ok) throw new Error('Failed to fetch file list');
+    const searchData = await searchResponse.json();
+    const existingSyncFile = searchData.files?.[0];
+
+    if (existingSyncFile) {
+      return await this.updateFileContent(existingSyncFile.id, content);
+    } else {
+      return await this.uploadFile(content, SYNC_FILENAME, folder.id);
+    }
+  },
+
+  /**
+   * List JSON backup files from Drive (specifically from the selected folder)
+   */
+  async listBackups() {
+    const token = this.getAccessToken();
+    if (!token) return [];
+    
+    const folder = this.getSelectedFolder();
+
+    const response = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=mimeType='application/json' and '${folder.id}' in parents and trashed=false&fields=files(id, name, createdTime)`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    if (!response.ok) return [];
     const data = await response.json();
     return data.files as { id: string; name: string; createdTime: string }[];
   },

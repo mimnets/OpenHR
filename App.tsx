@@ -10,21 +10,50 @@ import Reports from './pages/Reports';
 import Organization from './pages/Organization';
 import Login from './pages/Login';
 import { hrService } from './services/hrService';
+import { googleDriveService } from './services/googleDriveService';
 import { User } from './types';
-import { Search, Bell, Menu, X } from 'lucide-react';
+import { Search, Bell, Menu, X, Cloud } from 'lucide-react';
 
 const App: React.FC = () => {
   const [currentPath, setCurrentPath] = useState('dashboard');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     hrService.initialize();
     const user = hrService.getCurrentUser();
     setCurrentUser(user);
     setIsInitialized(true);
+
+    // Auto-sync logic: listen for changes in hrService
+    const unsubscribe = hrService.subscribe(() => {
+      if (googleDriveService.isConnected()) {
+        triggerAutoSync();
+      }
+    });
+
+    return unsubscribe;
   }, []);
+
+  // Debounced auto-sync to avoid excessive API calls
+  let syncTimeout: any = null;
+  const triggerAutoSync = () => {
+    if (syncTimeout) clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(async () => {
+      setIsSyncing(true);
+      try {
+        const data = hrService.exportFullData();
+        await googleDriveService.syncToSingleFile(data);
+        console.log('Auto-sync to Google Drive completed.');
+      } catch (err) {
+        console.error('Auto-sync failed:', err);
+      } finally {
+        setIsSyncing(false);
+      }
+    }, 5000); // Wait 5 seconds after the last local change before syncing
+  };
 
   const handleLogout = () => {
     hrService.logout();
@@ -101,6 +130,12 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-4 md:gap-6">
+            {isSyncing && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full border border-indigo-100 animate-pulse">
+                <Cloud size={14} className="animate-bounce" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Cloud Syncing...</span>
+              </div>
+            )}
             <button className="p-2.5 text-slate-500 hover:bg-slate-50 rounded-xl relative">
               <Bell size={20} />
               <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 border-2 border-white rounded-full"></span>

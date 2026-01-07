@@ -19,7 +19,10 @@ import {
   Download,
   Clock,
   AlertCircle,
-  X
+  X,
+  Folder,
+  ChevronRight,
+  UserCircle
 } from 'lucide-react';
 import { hrService } from '../services/hrService';
 import { googleDriveService } from '../services/googleDriveService';
@@ -41,12 +44,18 @@ const Settings: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [backups, setBackups] = useState<{ id: string; name: string; createdTime: string }[]>([]);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
+  
+  // Folder Selection State
+  const [availableFolders, setAvailableFolders] = useState<{ id: string; name: string }[]>([]);
+  const [selectedFolder, setSelectedFolder] = useState(googleDriveService.getSelectedFolder());
+  const [showFolderModal, setShowFolderModal] = useState(false);
+  const [isLoadingFolders, setIsLoadingFolders] = useState(false);
 
   useEffect(() => {
     if (isGoogleConnected) {
       loadBackups();
     }
-  }, [isGoogleConnected]);
+  }, [isGoogleConnected, selectedFolder.id]);
 
   const loadBackups = async () => {
     try {
@@ -54,6 +63,18 @@ const Settings: React.FC = () => {
       setBackups(list);
     } catch (err) {
       console.error('Failed to load backups', err);
+    }
+  };
+
+  const loadFolders = async () => {
+    setIsLoadingFolders(true);
+    try {
+      const folders = await googleDriveService.listFolders();
+      setAvailableFolders([{ id: 'root', name: 'Root Drive (Main)' }, ...folders]);
+    } catch (err) {
+      console.error('Failed to load folders', err);
+    } finally {
+      setIsLoadingFolders(false);
     }
   };
 
@@ -75,27 +96,38 @@ const Settings: React.FC = () => {
       await googleDriveService.connect();
       setIsGoogleConnected(true);
       alert('Google Drive connected successfully!');
+      loadFolders();
+      setShowFolderModal(true);
     } catch (err) {
       alert('Failed to connect to Google. Ensure you have a valid Client ID configured.');
     }
   };
 
   const handleGoogleDisconnect = () => {
-    googleDriveService.disconnect();
-    setIsGoogleConnected(false);
-    setBackups([]);
+    if (confirm('Disconnect your Google account? Automatic cloud sync will be disabled.')) {
+      googleDriveService.disconnect();
+      setIsGoogleConnected(false);
+      setBackups([]);
+      setSelectedFolder({ id: 'root', name: 'Root Drive' });
+    }
+  };
+
+  const handleFolderSelect = (id: string, name: string) => {
+    googleDriveService.setSelectedFolder(id, name);
+    setSelectedFolder({ id, name });
+    setShowFolderModal(false);
+    loadBackups();
   };
 
   const handleBackupNow = async () => {
     setIsSyncing(true);
     try {
       const data = hrService.exportFullData();
-      const filename = `OpenHR_Backup_${new Date().toISOString().split('T')[0]}.json`;
-      await googleDriveService.uploadFile(data, filename);
-      alert('Backup uploaded successfully to your Google Drive!');
+      await googleDriveService.syncToSingleFile(data);
+      alert('Cloud synchronization complete!');
       loadBackups();
     } catch (err: any) {
-      alert(`Backup failed: ${err.message}`);
+      alert(`Sync failed: ${err.message}`);
     } finally {
       setIsSyncing(false);
     }
@@ -219,7 +251,7 @@ const Settings: React.FC = () => {
               <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000"></div>
               
               <h3 className="text-xl font-black mb-8 flex items-center gap-3 relative z-10">
-                <Cloud className="text-indigo-400" /> Cloud Backup Engine
+                <Cloud className="text-indigo-400" /> Cloud Sync Engine
               </h3>
               
               <div className="space-y-8 relative z-10">
@@ -227,7 +259,7 @@ const Settings: React.FC = () => {
                    <div className="space-y-6">
                       <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
                          <p className="text-xs text-slate-400 leading-relaxed">
-                            Connect your Google Workspace or Personal Drive to enable automatic organizational backups and portable data migration.
+                            Connect your Google Drive to enable automatic organizational synchronization and secure cloud storage.
                          </p>
                       </div>
                       <button 
@@ -239,17 +271,35 @@ const Settings: React.FC = () => {
                    </div>
                 ) : (
                    <div className="space-y-6">
-                      <div className="flex items-center justify-between bg-emerald-500/10 p-4 rounded-2xl border border-emerald-500/20">
-                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400">
-                               <CheckCircle size={20} />
-                            </div>
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center justify-between bg-emerald-500/10 p-4 rounded-2xl border border-emerald-500/20">
+                          <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400">
+                                <CheckCircle size={20} />
+                              </div>
+                              <div>
+                                <p className="text-[10px] text-emerald-400 font-black uppercase tracking-widest leading-none mb-1">Authenticated</p>
+                                <p className="text-xs font-bold">Google Cloud Active</p>
+                              </div>
+                          </div>
+                          <button onClick={handleGoogleDisconnect} title="Change Account / Disconnect" className="p-2 bg-white/5 hover:bg-rose-500/20 rounded-xl text-slate-400 hover:text-rose-400 transition-all">
+                            <Unlink size={18} />
+                          </button>
+                        </div>
+
+                        <button 
+                          onClick={() => { loadFolders(); setShowFolderModal(true); }}
+                          className="flex items-center justify-between w-full p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all text-left"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Folder size={18} className="text-indigo-400" />
                             <div>
-                               <p className="text-[10px] text-emerald-400 font-black uppercase tracking-widest">Connected</p>
-                               <p className="text-xs font-bold">Google Drive Enabled</p>
+                              <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest leading-none mb-1">Target Folder</p>
+                              <p className="text-xs font-bold truncate max-w-[120px]">{selectedFolder.name}</p>
                             </div>
-                         </div>
-                         <button onClick={handleGoogleDisconnect} className="text-slate-500 hover:text-rose-400 transition-colors"><Unlink size={18} /></button>
+                          </div>
+                          <ChevronRight size={16} className="text-slate-600" />
+                        </button>
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
@@ -272,7 +322,7 @@ const Settings: React.FC = () => {
 
                       <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3">
                          <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
-                            <span>Recent Drive Activity</span>
+                            <span>Folder Backups</span>
                             <button onClick={loadBackups} className="text-indigo-400 hover:underline">Refresh</button>
                          </div>
                          <div className="space-y-2 max-h-32 overflow-y-auto no-scrollbar">
@@ -282,7 +332,7 @@ const Settings: React.FC = () => {
                                   <span className="text-[9px] text-slate-500 whitespace-nowrap">{new Date(b.createdTime).toLocaleDateString()}</span>
                                </div>
                             ))}
-                            {backups.length === 0 && <p className="text-[10px] text-slate-600 italic">No backups found in Drive.</p>}
+                            {backups.length === 0 && <p className="text-[10px] text-slate-600 italic">No sync file found in folder.</p>}
                          </div>
                       </div>
                    </div>
@@ -290,7 +340,7 @@ const Settings: React.FC = () => {
                 
                 <div className="flex items-center gap-2 text-[10px] text-slate-500 justify-center">
                   <div className={`w-2 h-2 rounded-full ${isGoogleConnected ? 'bg-emerald-500' : 'bg-rose-500'} animate-pulse`}></div>
-                  {isGoogleConnected ? 'Ready for Cloud Synchronization' : 'Cloud Engine Offline'}
+                  {isGoogleConnected ? 'Live Connection Established' : 'Cloud Engine Offline'}
                 </div>
               </div>
             </div>
@@ -298,7 +348,7 @@ const Settings: React.FC = () => {
             <div className="p-6 bg-slate-50 rounded-[32px] border border-slate-200">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Security Integrity</p>
               <p className="text-xs text-slate-600 font-medium leading-relaxed">
-                Backups are stored in JSON format for perfect fidelity. Only you can access your private Google Drive files. The system does not store your Google credentials.
+                Only you have access to your Google Drive data. Selecting a specific folder organizes your backups and keeps your Drive clean.
               </p>
             </div>
           </div>
@@ -312,7 +362,7 @@ const Settings: React.FC = () => {
              <div className="bg-slate-900 p-8 flex justify-between items-center text-white">
                 <div className="flex items-center gap-3">
                    <div className="p-2 bg-indigo-500/20 rounded-xl text-indigo-400"><Download size={24}/></div>
-                   <h3 className="text-xl font-black uppercase tracking-tight">System Data Restore</h3>
+                   <h3 className="text-xl font-black uppercase tracking-tight">Cloud Data Restore</h3>
                 </div>
                 <button onClick={() => setShowRestoreModal(false)} className="hover:bg-white/10 p-2 rounded-xl transition-all"><X size={28} /></button>
              </div>
@@ -321,12 +371,12 @@ const Settings: React.FC = () => {
                 <div className="p-5 bg-rose-50 border border-rose-100 rounded-3xl flex items-start gap-4">
                    <AlertCircle className="text-rose-600 shrink-0 mt-1" size={20} />
                    <p className="text-xs font-bold text-rose-800 leading-relaxed uppercase">
-                      CRITICAL: Restoring from a backup will replace ALL current data on this device with the version from your Google Drive. This cannot be undone.
+                      CRITICAL: Restoring from a backup will replace ALL current data on this device with the cloud version. 
                    </p>
                 </div>
 
                 <div className="space-y-3">
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Select Backup Record from Drive</p>
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Source: {selectedFolder.name}</p>
                    <div className="space-y-2 max-h-60 overflow-y-auto pr-2 no-scrollbar">
                       {backups.map((b) => (
                          <div key={b.id} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl group hover:bg-white hover:border-indigo-200 hover:shadow-md transition-all">
@@ -343,14 +393,14 @@ const Settings: React.FC = () => {
                                onClick={() => handleRestore(b.id)}
                                className="px-4 py-2 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-md opacity-0 group-hover:opacity-100 transition-all active:scale-95"
                             >
-                               Restore This
+                               Restore
                             </button>
                          </div>
                       ))}
                       {backups.length === 0 && (
                          <div className="py-12 text-center text-slate-300">
                             <Cloud size={48} className="mx-auto mb-2 opacity-20" />
-                            <p className="text-xs font-black uppercase">No backups found in Drive</p>
+                            <p className="text-xs font-black uppercase">No sync file in this folder</p>
                          </div>
                       )}
                    </div>
@@ -360,8 +410,64 @@ const Settings: React.FC = () => {
                   onClick={() => setShowRestoreModal(false)}
                   className="w-full py-4 bg-slate-100 text-slate-700 rounded-3xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-200 transition-all"
                 >
-                  Cancel Restore
+                  Cancel
                 </button>
+             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Folder Selection Modal */}
+      {showFolderModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[115] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[40px] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in duration-300">
+             <div className="bg-indigo-600 p-8 flex justify-between items-center text-white">
+                <div className="flex items-center gap-3">
+                   <div className="p-2 bg-white/20 rounded-xl"><Folder size={24}/></div>
+                   <h3 className="text-xl font-black uppercase tracking-tight">Select Sync Folder</h3>
+                </div>
+                <button onClick={() => setShowFolderModal(false)} className="hover:bg-white/10 p-2 rounded-xl transition-all"><X size={28} /></button>
+             </div>
+             
+             <div className="p-8 space-y-6">
+                <p className="text-xs font-medium text-slate-500 leading-relaxed italic">
+                  Choose which folder to use for automatic organization synchronization. Root Drive is used by default.
+                </p>
+
+                <div className="space-y-2">
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Available Folders</p>
+                   <div className="space-y-1.5 max-h-[300px] overflow-y-auto no-scrollbar">
+                      {isLoadingFolders ? (
+                         <div className="py-12 flex flex-col items-center justify-center gap-4">
+                            <RefreshCw className="animate-spin text-indigo-600" size={32} />
+                            <p className="text-[10px] font-black text-slate-400 uppercase">Fetching Drive Map...</p>
+                         </div>
+                      ) : (
+                        availableFolders.map((f) => (
+                          <button 
+                            key={f.id} 
+                            onClick={() => handleFolderSelect(f.id, f.name)}
+                            className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all border ${selectedFolder.id === f.id ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-slate-50 border-slate-100 text-slate-600 hover:bg-white hover:border-indigo-100 hover:shadow-sm'}`}
+                          >
+                            <div className="flex items-center gap-3">
+                               <Folder size={18} className={selectedFolder.id === f.id ? 'text-indigo-600' : 'text-slate-400'} />
+                               <span className="text-sm font-bold">{f.name}</span>
+                            </div>
+                            {selectedFolder.id === f.id && <CheckCircle size={16} className="text-indigo-600" />}
+                          </button>
+                        ))
+                      )}
+                   </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-50">
+                  <button 
+                    onClick={() => setShowFolderModal(false)}
+                    className="w-full py-4 bg-slate-900 text-white rounded-3xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-800 transition-all shadow-xl"
+                  >
+                    Confirm Selection
+                  </button>
+                </div>
              </div>
           </div>
         </div>
