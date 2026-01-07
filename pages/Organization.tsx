@@ -17,7 +17,8 @@ import {
   Workflow,
   ArrowRight,
   UserCheck,
-  Clock
+  Clock,
+  Timer
 } from 'lucide-react';
 import { hrService } from '../services/hrService';
 import { Holiday, AppConfig, LeaveWorkflow, Employee } from '../types';
@@ -52,19 +53,12 @@ const Organization: React.FC = () => {
   // Shared Handlers
   const handleSaveConfig = () => {
     hrService.setConfig(config);
-    alert('Employment terms updated successfully.');
+    alert('Organizational policies and terms updated successfully.');
   };
 
   const handleUpdateLineManager = (empId: string, managerId: string) => {
     hrService.updateProfile(empId, { lineManagerId: managerId });
     setEmployees(hrService.getEmployees());
-  };
-
-  const handleAddHoliday = (name: string, date: string, type: any) => {
-    const newHolidays = [...holidays, { id: Math.random().toString(), name, date, type, isGovernment: true }];
-    setHolidays(newHolidays);
-    hrService.setHolidays(newHolidays);
-    setShowAddForm(false);
   };
 
   const renderStructure = () => (
@@ -171,11 +165,11 @@ const Organization: React.FC = () => {
   );
 
   const renderTerms = () => (
-    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 space-y-10">
+    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 space-y-12">
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-xl font-black text-slate-900">Employment Terms & Workdays</h3>
-          <p className="text-sm text-slate-500">Organization-wide policies for working hours and days</p>
+          <h3 className="text-xl font-black text-slate-900">Employment Terms & Compliance</h3>
+          <p className="text-sm text-slate-500">Configure global shift rules, grace periods, and workweek</p>
         </div>
         <button 
           onClick={handleSaveConfig}
@@ -186,46 +180,103 @@ const Organization: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-        <div className="space-y-6">
-          <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-            <Calendar size={14} className="text-indigo-600" /> Standard Working Days
-          </h4>
-          <div className="flex flex-wrap gap-2">
-            {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => {
-              const isActive = config.workingDays.includes(day);
-              return (
-                <button 
-                  key={day}
-                  onClick={() => {
-                    const next = isActive 
-                      ? config.workingDays.filter(d => d !== day)
-                      : [...config.workingDays, day];
-                    setConfig({...config, workingDays: next});
-                  }}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
-                    isActive ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-100' : 'bg-white text-slate-400 border-slate-100'
-                  }`}
-                >
-                  {day}
-                </button>
-              );
-            })}
+        <div className="space-y-8">
+          <div className="space-y-6">
+            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              <Calendar size={14} className="text-indigo-600" /> Standard Working Days
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => {
+                const isActive = config.workingDays.includes(day);
+                return (
+                  <button 
+                    key={day}
+                    onClick={() => {
+                      const next = isActive 
+                        ? config.workingDays.filter(d => d !== day)
+                        : [...config.workingDays, day];
+                      setConfig({...config, workingDays: next});
+                    }}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
+                      isActive ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-100' : 'bg-white text-slate-400 border-slate-100'
+                    }`}
+                  >
+                    {day}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              <Clock size={14} className="text-indigo-600" /> Fixed Shift Hours
+            </h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase px-1">Office Starts At</label>
+                <input 
+                  type="time" 
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" 
+                  value={config.officeStartTime} 
+                  onChange={e => setConfig({...config, officeStartTime: e.target.value})}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase px-1">Office Ends At</label>
+                <input 
+                  type="time" 
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" 
+                  value={config.officeEndTime} 
+                  onChange={e => setConfig({...config, officeEndTime: e.target.value})}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="space-y-6">
-          <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-            <Clock size={14} className="text-indigo-600" /> Shift & General Timing
-          </h4>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase">Office Start</label>
-              <input type="time" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl" defaultValue="09:00" />
+        <div className="space-y-8">
+          <div className="space-y-6">
+            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              <Timer size={14} className="text-indigo-600" /> Attendance Policy Rules
+            </h4>
+            <div className="space-y-6">
+              <div className="p-6 bg-amber-50 rounded-2xl border border-amber-100 space-y-4">
+                <div className="flex justify-between items-center">
+                  <p className="text-xs font-black text-amber-900 uppercase">Late Entry Grace Period</p>
+                  <span className="text-xs font-black text-amber-600 px-3 py-1 bg-white rounded-lg">{config.lateGracePeriod} Mins</span>
+                </div>
+                <input 
+                  type="range" min="0" max="60" step="5" 
+                  className="w-full accent-amber-500"
+                  value={config.lateGracePeriod}
+                  onChange={e => setConfig({...config, lateGracePeriod: parseInt(e.target.value)})}
+                />
+                <p className="text-[9px] text-amber-700 font-medium">Any punch after {config.officeStartTime} + {config.lateGracePeriod}m will be marked as LATE.</p>
+              </div>
+
+              <div className="p-6 bg-rose-50 rounded-2xl border border-rose-100 space-y-4">
+                <div className="flex justify-between items-center">
+                  <p className="text-xs font-black text-rose-900 uppercase">Early Exit Grace Period</p>
+                  <span className="text-xs font-black text-rose-600 px-3 py-1 bg-white rounded-lg">{config.earlyOutGracePeriod} Mins</span>
+                </div>
+                <input 
+                  type="range" min="0" max="60" step="5" 
+                  className="w-full accent-rose-500"
+                  value={config.earlyOutGracePeriod}
+                  onChange={e => setConfig({...config, earlyOutGracePeriod: parseInt(e.target.value)})}
+                />
+                <p className="text-[9px] text-rose-700 font-medium">Punches before {config.officeEndTime} - {config.earlyOutGracePeriod}m flagged as EARLY EXIT.</p>
+              </div>
             </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase">Office End</label>
-              <input type="time" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl" defaultValue="17:00" />
-            </div>
+          </div>
+          
+          <div className="p-5 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-start gap-4">
+             <AlertCircle className="text-indigo-600 shrink-0 mt-1" size={20} />
+             <div>
+               <p className="text-xs font-black text-indigo-900 uppercase">Flexible Staff Exclusion</p>
+               <p className="text-[10px] text-indigo-700 leading-relaxed mt-1">Staff marked as "FIELD" or "FACTORY" work type are automatically excluded from Late/Early Out calculations.</p>
+             </div>
           </div>
         </div>
       </div>
@@ -326,7 +377,6 @@ const Organization: React.FC = () => {
         </div>
       </header>
 
-      {/* Tabs Menu */}
       <div className="flex overflow-x-auto no-scrollbar gap-2 p-1.5 bg-white border border-slate-100 rounded-2xl shadow-sm">
         {(['STRUCTURE', 'PLACEMENT', 'TERMS', 'WORKFLOW', 'HOLIDAYS'] as OrgTab[]).map(tab => (
           <button
@@ -341,7 +391,6 @@ const Organization: React.FC = () => {
         ))}
       </div>
 
-      {/* Content Area */}
       <div className="animate-in fade-in zoom-in-95 duration-300">
         {activeTab === 'STRUCTURE' && renderStructure()}
         {activeTab === 'PLACEMENT' && renderPlacement()}
@@ -350,7 +399,6 @@ const Organization: React.FC = () => {
         {activeTab === 'HOLIDAYS' && renderHolidays()}
       </div>
 
-      {/* Shared Success Indicator */}
       <div className="p-8 bg-slate-900 rounded-3xl text-white shadow-xl flex items-center gap-8">
         <div className="p-4 bg-indigo-600 rounded-2xl shadow-lg">
           <Settings size={32} />

@@ -15,7 +15,9 @@ import {
   Briefcase,
   Mail,
   RefreshCw,
-  Lock
+  Lock,
+  Globe,
+  MapPin
 } from 'lucide-react';
 import { hrService } from '../services/hrService';
 import { Employee } from '../types';
@@ -27,7 +29,6 @@ const EmployeeDirectory: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Dynamic lists from service
   const [depts, setDepts] = useState<string[]>([]);
   const [desigs, setDesigs] = useState<string[]>([]);
 
@@ -58,7 +59,8 @@ const EmployeeDirectory: React.FC = () => {
     salary: 0,
     status: 'ACTIVE' as any,
     employmentType: 'PERMANENT' as any,
-    location: 'Dhaka'
+    location: 'Dhaka',
+    workType: 'OFFICE' as any
   };
 
   const [formState, setFormState] = useState(initialNewEmpState);
@@ -97,7 +99,8 @@ const EmployeeDirectory: React.FC = () => {
       ...initialNewEmpState,
       ...emp,
       salary: emp.salary || 0,
-      password: emp.password || '' // Load current password for editing if needed
+      password: emp.password || '',
+      workType: emp.workType || 'OFFICE'
     } as any);
     setShowModal(true);
   };
@@ -111,21 +114,17 @@ const EmployeeDirectory: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (editingId) {
       hrService.updateProfile(editingId, {
         ...formState,
         avatar: formState.avatar || `https://picsum.photos/seed/${formState.name}/200`
       } as any);
-      alert(`Successfully updated profile for ${formState.name}`);
     } else {
       hrService.addEmployee({
         ...formState,
         avatar: formState.avatar || `https://picsum.photos/seed/${formState.name}/200`
       } as any);
-      alert(`Successfully onboarded ${formState.name}! ID: ${formState.id}. Password set to: ${formState.password || '123'}`);
     }
-    
     fetchEmployees();
     setShowModal(false);
   };
@@ -144,18 +143,12 @@ const EmployeeDirectory: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">Employee Directory</h1>
-          <p className="text-sm text-slate-500 font-medium tracking-tight">Managing {employees.length} active personnel across all branches</p>
+          <p className="text-sm text-slate-500 font-medium tracking-tight">Managing {employees.length} active personnel</p>
         </div>
         <div className="flex gap-2">
           <button 
-            onClick={() => alert("Bulk import features coming soon...")}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 shadow-sm transition-all"
-          >
-            <Upload size={16} /> Bulk Import
-          </button>
-          <button 
             onClick={handleOpenAdd}
-            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all"
+            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-700 shadow-md transition-all"
           >
             <UserPlus size={16} /> Add Employee
           </button>
@@ -168,7 +161,7 @@ const EmployeeDirectory: React.FC = () => {
           <input 
             type="text" 
             placeholder="Search by name, ID or department..."
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 transition-all"
+            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -184,24 +177,16 @@ const EmployeeDirectory: React.FC = () => {
                 <div className="flex justify-between items-start">
                   <h3 className="font-bold text-slate-900 truncate">{emp.name}</h3>
                   <div className="flex gap-1">
-                    <button 
-                      onClick={() => handleOpenEdit(emp)}
-                      className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-                      title="Edit Employee"
-                    >
-                      <Edit size={14} />
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(emp.id)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
-                      title="Delete Employee"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    <button onClick={() => handleOpenEdit(emp)} className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg transition-all"><Edit size={14} /></button>
+                    <button onClick={() => handleDelete(emp.id)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition-all"><Trash2 size={14} /></button>
                   </div>
                 </div>
                 <p className="text-[10px] font-black text-indigo-600 uppercase mt-0.5">{emp.designation}</p>
-                <p className="text-[11px] text-slate-500 font-bold mt-1 uppercase tracking-tighter">{emp.department}</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${emp.workType === 'FIELD' ? 'bg-amber-100 text-amber-700' : 'bg-indigo-100 text-indigo-700'}`}>
+                    {emp.workType === 'FIELD' ? 'Flexible (Field)' : 'Fixed (Office)'}
+                  </span>
+                </div>
               </div>
             </div>
             <div className="mt-6 grid grid-cols-2 gap-4">
@@ -210,18 +195,12 @@ const EmployeeDirectory: React.FC = () => {
                 <p className="text-sm font-black text-slate-700">{emp.id}</p>
               </div>
               <div className="bg-slate-50 p-2.5 rounded-xl">
-                <p className="text-[9px] text-slate-400 uppercase font-black">NID</p>
-                <p className="text-sm font-black text-slate-700">{emp.nid || 'N/A'}</p>
+                <p className="text-[9px] text-slate-400 uppercase font-black">Department</p>
+                <p className="text-[11px] font-black text-slate-700 uppercase truncate">{emp.department}</p>
               </div>
             </div>
           </div>
         ))}
-        {filtered.length === 0 && (
-          <div className="col-span-full py-20 text-center">
-            <Search size={48} className="mx-auto text-slate-200 mb-4" />
-            <h3 className="text-lg font-bold text-slate-400">No employees found matching your criteria.</h3>
-          </div>
-        )}
       </div>
 
       {showModal && (
@@ -229,261 +208,83 @@ const EmployeeDirectory: React.FC = () => {
           <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden animate-in zoom-in duration-300">
             <div className="bg-slate-900 p-6 flex justify-between items-center text-white">
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${editingId ? 'bg-indigo-600' : 'bg-emerald-600'}`}>
-                  {editingId ? <Edit size={20} /> : <UserPlus size={20} />}
-                </div>
-                <h3 className="text-xl font-black uppercase tracking-tight">
-                  {editingId ? 'Modify Profile' : 'New Onboarding'}
-                </h3>
+                <h3 className="text-xl font-black uppercase tracking-tight">{editingId ? 'Modify Profile' : 'New Onboarding'}</h3>
               </div>
-              <button onClick={() => setShowModal(false)} className="hover:bg-white/10 p-2 rounded-xl transition-all">
-                <X size={24} />
-              </button>
+              <button onClick={() => setShowModal(false)} className="hover:bg-white/10 p-2 rounded-xl"><X size={24} /></button>
             </div>
             
             <form onSubmit={handleSubmit} className="p-8 space-y-8 max-h-[85vh] overflow-y-auto no-scrollbar">
-              {/* Profile Header section */}
               <div className="flex flex-col md:flex-row gap-8 items-center pb-8 border-b border-slate-100">
-                <div className="relative group">
-                  <div 
-                    className="w-32 h-32 rounded-3xl bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center relative overflow-hidden cursor-pointer"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    {formState.avatar ? (
-                      <img src={formState.avatar} className="w-full h-full object-cover" />
-                    ) : (
-                      <Camera size={40} className="text-slate-400" />
-                    )}
-                    <div className="absolute inset-0 bg-slate-900/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="text-[10px] font-black uppercase">Change Photo</span>
-                    </div>
-                  </div>
+                <div className="w-32 h-32 rounded-3xl bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center relative overflow-hidden cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                  {formState.avatar ? <img src={formState.avatar} className="w-full h-full object-cover" /> : <Camera size={40} className="text-slate-400" />}
                   <input type="file" ref={fileInputRef} hidden accept="image/*" onChange={handleFileChange} />
                 </div>
                 
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Full Employee Name</label>
-                    <input 
-                      type="text" 
-                      required 
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:ring-2 focus:ring-indigo-500 outline-none" 
-                      value={formState.name}
-                      onChange={e => setFormState({...formState, name: e.target.value})}
-                    />
+                    <label className="text-[10px] font-black text-slate-400 uppercase px-1">Full Employee Name</label>
+                    <input type="text" required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none" value={formState.name} onChange={e => setFormState({...formState, name: e.target.value})} />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Official ID Number</label>
-                    <input 
-                      type="text" 
-                      readOnly={!!editingId}
-                      className={`w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none ${editingId ? 'text-slate-400' : ''}`} 
-                      value={formState.id}
-                      onChange={e => !editingId && setFormState({...formState, id: e.target.value})}
-                    />
+                    <label className="text-[10px] font-black text-slate-400 uppercase px-1">Identity ID</label>
+                    <input type="text" readOnly={!!editingId} className={`w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none ${editingId ? 'text-slate-400' : ''}`} value={formState.id} onChange={e => !editingId && setFormState({...formState, id: e.target.value})} />
                   </div>
                 </div>
               </div>
 
-              {/* Information Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                    <Mail size={12} /> Work Email
-                  </label>
-                  <input 
-                    type="email" 
-                    required 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" 
-                    value={formState.email}
-                    onChange={e => setFormState({...formState, email: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                    <Key size={12} /> Login Username
-                  </label>
-                  <input 
-                    type="text" 
-                    required 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" 
-                    value={formState.username}
-                    onChange={e => setFormState({...formState, username: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                    <ShieldCheck size={12} /> Account Role
-                  </label>
-                  <select 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold"
-                    value={formState.role}
-                    onChange={e => setFormState({...formState, role: e.target.value as any})}
-                  >
-                    <option value="EMPLOYEE">Standard Employee</option>
-                    <option value="MANAGER">Managerial Access</option>
-                    <option value="HR">HR Administrator</option>
-                    <option value="ADMIN">System SuperAdmin</option>
+                  <label className="text-[10px] font-black text-slate-400 uppercase px-1">Work Type (Attendance Rules)</label>
+                  <select className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" value={formState.workType} onChange={e => setFormState({...formState, workType: e.target.value as any})}>
+                    <option value="OFFICE">Office (Fixed Shift)</option>
+                    <option value="FIELD">Field (Flexible/Factory)</option>
                   </select>
                 </div>
-
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                    <Briefcase size={12} /> Department
-                  </label>
-                  <select 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold"
-                    value={formState.department}
-                    onChange={e => setFormState({...formState, department: e.target.value})}
-                  >
+                  <label className="text-[10px] font-black text-slate-400 uppercase px-1">Account Role</label>
+                  <select className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" value={formState.role} onChange={e => setFormState({...formState, role: e.target.value as any})}>
+                    <option value="EMPLOYEE">Employee</option>
+                    <option value="MANAGER">Manager</option>
+                    <option value="HR">HR Specialist</option>
+                    <option value="ADMIN">Administrator</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase px-1">Department</label>
+                  <select className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" value={formState.department} onChange={e => setFormState({...formState, department: e.target.value})}>
                     {depts.map(d => <option key={d}>{d}</option>)}
                   </select>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                    <Briefcase size={12} /> Designation
-                  </label>
-                  <select 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold"
-                    value={formState.designation}
-                    onChange={e => setFormState({...formState, designation: e.target.value})}
-                  >
+                <div className="space-y-1 lg:col-span-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase px-1">Designation</label>
+                  <select className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" value={formState.designation} onChange={e => setFormState({...formState, designation: e.target.value})}>
                     {desigs.map(d => <option key={d}>{d}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                    <CreditCard size={12} /> Basic Salary (BDT)
-                  </label>
-                  <input 
-                    type="number" 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" 
-                    value={formState.salary}
-                    onChange={e => setFormState({...formState, salary: parseInt(e.target.value) || 0})}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">NID / Passport</label>
-                  <input 
-                    type="text" 
-                    required 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" 
-                    value={formState.nid}
-                    onChange={e => setFormState({...formState, nid: e.target.value})}
-                  />
+                  <label className="text-[10px] font-black text-slate-400 uppercase px-1">Monthly Salary (BDT)</label>
+                  <input type="number" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" value={formState.salary} onChange={e => setFormState({...formState, salary: parseInt(e.target.value) || 0})} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Contact Mobile</label>
-                  <input 
-                    type="text" 
-                    required 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" 
-                    value={formState.mobile}
-                    onChange={e => setFormState({...formState, mobile: e.target.value})}
-                  />
+                  <label className="text-[10px] font-black text-slate-400 uppercase px-1">Work Email</label>
+                  <input type="email" required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" value={formState.email} onChange={e => setFormState({...formState, email: e.target.value})} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Emergency Phone</label>
-                  <input 
-                    type="text" 
-                    required 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" 
-                    value={formState.emergencyContact}
-                    onChange={e => setFormState({...formState, emergencyContact: e.target.value})}
-                  />
-                </div>
-                
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Joining Date</label>
-                  <input 
-                    type="date" 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" 
-                    value={formState.joiningDate}
-                    onChange={e => setFormState({...formState, joiningDate: e.target.value})}
-                  />
+                  <label className="text-[10px] font-black text-slate-400 uppercase px-1">Username</label>
+                  <input type="text" required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" value={formState.username} onChange={e => setFormState({...formState, username: e.target.value})} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Employment Type</label>
-                  <select 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold"
-                    value={formState.employmentType}
-                    onChange={e => setFormState({...formState, employmentType: e.target.value as any})}
-                  >
-                    <option value="PERMANENT">Permanent Full-Time</option>
-                    <option value="CONTRACT">Contract Basis</option>
-                    <option value="TEMPORARY">Temporary / Intern</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Status</label>
-                  <select 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold"
-                    value={formState.status}
-                    onChange={e => setFormState({...formState, status: e.target.value as any})}
-                  >
-                    <option value="ACTIVE">Active (Working)</option>
-                    <option value="ON_LEAVE">On Leave</option>
-                    <option value="INACTIVE">Inactive (Resigned/Terminated)</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Security & Password Reset Section */}
-              <div className="p-6 bg-slate-50 border border-slate-200 rounded-[32px] space-y-4">
-                <div className="flex items-center gap-2 px-1">
-                  <Lock size={16} className="text-indigo-600" />
-                  <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">Security & Account Access</h4>
-                </div>
-                
-                <div className="flex flex-col md:flex-row gap-4 items-end">
-                  <div className="flex-1 space-y-1.5 w-full">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
-                      {editingId ? 'Reset Password' : 'Initial Access Password'}
-                    </label>
-                    <div className="relative">
-                      <input 
-                        type="text" 
-                        placeholder={editingId ? "Leave blank to keep current" : "Set initial password"}
-                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm focus:ring-2 focus:ring-indigo-500 outline-none pr-12" 
-                        value={formState.password}
-                        onChange={e => setFormState({...formState, password: e.target.value})}
-                      />
-                      <button 
-                        type="button"
-                        onClick={generatePassword}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-                        title="Generate Secure Password"
-                      >
-                        <RefreshCw size={16} />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-start gap-2 max-w-xs">
-                    <ShieldCheck className="text-indigo-600 shrink-0 mt-0.5" size={14} />
-                    <p className="text-[9px] text-indigo-700 leading-tight font-bold uppercase">
-                      {editingId 
-                        ? "Changing this will take effect on the employee's next login attempt." 
-                        : "Required for first-time onboarding access."}
-                    </p>
+                  <label className="text-[10px] font-black text-slate-400 uppercase px-1">Password</label>
+                  <div className="relative">
+                    <input type="text" placeholder="Set or regenerate" className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none" value={formState.password} onChange={e => setFormState({...formState, password: e.target.value})} />
+                    <button type="button" onClick={generatePassword} className="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-600"><RefreshCw size={16} /></button>
                   </div>
                 </div>
               </div>
 
               <div className="pt-8 border-t border-slate-100 flex gap-4">
-                <button 
-                  type="button" 
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 py-4 bg-slate-100 text-slate-700 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-200 transition-all"
-                >
-                  Discard Changes
-                </button>
-                <button 
-                  type="submit" 
-                  className={`flex-1 py-4 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg transition-all flex items-center justify-center gap-2 ${editingId ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100'}`}
-                >
-                  <Save size={18} /> {editingId ? 'Save Profile & Security' : 'Onboard & Create Account'}
-                </button>
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 bg-slate-100 text-slate-700 rounded-2xl font-black uppercase text-xs">Cancel</button>
+                <button type="submit" className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs shadow-lg flex items-center justify-center gap-2"><Save size={18} /> {editingId ? 'Save Profile' : 'Complete Onboarding'}</button>
               </div>
             </form>
           </div>

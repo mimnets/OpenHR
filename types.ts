@@ -1,5 +1,6 @@
 
 export type Role = 'ADMIN' | 'MANAGER' | 'HR' | 'EMPLOYEE';
+export type WorkType = 'OFFICE' | 'FIELD';
 
 export interface User {
   id: string;
@@ -22,7 +23,8 @@ export interface Employee extends User {
   location: string;
   nid?: string;
   password?: string;
-  lineManagerId?: string; // Reporting line
+  lineManagerId?: string;
+  workType: WorkType; // OFFICE follows rules, FIELD is flexible
 }
 
 export interface Attendance {
@@ -32,10 +34,10 @@ export interface Attendance {
   date: string;
   checkIn?: string;
   checkOut?: string;
-  status: 'PRESENT' | 'ABSENT' | 'LATE' | 'LEAVE';
+  status: 'PRESENT' | 'ABSENT' | 'LATE' | 'LEAVE' | 'EARLY_OUT';
   location?: { lat: number; lng: number; address?: string };
   remarks?: string;
-  selfie?: string; // Base64 encoded selfie image
+  selfie?: string;
 }
 
 export interface LeaveRequest {
@@ -80,4 +82,8 @@ export interface AppConfig {
   currency: string;
   dateFormat: string;
   workingDays: string[];
+  officeStartTime: string; // HH:mm
+  officeEndTime: string;   // HH:mm
+  lateGracePeriod: number; // minutes
+  earlyOutGracePeriod: number; // minutes
 }

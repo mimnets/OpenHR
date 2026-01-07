@@ -33,7 +33,8 @@ const INITIAL_EMPLOYEES: Employee[] = [
     location: 'Dhaka',
     avatar: 'https://picsum.photos/seed/admin/200',
     nid: '1234567890',
-    password: '123'
+    password: '123',
+    workType: 'OFFICE'
   },
   {
     id: 'EMP002',
@@ -53,7 +54,8 @@ const INITIAL_EMPLOYEES: Employee[] = [
     avatar: 'https://picsum.photos/seed/anis/200',
     nid: '0987654321',
     lineManagerId: 'EMP001',
-    password: '123'
+    password: '123',
+    workType: 'OFFICE'
   }
 ];
 
@@ -67,6 +69,10 @@ export const hrService = {
       const repaired = existing.map(emp => {
         if (!emp.password) {
           emp.password = '123';
+          updated = true;
+        }
+        if (!emp.workType) {
+          emp.workType = 'OFFICE';
           updated = true;
         }
         return emp;
@@ -144,7 +150,7 @@ export const hrService = {
   addEmployee(employee: Employee) {
     const employees = this.getEmployees();
     const pwd = (employee.password && employee.password.trim().length > 0) ? employee.password : '123';
-    const newEmployee = { ...employee, password: pwd };
+    const newEmployee = { ...employee, password: pwd, workType: employee.workType || 'OFFICE' };
     employees.push(newEmployee);
     localStorage.setItem(STORAGE_KEYS.EMPLOYEES, JSON.stringify(employees));
     const balances = this.getAllLeaveBalances();
@@ -233,6 +239,21 @@ export const hrService = {
 
   saveAttendance(attendance: Attendance) {
     const list = this.getAttendance();
+    const config = this.getConfig();
+    const emp = this.getEmployees().find(e => e.id === attendance.employeeId);
+    
+    // Logic for LATE marking
+    if (emp?.workType === 'OFFICE' && attendance.checkIn) {
+      const [inH, inM] = attendance.checkIn.split(':').map(Number);
+      const [offH, offM] = config.officeStartTime.split(':').map(Number);
+      const inMinutes = inH * 60 + inM;
+      const offMinutes = offH * 60 + offM;
+      
+      if (inMinutes > offMinutes + config.lateGracePeriod) {
+        attendance.status = 'LATE';
+      }
+    }
+
     const index = list.findIndex(a => a.id === attendance.id);
     if (index > -1) {
       list[index] = attendance;
@@ -246,7 +267,29 @@ export const hrService = {
     const list = this.getAttendance();
     const index = list.findIndex(a => a.id === id);
     if (index > -1) {
-      list[index] = { ...list[index], ...updates };
+      const current = list[index];
+      const config = this.getConfig();
+      const emp = this.getEmployees().find(e => e.id === current.employeeId);
+      
+      const updated = { ...current, ...updates };
+
+      // Logic for EARLY_OUT marking
+      if (emp?.workType === 'OFFICE' && updated.checkOut) {
+        const [outH, outM] = updated.checkOut.split(':').map(Number);
+        const [offEndH, offEndM] = config.officeEndTime.split(':').map(Number);
+        const outMinutes = outH * 60 + outM;
+        const offEndMinutes = offEndH * 60 + offEndM;
+        
+        if (outMinutes < offEndMinutes - config.earlyOutGracePeriod) {
+          // We prioritize LATE if they were late, but EARLY_OUT is also important.
+          // For now, if they are already LATE, keep it, otherwise mark EARLY_OUT.
+          if (updated.status === 'PRESENT') {
+            updated.status = 'EARLY_OUT';
+          }
+        }
+      }
+
+      list[index] = updated;
       localStorage.setItem(STORAGE_KEYS.ATTENDANCE, JSON.stringify(list));
       return list[index];
     }
@@ -268,8 +311,6 @@ export const hrService = {
     const list = this.getLeaves();
     const index = list.findIndex(r => r.id === id);
     if (index > -1) {
-      // If dates or days changed and it was already approved, this is complex.
-      // For this app, we assume modifications are only done before final approval OR by Admin.
       list[index] = { ...list[index], ...updates };
       localStorage.setItem(STORAGE_KEYS.LEAVES, JSON.stringify(list));
     }
@@ -283,7 +324,6 @@ export const hrService = {
       const isHRAdmin = approverRole === 'ADMIN' || approverRole === 'HR';
       const oldStatus = request.status;
       
-      // Stage 1: Line Manager Approval (Verified)
       if (request.status === 'PENDING_MANAGER') {
         if (status === 'APPROVED') {
           request.status = 'PENDING_HR';
@@ -293,22 +333,16 @@ export const hrService = {
           request.managerRemarks = remarks;
         }
       } 
-      // Stage 2: HR/Admin Final Decision or Administrative Override
       else if (isHRAdmin) {
-        // If an Admin rejects/cancels an ALREADY approved request, restore balance
         if (oldStatus === 'APPROVED' && status === 'REJECTED') {
           this.addLeaveBalance(request.employeeId, request.type as any, request.totalDays);
         }
-
         request.status = status as any;
         request.approverRemarks = remarks;
-        
-        // If approving for the first time
         if (status === 'APPROVED' && oldStatus !== 'APPROVED') {
           this.deductLeaveBalance(request.employeeId, request.type as any, request.totalDays);
         }
       }
-      
       localStorage.setItem(STORAGE_KEYS.LEAVES, JSON.stringify(list));
     }
   },
