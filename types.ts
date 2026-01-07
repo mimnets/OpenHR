@@ -62,10 +62,10 @@ export interface LeaveBalance {
   SICK: number;
 }
 
+// Added missing LeaveWorkflow interface to fix export errors
 export interface LeaveWorkflow {
   department: string;
-  approverRole: Role | 'LINE_MANAGER';
-  autoApproveAfterDays?: number;
+  approverRole: 'LINE_MANAGER' | 'HR' | 'ADMIN';
 }
 
 export interface Holiday {
@@ -74,6 +74,16 @@ export interface Holiday {
   name: string;
   isGovernment: boolean;
   type: 'FESTIVAL' | 'ISLAMIC' | 'NATIONAL';
+}
+
+export interface SentEmail {
+  id: string;
+  to: string;
+  subject: string;
+  body: string;
+  sentAt: string;
+  status: 'SENT' | 'FAILED';
+  provider: string;
 }
 
 export interface SmtpConfig {

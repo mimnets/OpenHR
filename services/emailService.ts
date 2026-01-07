@@ -1,72 +1,69 @@
 
 import { hrService } from './hrService';
-import { Employee, LeaveRequest, SmtpConfig } from '../types';
+import { Employee, LeaveRequest, SentEmail } from '../types';
+
+const STORAGE_KEY = 'hr_sent_emails';
 
 export const emailService = {
-  /**
-   * Simulates sending an email. Supports both Basic Auth and XOAUTH2.
-   */
+  getOutbox(): SentEmail[] {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  },
+
+  clearOutbox() {
+    localStorage.setItem(STORAGE_KEY, '[]');
+  },
+
   async sendEmail(to: string, subject: string, body: string): Promise<boolean> {
     const config = hrService.getConfig().smtp;
+    const outbox = this.getOutbox();
     
+    const newEmail: SentEmail = {
+      id: Math.random().toString(36).substring(7),
+      to,
+      subject,
+      body,
+      sentAt: new Date().toISOString(),
+      status: (config && config.isActive) ? 'SENT' : 'FAILED',
+      provider: config?.provider || 'NONE'
+    };
+
+    outbox.unshift(newEmail);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(outbox.slice(0, 50))); // Keep last 50
+
     if (!config || !config.isActive) {
-      console.warn('Email Dispatcher: SMTP is not configured or inactive.');
+      console.warn('Email Dispatcher: SMTP is not active. Email moved to Failed Outbox.');
       return false;
     }
 
-    console.group(`%c📧 Outgoing Email: ${subject}`, 'color: #4f46e5; font-weight: bold; font-size: 12px;');
-    console.log(`%cTo: %c${to}`, 'font-weight: bold;', 'color: #1e293b;');
-    console.log(`%cFrom: %c"${config.fromName}" <${config.fromEmail}>`, 'font-weight: bold;', 'color: #1e293b;');
-    
-    if (config.authType === 'OAUTH2') {
-      console.log(`%cAuthentication: %cXOAUTH2 (Modern Auth)`, 'font-weight: bold;', 'color: #10b981;');
-      console.log(`%cBearer Token: %c${config.accessToken?.substring(0, 15)}...`, 'font-weight: bold;', 'color: #64748b;');
-    } else {
-      console.log(`%cAuthentication: %cBasic Auth (Legacy)`, 'font-weight: bold;', 'color: #f59e0b;');
-    }
-
-    console.log(`%cSMTP Relay: %c${config.host}:${config.port}`, 'font-weight: bold;', 'color: #64748b;');
-    console.log(`%cBody Content:`, 'font-weight: bold;');
-    console.log(body);
+    console.group(`%c📧 Outgoing Email: ${subject}`, 'color: #4f46e5; font-weight: bold;');
+    console.log(`To: ${to}`);
+    console.log(`Body: ${body}`);
     console.groupEnd();
 
     return true;
   },
 
   async sendWelcomeEmail(employee: Employee) {
-    const subject = `Welcome to OpenHR - Your Login Credentials`;
-    const body = `
-      Hello ${employee.name},
-      
-      Your account has been successfully created.
-      
-      Username: ${employee.username}
-      Password: ${employee.password || '123'}
-      
-      Please login at: ${window.location.origin}
-    `;
+    const subject = `Welcome to OpenHR - Login Credentials`;
+    const body = `Hello ${employee.name},\n\nYour account is active.\nUsername: ${employee.username}\nPassword: ${employee.password || '123'}`;
     return this.sendEmail(employee.email, subject, body);
   },
 
   async sendLeaveStatusAlert(request: LeaveRequest, employee: Employee) {
-    const subject = `Leave Request ${request.status === 'APPROVED' ? 'Approved' : 'Rejected'}`;
-    const body = `
-      Hello ${employee.name},
-      
-      Your leave request for ${request.startDate} has been ${request.status}.
-    `;
+    const subject = `Leave Request ${request.status}`;
+    const body = `Hello ${employee.name},\n\nYour leave for ${request.startDate} is ${request.status}.`;
     return this.sendEmail(employee.email, subject, body);
   },
 
   async sendPasswordReset(email: string) {
     const subject = `Password Reset Request`;
-    const body = `You requested a password reset. Your temporary key is: ${Math.random().toString(36).substring(7).toUpperCase()}`;
+    const body = `Your temporary password reset key is: ${Math.random().toString(36).substring(7).toUpperCase()}`;
     return this.sendEmail(email, subject, body);
   },
 
   async sendReport(to: string, reportName: string) {
-    const subject = `Organization Report: ${reportName}`;
-    const body = `Attached is the ${reportName} generated on ${new Date().toLocaleString()}.`;
+    const subject = `Report: ${reportName}`;
+    const body = `The requested ${reportName} is attached.`;
     return this.sendEmail(to, subject, body);
   }
 };

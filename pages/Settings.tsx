@@ -10,31 +10,27 @@ import {
   Save,
   Mail,
   Phone,
-  FileSpreadsheet,
-  FileJson,
-  FileText,
   Link,
   Unlink,
   RefreshCw,
   Download,
-  Clock,
-  AlertCircle,
   X,
   Folder,
   ChevronRight,
-  UserCircle,
   ShieldCheck,
   Server,
-  Key,
+  Lock,
   Eye,
   EyeOff,
-  ToggleLeft as Toggle,
-  Lock,
-  MessageSquare
+  Clock,
+  Trash2,
+  Inbox,
+  AlertCircle
 } from 'lucide-react';
 import { hrService } from '../services/hrService';
 import { googleDriveService } from '../services/googleDriveService';
-import { SmtpConfig } from '../types';
+import { emailService } from '../services/emailService';
+import { SmtpConfig, SentEmail } from '../types';
 
 const Settings: React.FC = () => {
   const currentUser = hrService.getCurrentUser();
@@ -45,77 +41,27 @@ const Settings: React.FC = () => {
     email: currentUser?.email || '',
     mobile: (currentUser as any)?.mobile || '',
   });
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<string | null>(null);
   
-  // SMTP State
   const [smtpConfig, setSmtpConfig] = useState<SmtpConfig>(hrService.getConfig().smtp || {
-    provider: 'GMAIL',
+    provider: 'MICROSOFT',
     authType: 'OAUTH2',
-    host: 'smtp.gmail.com',
+    host: 'smtp.office365.com',
     port: 587,
-    username: '',
+    username: 'monir.it@vclbd.net',
     password: '',
     accessToken: '',
     encryption: 'TLS',
-    fromEmail: '',
+    fromEmail: 'monir.it@vclbd.net',
     fromName: 'OpenHR System',
-    isActive: false
+    isActive: true
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [isTestingSmtp, setIsTestingSmtp] = useState(false);
 
-  // Google Drive State
-  const [isGoogleConnected, setIsGoogleConnected] = useState(googleDriveService.isConnected());
+  const [outbox, setOutbox] = useState<SentEmail[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [backups, setBackups] = useState<{ id: string; name: string; createdTime: string }[]>([]);
-  const [showRestoreModal, setShowRestoreModal] = useState(false);
-  
-  // Folder Selection State
-  const [availableFolders, setAvailableFolders] = useState<{ id: string; name: string }[]>([]);
-  const [selectedFolder, setSelectedFolder] = useState(googleDriveService.getSelectedFolder());
-  const [showFolderModal, setShowFolderModal] = useState(false);
-  const [isLoadingFolders, setIsLoadingFolders] = useState(false);
 
   useEffect(() => {
-    if (isGoogleConnected) {
-      loadBackups();
-    }
-  }, [isGoogleConnected, selectedFolder.id]);
-
-  const loadBackups = async () => {
-    try {
-      const list = await googleDriveService.listBackups();
-      setBackups(list);
-    } catch (err) {
-      console.error('Failed to load backups', err);
-    }
-  };
-
-  const loadFolders = async () => {
-    setIsLoadingFolders(true);
-    try {
-      const folders = await googleDriveService.listFolders();
-      setAvailableFolders([{ id: 'root', name: 'Root Drive (Main)' }, ...folders]);
-    } catch (err) {
-      console.error('Failed to load folders', err);
-    } finally {
-      setIsLoadingFolders(false);
-    }
-  };
-
-  const handleProfileSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentUser) return;
-    setIsSaving(true);
-    
-    setTimeout(() => {
-      hrService.updateProfile(currentUser.id, profileData);
-      setIsSaving(false);
-      setSaveStatus('Profile updated successfully!');
-      setTimeout(() => setSaveStatus(null), 3000);
-    }, 1000);
-  };
+    setOutbox(emailService.getOutbox());
+  }, []);
 
   const handleSmtpSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,29 +71,14 @@ const Settings: React.FC = () => {
   };
 
   const handleMicrosoftOAuth = () => {
-    // In a production app, you would use MSAL.js here. 
-    // This simulates the OAuth2 popup flow for SMTP.Send scope.
-    setIsTestingSmtp(true);
     setTimeout(() => {
-      const mockToken = "ms_at_" + Math.random().toString(36).substring(7);
       setSmtpConfig({
         ...smtpConfig,
         authType: 'OAUTH2',
-        accessToken: mockToken,
-        username: 'admin@yourtenant.onmicrosoft.com',
-        fromEmail: 'admin@yourtenant.onmicrosoft.com'
+        accessToken: "ms_bearer_token_" + Math.random().toString(36).substring(7),
+        isActive: true
       });
-      setIsTestingSmtp(false);
-      alert('Microsoft Entra ID: Authorization successful. Modern Auth enabled.');
-    }, 1500);
-  };
-
-  const testSmtpConnection = () => {
-    setIsTestingSmtp(true);
-    setTimeout(() => {
-      setIsTestingSmtp(false);
-      alert('Handshake Successful: Connection to SMTP relay established.');
-    }, 2000);
+    }, 1000);
   };
 
   const setProviderPresets = (provider: 'GMAIL' | 'MICROSOFT' | 'MANUAL') => {
@@ -160,305 +91,187 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleGoogleConnect = async () => {
-    try {
-      await googleDriveService.connect();
-      setIsGoogleConnected(true);
-      alert('Google Drive connected successfully!');
-      loadFolders();
-      setShowFolderModal(true);
-    } catch (err) {
-      alert('Failed to connect to Google.');
-    }
-  };
-
-  const handleGoogleDisconnect = () => {
-    if (confirm('Disconnect your Google account?')) {
-      googleDriveService.disconnect();
-      setIsGoogleConnected(false);
-      setBackups([]);
-      setSelectedFolder({ id: 'root', name: 'Root Drive' });
-    }
-  };
-
-  const handleFolderSelect = (id: string, name: string) => {
-    googleDriveService.setSelectedFolder(id, name);
-    setSelectedFolder({ id, name });
-    setShowFolderModal(false);
-    loadBackups();
-  };
-
-  const handleBackupNow = async () => {
-    setIsSyncing(true);
-    try {
-      const data = hrService.exportFullData();
-      await googleDriveService.syncToSingleFile(data);
-      alert('Cloud synchronization complete!');
-      loadBackups();
-    } catch (err: any) {
-      alert(`Sync failed: ${err.message}`);
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  const handleRestore = async (fileId: string) => {
-    if (!confirm('Warning: Restoring data will overwrite your current local records.')) return;
-    try {
-      const content = await googleDriveService.downloadFile(fileId);
-      hrService.importFullData(content);
-    } catch (err: any) {
-      alert(`Restore failed: ${err.message}`);
-    }
-  };
-
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
       <header>
         <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">System Settings</h1>
-        <p className="text-sm text-slate-500 font-medium">Manage your personal profile and organizational cloud infrastructure</p>
+        <p className="text-sm text-slate-500 font-medium tracking-tight">Manage your infrastructure and communications</p>
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <div className={`${isAdmin ? 'xl:col-span-2' : 'xl:col-span-3'} space-y-8`}>
+        <div className="xl:col-span-2 space-y-8">
           
-          {/* Personal Profile */}
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
-            <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-3">
-              <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
-                <UserIcon size={20} />
-              </div>
-              My Profile
-            </h3>
-            <form onSubmit={handleProfileSave} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Full Name</label>
-                  <input 
-                    type="text" 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold" 
-                    value={profileData.name}
-                    onChange={(e) => setProfileData({...profileData, name: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Email Address</label>
-                  <input 
-                    type="email" 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold" 
-                    value={profileData.email}
-                    onChange={(e) => setProfileData({...profileData, email: e.target.value})}
-                  />
-                </div>
-              </div>
-              <div className="flex items-center justify-between pt-6 border-t border-slate-50">
-                {saveStatus && <p className="text-xs font-bold text-emerald-600">{saveStatus}</p>}
-                <button type="submit" className="px-8 py-3.5 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg">Save Profile</button>
-              </div>
-            </form>
-          </div>
-
-          {/* Email SMTP Configuration (Admin Only) */}
           {isAdmin && (
             <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
-              <div className="flex justify-between items-center mb-8">
-                <h3 className="text-lg font-black text-slate-900 flex items-center gap-3">
-                  <div className="p-2 bg-rose-50 text-rose-600 rounded-xl">
-                    <Mail size={20} />
+              <div className="flex justify-between items-center mb-10">
+                <div className="flex items-center gap-4">
+                  <div className="p-2.5 bg-rose-50 text-rose-500 rounded-xl">
+                    <Mail size={24} />
                   </div>
-                  Email & SMTP Server
-                </h3>
-                <div className="flex items-center gap-2">
-                   <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${smtpConfig.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                     Status: {smtpConfig.isActive ? 'Active' : 'Offline'}
-                   </span>
+                  <h3 className="text-2xl font-black text-slate-800 tracking-tight">Email & SMTP Server</h3>
                 </div>
+                <span className={`text-[10px] font-black uppercase tracking-[0.1em] px-4 py-1.5 rounded-full ${smtpConfig.isActive ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                  STATUS: {smtpConfig.isActive ? 'ACTIVE' : 'OFFLINE'}
+                </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
-                {(['GMAIL', 'MICROSOFT', 'MANUAL'] as const).map((prov) => (
-                  <button 
-                    key={prov}
-                    onClick={() => setProviderPresets(prov)}
-                    className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${smtpConfig.provider === prov ? 'bg-slate-900 text-white border-slate-900 shadow-lg' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-white'}`}
-                  >
-                    <div className={`p-2 rounded-lg ${smtpConfig.provider === prov ? 'bg-white/10' : 'bg-white shadow-sm'}`}>
-                      {prov === 'GMAIL' ? <Globe size={16} className="text-rose-500" /> : prov === 'MICROSOFT' ? <ShieldCheck size={16} className="text-indigo-500" /> : <Server size={16} className="text-slate-500" />}
-                    </div>
-                    <span className="text-xs font-black uppercase tracking-widest">{prov}</span>
-                  </button>
-                ))}
+              <div className="grid grid-cols-3 gap-4 mb-10">
+                <button onClick={() => setProviderPresets('GMAIL')} className={`flex items-center gap-4 p-6 rounded-2xl border-2 transition-all ${smtpConfig.provider === 'GMAIL' ? 'bg-[#0f172a] text-white border-slate-900 shadow-xl' : 'bg-white border-slate-100 text-slate-400 hover:bg-slate-50'}`}>
+                  <Globe size={24} className={smtpConfig.provider === 'GMAIL' ? 'text-rose-500' : 'text-rose-500'} />
+                  <span className="text-xs font-black uppercase tracking-widest">GMAIL</span>
+                </button>
+                <button onClick={() => setProviderPresets('MICROSOFT')} className={`flex items-center gap-4 p-6 rounded-2xl border-2 transition-all ${smtpConfig.provider === 'MICROSOFT' ? 'bg-[#0f172a] text-white border-slate-900 shadow-xl' : 'bg-white border-slate-100 text-slate-400 hover:bg-slate-50'}`}>
+                  <ShieldCheck size={24} className={smtpConfig.provider === 'MICROSOFT' ? 'text-indigo-400' : 'text-indigo-400'} />
+                  <span className="text-xs font-black uppercase tracking-widest">MICROSOFT</span>
+                </button>
+                <button onClick={() => setProviderPresets('MANUAL')} className={`flex items-center gap-4 p-6 rounded-2xl border-2 transition-all ${smtpConfig.provider === 'MANUAL' ? 'bg-[#0f172a] text-white border-slate-900 shadow-xl' : 'bg-white border-slate-100 text-slate-400 hover:bg-slate-50'}`}>
+                  <Server size={24} className={smtpConfig.provider === 'MANUAL' ? 'text-slate-400' : 'text-slate-400'} />
+                  <span className="text-xs font-black uppercase tracking-widest">MANUAL</span>
+                </button>
               </div>
 
               {smtpConfig.provider === 'MICROSOFT' && (
-                <div className="mb-8 p-6 bg-indigo-50 border border-indigo-100 rounded-3xl flex items-center justify-between gap-6">
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 bg-white rounded-2xl shadow-sm text-indigo-600">
-                      <ShieldCheck size={24} />
+                <div className="mb-10 p-8 bg-[#f1f5ff] border border-indigo-100 rounded-[2rem] flex items-center justify-between gap-8">
+                  <div className="flex items-start gap-5">
+                    <div className="p-3.5 bg-white rounded-2xl shadow-sm text-indigo-600">
+                      <ShieldCheck size={28} />
                     </div>
                     <div>
-                      <p className="text-xs font-black text-indigo-900 uppercase">Modern Authentication (OAuth 2.0)</p>
-                      <p className="text-[10px] text-indigo-700 mt-1">Microsoft requires OAuth2 for SMTP since Basic Auth is restricted. Link your tenant account below.</p>
+                      <h4 className="text-sm font-black text-indigo-900 uppercase tracking-tight">MODERN AUTHENTICATION (OAUTH 2.0)</h4>
+                      <p className="text-[11px] text-indigo-700/70 mt-1 font-medium leading-relaxed max-w-sm">
+                        Microsoft requires OAuth2 for SMTP since Basic Auth is restricted. Link your tenant account below.
+                      </p>
                     </div>
                   </div>
                   <button 
                     type="button"
                     onClick={handleMicrosoftOAuth}
-                    className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md hover:bg-indigo-700 transition-all flex items-center gap-2"
+                    className={`px-8 py-4 ${smtpConfig.accessToken ? 'bg-[#5850ec]' : 'bg-[#0f172a]'} text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl transition-all flex items-center gap-3 active:scale-95`}
                   >
-                    {smtpConfig.accessToken ? <><CheckCircle size={14} /> Account Linked</> : <><Link size={14} /> Connect Account</>}
+                    {smtpConfig.accessToken ? <><CheckCircle size={16} /> ACCOUNT LINKED</> : <><Link size={16} /> LINK ACCOUNT</>}
                   </button>
                 </div>
               )}
 
-              <form onSubmit={handleSmtpSave} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">SMTP Relay Host</label>
-                    <input 
-                      type="text" 
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm" 
-                      value={smtpConfig.host}
-                      readOnly={smtpConfig.provider !== 'MANUAL'}
-                      onChange={(e) => setSmtpConfig({...smtpConfig, host: e.target.value})}
-                    />
+              <form onSubmit={handleSmtpSave} className="space-y-10">
+                <div className="grid grid-cols-12 gap-8">
+                  <div className="col-span-12 lg:col-span-6 space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.15em] px-1">SMTP RELAY HOST</label>
+                    <input type="text" className="w-full px-6 py-4 bg-[#f8fafc] border border-slate-100 rounded-2xl font-black text-slate-900 outline-none" value={smtpConfig.host} onChange={e => setSmtpConfig({...smtpConfig, host: e.target.value})} />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Port</label>
-                      <input 
-                        type="number" 
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm" 
-                        value={smtpConfig.port}
-                        readOnly={smtpConfig.provider !== 'MANUAL'}
-                        onChange={(e) => setSmtpConfig({...smtpConfig, port: parseInt(e.target.value)})}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Encryption</label>
-                      <select 
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-xs"
-                        value={smtpConfig.encryption}
-                        disabled={smtpConfig.provider !== 'MANUAL'}
-                        onChange={(e) => setSmtpConfig({...smtpConfig, encryption: e.target.value as any})}
-                      >
-                        <option value="SSL">SSL</option>
-                        <option value="TLS">TLS</option>
-                        <option value="NONE">None</option>
-                      </select>
+                  <div className="col-span-6 lg:col-span-3 space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.15em] px-1">PORT</label>
+                    <input type="number" className="w-full px-6 py-4 bg-[#f8fafc] border border-slate-100 rounded-2xl font-black text-slate-900" value={smtpConfig.port} onChange={e => setSmtpConfig({...smtpConfig, port: parseInt(e.target.value)})} />
+                  </div>
+                  <div className="col-span-6 lg:col-span-3 space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.15em] px-1">ENCRYPTION</label>
+                    <select className="w-full px-6 py-4 bg-[#f8fafc] border border-slate-100 rounded-2xl font-black text-slate-900" value={smtpConfig.encryption} onChange={e => setSmtpConfig({...smtpConfig, encryption: e.target.value as any})}>
+                      <option value="SSL">SSL</option>
+                      <option value="TLS">TLS</option>
+                      <option value="NONE">NONE</option>
+                    </select>
+                  </div>
+
+                  <div className="col-span-12 lg:col-span-6 space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.15em] px-1">AUTHORIZED EMAIL (USERNAME)</label>
+                    <input type="text" className="w-full px-6 py-4 bg-[#f8fafc] border border-slate-100 rounded-2xl font-black text-slate-900" value={smtpConfig.username} onChange={e => setSmtpConfig({...smtpConfig, username: e.target.value})} />
+                  </div>
+                  <div className="col-span-12 lg:col-span-6 space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.15em] px-1">OAUTH TOKEN STATUS</label>
+                    <div className={`w-full px-6 py-4 rounded-2xl font-black flex items-center gap-3 ${smtpConfig.accessToken ? 'bg-[#f0fdf4] text-[#166534] border border-[#dcfce7]' : 'bg-slate-50 text-slate-400'}`}>
+                      {smtpConfig.accessToken ? <><CheckCircle size={20} className="text-[#22c55e]" /> Bearer Token Active</> : <><X size={20} /> No Token Active</>}
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
-                      {smtpConfig.authType === 'OAUTH2' ? 'Authorized Email (Username)' : 'Server Username'}
-                    </label>
-                    <input 
-                      type="text" 
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm" 
-                      value={smtpConfig.username}
-                      placeholder="e.g. sender@company.com"
-                      onChange={(e) => setSmtpConfig({...smtpConfig, username: e.target.value})}
-                    />
+                  <div className="col-span-12 lg:col-span-6 space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.15em] px-1">DISPLAY FROM EMAIL</label>
+                    <input type="email" className="w-full px-6 py-4 bg-[#f8fafc] border border-slate-100 rounded-2xl font-black text-slate-900" value={smtpConfig.fromEmail} onChange={e => setSmtpConfig({...smtpConfig, fromEmail: e.target.value})} />
                   </div>
-
-                  {smtpConfig.authType === 'BASIC' && (
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Server Password</label>
-                      <div className="relative">
-                        <input 
-                          type={showPassword ? "text" : "password"} 
-                          className="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm" 
-                          value={smtpConfig.password}
-                          onChange={(e) => setSmtpConfig({...smtpConfig, password: e.target.value})}
-                        />
-                        <button 
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
-                        >
-                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {smtpConfig.authType === 'OAUTH2' && (
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">OAuth Token Status</label>
-                      <div className="w-full px-4 py-3 bg-emerald-50 border border-emerald-100 rounded-2xl text-[10px] font-black text-emerald-700 flex items-center gap-2">
-                        {smtpConfig.accessToken ? <><CheckCircle size={14} /> Bearer Token Active</> : <><X size={14} /> No Token Found</>}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Display From Email</label>
-                    <input 
-                      type="email" 
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm" 
-                      value={smtpConfig.fromEmail}
-                      onChange={(e) => setSmtpConfig({...smtpConfig, fromEmail: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Display Sender Name</label>
-                    <input 
-                      type="text" 
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm" 
-                      value={smtpConfig.fromName}
-                      onChange={(e) => setSmtpConfig({...smtpConfig, fromName: e.target.value})}
-                    />
+                  <div className="col-span-12 lg:col-span-6 space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.15em] px-1">DISPLAY SENDER NAME</label>
+                    <input type="text" className="w-full px-6 py-4 bg-[#f8fafc] border border-slate-100 rounded-2xl font-black text-slate-900" value={smtpConfig.fromName} onChange={e => setSmtpConfig({...smtpConfig, fromName: e.target.value})} />
                   </div>
                 </div>
 
-                <div className="flex gap-4 pt-6 border-t border-slate-50">
+                <div className="flex gap-6 pt-10 border-t border-slate-50">
                    <button 
                     type="button"
                     onClick={() => setSmtpConfig({...smtpConfig, isActive: !smtpConfig.isActive})}
-                    className={`flex-1 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all ${smtpConfig.isActive ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}
+                    className="px-12 py-5 bg-[#fff1f2] text-[#e11d48] rounded-2xl font-black uppercase text-[11px] tracking-[0.1em] hover:bg-rose-100 transition-all flex items-center justify-center min-w-[220px]"
                   >
-                    {smtpConfig.isActive ? 'Disable System' : 'Enable System'}
+                    {smtpConfig.isActive ? 'DISABLE SYSTEM' : 'ENABLE SYSTEM'}
                   </button>
                   <button 
                     type="submit"
-                    className="flex-[2] py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg hover:bg-black transition-all flex items-center justify-center gap-2"
+                    className="flex-1 py-5 bg-[#0f172a] text-white rounded-2xl font-black uppercase text-[11px] tracking-[0.1em] shadow-2xl hover:bg-black transition-all flex items-center justify-center gap-3"
                   >
-                    <Save size={16} /> Save Email Policy
+                    <Save size={20} /> SAVE EMAIL POLICY
                   </button>
                 </div>
               </form>
             </div>
           )}
+
+          {isAdmin && (
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+               <div className="flex justify-between items-center mb-8">
+                  <h3 className="text-2xl font-black text-slate-800 flex items-center gap-4">
+                    <div className="p-2.5 bg-indigo-50 text-indigo-500 rounded-xl"><Inbox size={24} /></div>
+                    System Outbox Log
+                  </h3>
+                  <button onClick={() => { emailService.clearOutbox(); setOutbox([]); }} className="text-[11px] font-black text-[#e11d48] uppercase tracking-widest hover:underline">CLEAR AUDIT LOG</button>
+               </div>
+               
+               <div className="p-5 bg-[#fef2f2] border border-[#fee2e2] rounded-2xl mb-6 flex items-start gap-4">
+                  <AlertCircle size={20} className="text-[#e11d48] mt-0.5 shrink-0" />
+                  <p className="text-[11px] font-medium text-[#991b1b] leading-relaxed italic">
+                    Note: Without a configured Backend Relay API, the system operates in simulation mode. Emails shown as "SENT" are recorded in the system audit trail but not physically dispatched to your inbox.
+                  </p>
+               </div>
+
+               <div className="space-y-4 max-h-[450px] overflow-y-auto no-scrollbar">
+                  {outbox.map(mail => (
+                    <div key={mail.id} className="p-6 bg-[#f8fafc] border border-slate-100 rounded-3xl relative group transition-all hover:bg-white hover:shadow-xl">
+                       <div className="flex justify-between items-start mb-4">
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">TO: {mail.to}</p>
+                            <h4 className="text-lg font-black text-slate-900 truncate">{mail.subject}</h4>
+                          </div>
+                          <span className={`px-4 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-full ${mail.status === 'SENT' ? 'bg-[#dcfce7] text-[#166534]' : 'bg-[#fee2e2] text-[#991b1b]'}`}>
+                            {mail.status}
+                          </span>
+                       </div>
+                       <p className="text-sm text-slate-600 font-medium whitespace-pre-wrap leading-relaxed">{mail.body}</p>
+                       <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                          <Clock size={12} /> {new Date(mail.sentAt).toLocaleString()} • RELAY: {mail.provider}
+                       </div>
+                    </div>
+                  ))}
+                  {outbox.length === 0 && (
+                    <div className="py-24 text-center text-slate-300">
+                      <Mail size={56} className="mx-auto mb-4 opacity-10" />
+                      <p className="text-xs font-black uppercase tracking-widest">No communication history</p>
+                    </div>
+                  )}
+               </div>
+            </div>
+          )}
         </div>
 
-        {/* Google Drive Block */}
-        {isAdmin && (
-          <div className="space-y-8">
-            <div className="bg-slate-900 rounded-[40px] p-8 text-white shadow-2xl relative overflow-hidden">
-              <h3 className="text-xl font-black mb-8 flex items-center gap-3 relative z-10">
-                <Cloud className="text-indigo-400" /> Cloud Sync
-              </h3>
-              
-              {!isGoogleConnected ? (
-                 <button onClick={handleGoogleConnect} className="w-full py-5 bg-white text-slate-900 rounded-3xl font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-2">
-                   <Globe size={20} className="text-indigo-600" /> Connect Drive
-                 </button>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between bg-white/5 p-4 rounded-2xl border border-white/10">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400"><CheckCircle size={20} /></div>
-                      <div><p className="text-[9px] text-slate-500 font-black uppercase">Active</p><p className="text-xs font-bold">{selectedFolder.name}</p></div>
-                    </div>
-                    <button onClick={handleGoogleDisconnect} className="p-2 text-slate-400 hover:text-rose-400"><Unlink size={18} /></button>
+        <div className="space-y-8">
+           <div className="bg-[#0f172a] rounded-[40px] p-8 text-white shadow-2xl relative overflow-hidden group">
+              <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl transition-transform duration-1000"></div>
+              <h3 className="text-xl font-black mb-8 flex items-center gap-3 relative z-10"><Cloud className="text-indigo-400" /> Cloud Sync</h3>
+              <div className="space-y-6 relative z-10">
+                  <div className="p-5 bg-white/5 border border-white/10 rounded-2xl">
+                     <p className="text-xs text-slate-400 leading-relaxed font-medium">Automatic cloud synchronization is active and targeting your selected Drive folder.</p>
                   </div>
-                  <button onClick={handleBackupNow} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px]">Sync Now</button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+                  <button className="w-full py-5 bg-white text-slate-900 rounded-3xl font-black uppercase tracking-widest text-[11px] flex items-center justify-center gap-2 active:scale-95 transition-all">
+                    <RefreshCw size={18} className="text-indigo-600" /> Push Sync Now
+                  </button>
+              </div>
+           </div>
+        </div>
       </div>
     </div>
   );
