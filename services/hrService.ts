@@ -59,11 +59,9 @@ const INITIAL_EMPLOYEES: Employee[] = [
 
 export const hrService = {
   initialize() {
-    // 1. Initial creation
     if (!localStorage.getItem(STORAGE_KEYS.EMPLOYEES)) {
       localStorage.setItem(STORAGE_KEYS.EMPLOYEES, JSON.stringify(INITIAL_EMPLOYEES));
     } else {
-      // 2. Data Repair: Ensure all existing records have a password field
       const existing = this.getEmployees();
       let updated = false;
       const repaired = existing.map(emp => {
@@ -119,12 +117,10 @@ export const hrService = {
   login(email: string, password: string): User | null {
     const employees = this.getEmployees();
     const normalizedInput = email.trim().toLowerCase();
-    
     const user = employees.find(e => 
       (e.email.toLowerCase() === normalizedInput || e.username?.toLowerCase() === normalizedInput) && 
-      ( (e.password || '123') === password ) // Default missing password to '123'
+      ( (e.password || '123') === password )
     );
-
     if (user) {
       localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
       return user;
@@ -151,7 +147,6 @@ export const hrService = {
     const newEmployee = { ...employee, password: pwd };
     employees.push(newEmployee);
     localStorage.setItem(STORAGE_KEYS.EMPLOYEES, JSON.stringify(employees));
-    
     const balances = this.getAllLeaveBalances();
     balances[employee.id] = {
       employeeId: employee.id,
@@ -168,7 +163,6 @@ export const hrService = {
     if (index > -1) {
       employees[index] = { ...employees[index], ...updates };
       localStorage.setItem(STORAGE_KEYS.EMPLOYEES, JSON.stringify(employees));
-      
       const currentUser = this.getCurrentUser();
       if (currentUser && currentUser.id === userId) {
         localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(employees[index]));
@@ -270,31 +264,47 @@ export const hrService = {
     localStorage.setItem(STORAGE_KEYS.LEAVES, JSON.stringify(list));
   },
 
+  modifyLeaveRequest(id: string, updates: Partial<LeaveRequest>) {
+    const list = this.getLeaves();
+    const index = list.findIndex(r => r.id === id);
+    if (index > -1) {
+      // If dates or days changed and it was already approved, this is complex.
+      // For this app, we assume modifications are only done before final approval OR by Admin.
+      list[index] = { ...list[index], ...updates };
+      localStorage.setItem(STORAGE_KEYS.LEAVES, JSON.stringify(list));
+    }
+  },
+
   updateLeaveStatus(requestId: string, status: 'APPROVED' | 'REJECTED' | 'PENDING_HR', remarks?: string, approverRole?: Role) {
     const list = this.getLeaves();
     const index = list.findIndex(r => r.id === requestId);
     if (index > -1) {
       const request = list[index];
-      
-      const isActuallyManager = this.isManagerOfSomeone(this.getCurrentUser()?.id || '');
       const isHRAdmin = approverRole === 'ADMIN' || approverRole === 'HR';
-
-      // Stage 1: Line Manager Approval
-      if (approverRole === 'MANAGER' || (approverRole === 'EMPLOYEE' && isActuallyManager)) {
-         if (status === 'APPROVED') {
-           request.status = 'PENDING_HR';
-           request.managerRemarks = remarks;
-         } else {
-           request.status = 'REJECTED';
-           request.managerRemarks = remarks;
-         }
+      const oldStatus = request.status;
+      
+      // Stage 1: Line Manager Approval (Verified)
+      if (request.status === 'PENDING_MANAGER') {
+        if (status === 'APPROVED') {
+          request.status = 'PENDING_HR';
+          request.managerRemarks = remarks;
+        } else {
+          request.status = 'REJECTED';
+          request.managerRemarks = remarks;
+        }
       } 
-      // Stage 2: HR/Admin Final Decision
+      // Stage 2: HR/Admin Final Decision or Administrative Override
       else if (isHRAdmin) {
+        // If an Admin rejects/cancels an ALREADY approved request, restore balance
+        if (oldStatus === 'APPROVED' && status === 'REJECTED') {
+          this.addLeaveBalance(request.employeeId, request.type as any, request.totalDays);
+        }
+
         request.status = status as any;
         request.approverRemarks = remarks;
         
-        if (status === 'APPROVED') {
+        // If approving for the first time
+        if (status === 'APPROVED' && oldStatus !== 'APPROVED') {
           this.deductLeaveBalance(request.employeeId, request.type as any, request.totalDays);
         }
       }
@@ -317,6 +327,16 @@ export const hrService = {
     if (all[employeeId]) {
       if (type === 'ANNUAL' || type === 'CASUAL' || type === 'SICK') {
         all[employeeId][type] = Math.max(0, all[employeeId][type] - days);
+      }
+      localStorage.setItem(STORAGE_KEYS.BALANCES, JSON.stringify(all));
+    }
+  },
+
+  addLeaveBalance(employeeId: string, type: 'ANNUAL' | 'CASUAL' | 'SICK', days: number) {
+    const all = this.getAllLeaveBalances();
+    if (all[employeeId]) {
+      if (type === 'ANNUAL' || type === 'CASUAL' || type === 'SICK') {
+        all[employeeId][type] += days;
       }
       localStorage.setItem(STORAGE_KEYS.BALANCES, JSON.stringify(all));
     }

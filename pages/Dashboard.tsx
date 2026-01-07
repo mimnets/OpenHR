@@ -60,22 +60,39 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
 
     if (isAdmin || isManager) {
       const allLeaves = hrService.getLeaves();
+      const allEmployees = hrService.getEmployees();
+      const reportIds = allEmployees.filter(e => e.lineManagerId === user.id).map(e => e.id);
+      
       let actionable: LeaveRequest[] = [];
 
-      if (isAdmin) {
-        actionable = allLeaves.filter(l => l.status === 'PENDING_HR');
-      } else if (isManager) {
-        const reportIds = hrService.getEmployees().filter(e => e.lineManagerId === user.id).map(e => e.id);
-        actionable = allLeaves.filter(l => l.status === 'PENDING_MANAGER' && reportIds.includes(l.employeeId));
-      }
-      setPendingLeaves(actionable);
+      // Logic: Combine HR-level tasks and Managerial-level tasks
+      const hrTasks = isAdmin ? allLeaves.filter(l => l.status === 'PENDING_HR') : [];
+      const managerTasks = isManager ? allLeaves.filter(l => l.status === 'PENDING_MANAGER' && reportIds.includes(l.employeeId)) : [];
+
+      // Avoid duplicates if a request somehow falls into both (rare)
+      const combined = [...hrTasks];
+      managerTasks.forEach(task => {
+        if (!combined.find(t => t.id === task.id)) {
+          combined.push(task);
+        }
+      });
+
+      setPendingLeaves(combined);
     }
   };
 
   const handleAction = (status: 'APPROVED' | 'REJECTED') => {
     if (!showReviewModal) return;
     
-    hrService.updateLeaveStatus(showReviewModal.id, status, reviewRemarks, user.role);
+    // Determine context: is user approving as a Manager or as HR?
+    // If request is PENDING_MANAGER and user is the Line Manager, use MANAGER role logic.
+    // If request is PENDING_HR and user is HR/ADMIN, use that role logic.
+    let roleToUse = user.role;
+    if (showReviewModal.status === 'PENDING_MANAGER' && !isAdmin) {
+      roleToUse = 'MANAGER';
+    }
+
+    hrService.updateLeaveStatus(showReviewModal.id, status, reviewRemarks, roleToUse);
     setPendingLeaves(prev => prev.filter(l => l.id !== showReviewModal.id));
     refreshDashboardData();
     setShowReviewModal(null);
@@ -136,7 +153,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
               <div key={leave.id} className="bg-white p-5 rounded-2xl shadow-sm border border-amber-100 flex flex-col justify-between hover:shadow-md transition-all">
                 <div>
                   <div className="flex justify-between items-start mb-3">
-                    <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[9px] font-black uppercase tracking-widest rounded">Leave Review</span>
+                    <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest rounded ${leave.status === 'PENDING_MANAGER' ? 'bg-amber-50 text-amber-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                      {leave.status === 'PENDING_MANAGER' ? 'Managerial Review' : 'HR Final Audit'}
+                    </span>
                     <p className="text-[10px] text-slate-400 font-bold">{new Date(leave.appliedDate).toLocaleDateString()}</p>
                   </div>
                   <h4 className="font-bold text-slate-900 leading-tight">{leave.employeeName}</h4>
@@ -227,10 +246,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
       {showReviewModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
           <div className="bg-white rounded-[48px] w-full max-w-xl shadow-2xl overflow-hidden animate-in zoom-in duration-300">
-            <div className={`p-8 flex justify-between items-center text-white ${isAdmin ? 'bg-indigo-600' : 'bg-slate-900'}`}>
+            <div className={`p-8 flex justify-between items-center text-white ${showReviewModal.status === 'PENDING_HR' ? 'bg-indigo-600' : 'bg-slate-900'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-white/20 rounded-xl"><UserCheck size={20}/></div>
-                <h3 className="text-xl font-black uppercase tracking-tight">{isAdmin ? 'Final Approval' : 'Review Request'}</h3>
+                <h3 className="text-xl font-black uppercase tracking-tight">{showReviewModal.status === 'PENDING_HR' ? 'HR Final Approval' : 'Review & Verify'}</h3>
               </div>
               <button onClick={() => setShowReviewModal(null)} className="hover:bg-white/10 p-2 rounded-xl"><X size={28} /></button>
             </div>
@@ -250,16 +269,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
                  </div>
               </div>
 
-              {/* Manager Evaluation Display for HR/Admin */}
-              {isAdmin && showReviewModal.status === 'PENDING_HR' && (
+              {/* Manager Evaluation Display for HR/Admin Reviewers (if request reached HR stage) */}
+              {showReviewModal.status === 'PENDING_HR' && (
                 <div className="bg-amber-50 p-6 rounded-3xl border border-amber-200">
                    <div className="flex items-center gap-2 mb-3">
                       <UserPen size={16} className="text-amber-600" />
                       <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Manager Evaluation</p>
-                   </div>
-                   <div className="flex items-center gap-2 mb-2">
-                      <span className="px-2 py-0.5 bg-amber-200 text-amber-700 text-[9px] font-black uppercase rounded">Status: Verified</span>
-                      <span className="text-[10px] text-amber-800 font-bold italic">Forwarded for final approval</span>
                    </div>
                    <div className="p-3 bg-white/60 rounded-xl border border-amber-100">
                       <p className="text-[11px] font-medium text-slate-700">
@@ -281,14 +296,16 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
                   onChange={e => setReviewRemarks(e.target.value)}
                 />
                 <p className="text-[9px] text-slate-400 font-bold uppercase px-1">
-                   {isAdmin ? "Your remarks will be visible to the employee as final audit notes." : "Forwarding this will send it to the HR Department for final decision."}
+                   {showReviewModal.status === 'PENDING_HR' 
+                     ? "Your remarks will be recorded as the final audit notes for this request." 
+                     : "Forwarding this will send it to the HR Department for final audit."}
                 </p>
               </div>
 
               <div className="flex gap-4 pt-4">
                 <button onClick={() => handleAction('REJECTED')} className="flex-1 py-5 bg-rose-50 text-rose-600 rounded-[32px] font-black uppercase text-[10px] tracking-widest hover:bg-rose-100 transition-all">Decline</button>
                 <button onClick={() => handleAction('APPROVED')} className="flex-1 py-5 bg-indigo-600 text-white rounded-[32px] font-black uppercase text-[10px] tracking-widest shadow-2xl hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
-                   {isAdmin ? 'Confirm & Approve' : 'Forward to HR'} <ArrowRight size={16} />
+                   {showReviewModal.status === 'PENDING_HR' ? 'Final Approve' : 'Verify & Forward'} <ArrowRight size={16} />
                 </button>
               </div>
             </div>
