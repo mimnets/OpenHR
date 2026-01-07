@@ -120,6 +120,36 @@ export const hrService = {
     }
   },
 
+  /**
+   * Exports the entire application state into a single JSON string
+   */
+  exportFullData(): string {
+    const exportObj: Record<string, any> = {};
+    Object.values(STORAGE_KEYS).forEach(key => {
+      exportObj[key] = localStorage.getItem(key);
+    });
+    return JSON.stringify(exportObj);
+  },
+
+  /**
+   * Imports application state from a JSON string and reloads the app
+   */
+  importFullData(jsonString: string) {
+    try {
+      const data = JSON.parse(jsonString);
+      Object.keys(data).forEach(key => {
+        if (data[key] !== null) {
+          localStorage.setItem(key, data[key]);
+        }
+      });
+      alert('Data imported successfully. The application will now reload.');
+      window.location.reload();
+    } catch (err) {
+      console.error('Import Error:', err);
+      throw new Error('Invalid backup file format.');
+    }
+  },
+
   login(email: string, password: string): User | null {
     const employees = this.getEmployees();
     const normalizedInput = email.trim().toLowerCase();

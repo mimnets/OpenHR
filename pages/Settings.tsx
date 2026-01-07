@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Building2, 
   Cloud, 
@@ -12,9 +12,17 @@ import {
   Phone,
   FileSpreadsheet,
   FileJson,
-  FileText
+  FileText,
+  Link,
+  Unlink,
+  RefreshCw,
+  Download,
+  Clock,
+  AlertCircle,
+  X
 } from 'lucide-react';
 import { hrService } from '../services/hrService';
+import { googleDriveService } from '../services/googleDriveService';
 
 const Settings: React.FC = () => {
   const currentUser = hrService.getCurrentUser();
@@ -27,7 +35,27 @@ const Settings: React.FC = () => {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
-  const [backupFormat, setBackupFormat] = useState('EXCEL');
+  
+  // Google Drive State
+  const [isGoogleConnected, setIsGoogleConnected] = useState(googleDriveService.isConnected());
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [backups, setBackups] = useState<{ id: string; name: string; createdTime: string }[]>([]);
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
+
+  useEffect(() => {
+    if (isGoogleConnected) {
+      loadBackups();
+    }
+  }, [isGoogleConnected]);
+
+  const loadBackups = async () => {
+    try {
+      const list = await googleDriveService.listBackups();
+      setBackups(list);
+    } catch (err) {
+      console.error('Failed to load backups', err);
+    }
+  };
 
   const handleProfileSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,19 +70,52 @@ const Settings: React.FC = () => {
     }, 1000);
   };
 
-  const handleBackup = () => {
-    setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
-      alert(`Organization data backed up to Google Drive in ${backupFormat} format.`);
-    }, 1500);
+  const handleGoogleConnect = async () => {
+    try {
+      await googleDriveService.connect();
+      setIsGoogleConnected(true);
+      alert('Google Drive connected successfully!');
+    } catch (err) {
+      alert('Failed to connect to Google. Ensure you have a valid Client ID configured.');
+    }
+  };
+
+  const handleGoogleDisconnect = () => {
+    googleDriveService.disconnect();
+    setIsGoogleConnected(false);
+    setBackups([]);
+  };
+
+  const handleBackupNow = async () => {
+    setIsSyncing(true);
+    try {
+      const data = hrService.exportFullData();
+      const filename = `OpenHR_Backup_${new Date().toISOString().split('T')[0]}.json`;
+      await googleDriveService.uploadFile(data, filename);
+      alert('Backup uploaded successfully to your Google Drive!');
+      loadBackups();
+    } catch (err: any) {
+      alert(`Backup failed: ${err.message}`);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleRestore = async (fileId: string) => {
+    if (!confirm('Warning: Restoring data will overwrite your current local records. Are you sure?')) return;
+    try {
+      const content = await googleDriveService.downloadFile(fileId);
+      hrService.importFullData(content);
+    } catch (err: any) {
+      alert(`Restore failed: ${err.message}`);
+    }
   };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <header>
-        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Account Settings</h1>
-        <p className="text-sm text-slate-500 font-medium">Manage your personal information and preferences</p>
+        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">System Settings</h1>
+        <p className="text-sm text-slate-500 font-medium">Manage your personal profile and organizational cloud infrastructure</p>
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -66,7 +127,7 @@ const Settings: React.FC = () => {
               <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
                 <UserIcon size={20} />
               </div>
-              Personal Account
+              My Profile
             </h3>
             <form onSubmit={handleProfileSave} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -104,7 +165,7 @@ const Settings: React.FC = () => {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Role / Designation</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Access Tier</label>
                   <input 
                     type="text" 
                     disabled
@@ -122,7 +183,7 @@ const Settings: React.FC = () => {
                   disabled={isSaving}
                   className="flex items-center gap-2 px-8 py-3.5 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all disabled:opacity-50"
                 >
-                  {isSaving ? 'Processing...' : <><Save size={16} /> Save Profile</>}
+                  {isSaving ? 'Processing...' : <><Save size={16} /> Update Account</>}
                 </button>
               </div>
             </form>
@@ -135,15 +196,15 @@ const Settings: React.FC = () => {
                 <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
                   <Building2 size={20} />
                 </div>
-                Company Profile
+                Company Information
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Legal Entity Name</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Legal Corporate Name</label>
                   <input type="text" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm" defaultValue="OpenHR Solutions Ltd." />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Trade License / BIN</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Tax / BIN Identification</label>
                   <input type="text" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm" defaultValue="BD-9988-7766-55" />
                 </div>
               </div>
@@ -151,75 +212,160 @@ const Settings: React.FC = () => {
           )}
         </div>
 
-        {/* Cloud & Backup Sidebar (Admin Only) */}
+        {/* Google Drive & Cloud Infrastructure (Admin Only) */}
         {isAdmin && (
           <div className="space-y-8 animate-in slide-in-from-right-4">
             <div className="bg-slate-900 rounded-[40px] p-8 text-white shadow-2xl relative overflow-hidden group">
               <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000"></div>
               
               <h3 className="text-xl font-black mb-8 flex items-center gap-3 relative z-10">
-                <Cloud className="text-indigo-400" /> Administrative Backup
+                <Cloud className="text-indigo-400" /> Cloud Backup Engine
               </h3>
               
               <div className="space-y-8 relative z-10">
-                <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10">
-                  <div className="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-400">
-                    <Globe size={20} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Storage Endpoint</p>
-                    <p className="text-sm font-bold truncate">Google Drive Account</p>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest px-1">Export Format</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { id: 'EXCEL', icon: FileSpreadsheet, label: 'Excel' },
-                      { id: 'CSV', icon: FileText, label: 'CSV' },
-                      { id: 'JSON', icon: FileJson, label: 'JSON' }
-                    ].map((f) => (
+                {!isGoogleConnected ? (
+                   <div className="space-y-6">
+                      <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
+                         <p className="text-xs text-slate-400 leading-relaxed">
+                            Connect your Google Workspace or Personal Drive to enable automatic organizational backups and portable data migration.
+                         </p>
+                      </div>
                       <button 
-                        key={f.id}
-                        onClick={() => setBackupFormat(f.id)}
-                        className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${
-                          backupFormat === f.id 
-                            ? 'bg-indigo-600 border-indigo-500 text-white' 
-                            : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
-                        }`}
+                        onClick={handleGoogleConnect}
+                        className="w-full py-5 bg-white text-slate-900 rounded-3xl font-black uppercase tracking-widest text-[11px] shadow-2xl hover:bg-slate-50 transition-all flex items-center justify-center gap-2 active:scale-95"
                       >
-                        <f.icon size={18} />
-                        <span className="text-[9px] font-black uppercase">{f.label}</span>
+                        <Globe size={20} className="text-indigo-600" /> Connect Google Account
                       </button>
-                    ))}
-                  </div>
-                </div>
-                
-                <button 
-                  onClick={handleBackup}
-                  disabled={isSaving}
-                  className="w-full py-5 bg-indigo-600 text-white rounded-3xl font-black uppercase tracking-widest text-[11px] shadow-2xl shadow-indigo-900/50 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
-                >
-                  <Database size={20} /> Start Global Sync
-                </button>
+                   </div>
+                ) : (
+                   <div className="space-y-6">
+                      <div className="flex items-center justify-between bg-emerald-500/10 p-4 rounded-2xl border border-emerald-500/20">
+                         <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400">
+                               <CheckCircle size={20} />
+                            </div>
+                            <div>
+                               <p className="text-[10px] text-emerald-400 font-black uppercase tracking-widest">Connected</p>
+                               <p className="text-xs font-bold">Google Drive Enabled</p>
+                            </div>
+                         </div>
+                         <button onClick={handleGoogleDisconnect} className="text-slate-500 hover:text-rose-400 transition-colors"><Unlink size={18} /></button>
+                      </div>
 
+                      <div className="grid grid-cols-2 gap-3">
+                         <button 
+                           onClick={handleBackupNow}
+                           disabled={isSyncing}
+                           className="flex flex-col items-center gap-2 p-5 bg-indigo-600 rounded-3xl font-black uppercase tracking-widest text-[9px] hover:bg-indigo-700 transition-all disabled:opacity-50"
+                         >
+                            {isSyncing ? <RefreshCw className="animate-spin" size={20} /> : <RefreshCw size={20} />}
+                            Sync Now
+                         </button>
+                         <button 
+                           onClick={() => setShowRestoreModal(true)}
+                           className="flex flex-col items-center gap-2 p-5 bg-white/5 border border-white/10 rounded-3xl font-black uppercase tracking-widest text-[9px] hover:bg-white/10 transition-all"
+                         >
+                            <Download size={20} className="text-indigo-400" />
+                            Restore
+                         </button>
+                      </div>
+
+                      <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3">
+                         <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+                            <span>Recent Drive Activity</span>
+                            <button onClick={loadBackups} className="text-indigo-400 hover:underline">Refresh</button>
+                         </div>
+                         <div className="space-y-2 max-h-32 overflow-y-auto no-scrollbar">
+                            {backups.slice(0, 3).map(b => (
+                               <div key={b.id} className="flex items-center justify-between text-xs">
+                                  <span className="truncate pr-2 opacity-80">{b.name}</span>
+                                  <span className="text-[9px] text-slate-500 whitespace-nowrap">{new Date(b.createdTime).toLocaleDateString()}</span>
+                               </div>
+                            ))}
+                            {backups.length === 0 && <p className="text-[10px] text-slate-600 italic">No backups found in Drive.</p>}
+                         </div>
+                      </div>
+                   </div>
+                )}
+                
                 <div className="flex items-center gap-2 text-[10px] text-slate-500 justify-center">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                  Last verified sync: 2 hours ago
+                  <div className={`w-2 h-2 rounded-full ${isGoogleConnected ? 'bg-emerald-500' : 'bg-rose-500'} animate-pulse`}></div>
+                  {isGoogleConnected ? 'Ready for Cloud Synchronization' : 'Cloud Engine Offline'}
                 </div>
               </div>
             </div>
 
             <div className="p-6 bg-slate-50 rounded-[32px] border border-slate-200">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Security Protocol</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Security Integrity</p>
               <p className="text-xs text-slate-600 font-medium leading-relaxed">
-                Backup files are encrypted with AES-256 before upload. Only high-privilege accounts can initiate a manual cloud synchronization.
+                Backups are stored in JSON format for perfect fidelity. Only you can access your private Google Drive files. The system does not store your Google credentials.
               </p>
             </div>
           </div>
         )}
       </div>
+
+      {/* Restore Modal */}
+      {showRestoreModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[40px] w-full max-w-xl shadow-2xl overflow-hidden animate-in zoom-in duration-300">
+             <div className="bg-slate-900 p-8 flex justify-between items-center text-white">
+                <div className="flex items-center gap-3">
+                   <div className="p-2 bg-indigo-500/20 rounded-xl text-indigo-400"><Download size={24}/></div>
+                   <h3 className="text-xl font-black uppercase tracking-tight">System Data Restore</h3>
+                </div>
+                <button onClick={() => setShowRestoreModal(false)} className="hover:bg-white/10 p-2 rounded-xl transition-all"><X size={28} /></button>
+             </div>
+             
+             <div className="p-8 space-y-6">
+                <div className="p-5 bg-rose-50 border border-rose-100 rounded-3xl flex items-start gap-4">
+                   <AlertCircle className="text-rose-600 shrink-0 mt-1" size={20} />
+                   <p className="text-xs font-bold text-rose-800 leading-relaxed uppercase">
+                      CRITICAL: Restoring from a backup will replace ALL current data on this device with the version from your Google Drive. This cannot be undone.
+                   </p>
+                </div>
+
+                <div className="space-y-3">
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Select Backup Record from Drive</p>
+                   <div className="space-y-2 max-h-60 overflow-y-auto pr-2 no-scrollbar">
+                      {backups.map((b) => (
+                         <div key={b.id} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl group hover:bg-white hover:border-indigo-200 hover:shadow-md transition-all">
+                            <div className="flex items-center gap-3">
+                               <FileJson className="text-indigo-400" size={18} />
+                               <div>
+                                  <p className="text-sm font-bold text-slate-900">{b.name}</p>
+                                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                     <Clock size={10} /> {new Date(b.createdTime).toLocaleString()}
+                                  </p>
+                               </div>
+                            </div>
+                            <button 
+                               onClick={() => handleRestore(b.id)}
+                               className="px-4 py-2 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-md opacity-0 group-hover:opacity-100 transition-all active:scale-95"
+                            >
+                               Restore This
+                            </button>
+                         </div>
+                      ))}
+                      {backups.length === 0 && (
+                         <div className="py-12 text-center text-slate-300">
+                            <Cloud size={48} className="mx-auto mb-2 opacity-20" />
+                            <p className="text-xs font-black uppercase">No backups found in Drive</p>
+                         </div>
+                      )}
+                   </div>
+                </div>
+
+                <button 
+                  onClick={() => setShowRestoreModal(false)}
+                  className="w-full py-4 bg-slate-100 text-slate-700 rounded-3xl font-black uppercase tracking-widest text-[10px] hover:bg-slate-200 transition-all"
+                >
+                  Cancel Restore
+                </button>
+             </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
