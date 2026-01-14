@@ -1,10 +1,21 @@
-
 /**
  * Google Drive Integration Service
  * Handles OAuth2 and File Uploads to Google Drive
  */
 
-const CLIENT_ID = '879929245496-dcdfsdfsdfsf5pdfgbvt38ueotp4u52eh52pbffn8o.apps.googleusercontent.com';
+const safeGetEnv = (key: string): string => {
+  try {
+    if (typeof import.meta !== 'undefined' && (import.meta as any).env) {
+      if ((import.meta as any).env[key]) return (import.meta as any).env[key];
+    }
+    if (typeof process !== 'undefined' && process.env) {
+      if ((process.env as any)[key]) return (process.env as any)[key];
+    }
+  } catch (e) {}
+  return '';
+};
+
+const CLIENT_ID = safeGetEnv('VITE_GOOGLE_CLIENT_ID') || safeGetEnv('GOOGLE_CLIENT_ID') || 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
 const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.metadata.readonly';
 const SYNC_FILENAME = 'OpenHR_Cloud_Sync.json';
 
@@ -66,9 +77,9 @@ export const googleDriveService = {
 
   async handleResponse(response: Response) {
     if (response.status === 401) {
-      console.warn("Google Drive: Unauthorized access. Clearing token.");
+      console.warn("Google Drive: Authentication expired.");
       this.disconnect();
-      throw new Error("Authentication expired. Please reconnect Google Drive.");
+      throw new Error("Cloud authentication expired.");
     }
     return response;
   },
@@ -77,15 +88,20 @@ export const googleDriveService = {
     const token = this.getAccessToken();
     if (!token) return [];
 
-    const response = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id, name)&pageSize=100`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    try {
+      const response = await fetch(
+        `https://www.googleapis.com/drive/v3/files?q=mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id, name)&pageSize=100`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-    await this.handleResponse(response);
-    if (!response.ok) return [];
-    const data = await response.json();
-    return data.files as { id: string; name: string }[];
+      await this.handleResponse(response);
+      if (!response.ok) return [];
+      const data = await response.json();
+      return data.files as { id: string; name: string }[];
+    } catch (err) {
+      console.error("[DriveService] Folder list failed", err);
+      return [];
+    }
   },
 
   async uploadFile(content: string, filename: string, folderId: string = 'root') {
@@ -147,13 +163,19 @@ export const googleDriveService = {
     const token = this.getAccessToken();
     if (!token) return [];
     const folder = this.getSelectedFolder();
-    const response = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=mimeType='application/json' and '${folder.id}' in parents and trashed=false&fields=files(id, name, createdTime)`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    await this.handleResponse(response);
-    const data = await response.json();
-    return data.files || [];
+    
+    try {
+      const response = await fetch(
+        `https://www.googleapis.com/drive/v3/files?q=mimeType='application/json' and '${folder.id}' in parents and trashed=false&fields=files(id, name, createdTime)`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      await this.handleResponse(response);
+      const data = await response.json();
+      return data.files || [];
+    } catch (err) {
+      console.warn("[DriveService] Backup list failed", err);
+      return [];
+    }
   },
 
   async downloadFile(fileId: string): Promise<string> {

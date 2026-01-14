@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Network, 
@@ -9,440 +8,194 @@ import {
   X, 
   Save, 
   Building2,
-  CheckCircle2,
-  AlertCircle,
   Calendar,
-  Users,
   Settings,
   Workflow,
   ArrowRight,
-  UserCheck,
   Clock,
-  Timer
+  Timer,
+  ShieldCheck,
+  CheckCircle2,
+  UserCheck,
+  Palmtree,
+  Activity,
+  UserCircle,
+  RefreshCw,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import { hrService } from '../services/hrService';
 import { Holiday, AppConfig, LeaveWorkflow, Employee } from '../types';
+import { DEFAULT_CONFIG } from '../constants.tsx';
 
 type OrgTab = 'STRUCTURE' | 'PLACEMENT' | 'TERMS' | 'WORKFLOW' | 'HOLIDAYS';
 
 const Organization: React.FC = () => {
   const [activeTab, setActiveTab] = useState<OrgTab>('STRUCTURE');
-  
-  // Data State
   const [departments, setDepartments] = useState<string[]>([]);
   const [designations, setDesignations] = useState<string[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
-  const [config, setConfig] = useState<AppConfig>(hrService.getConfig());
+  const [config, setConfig] = useState<AppConfig>(DEFAULT_CONFIG);
   const [workflows, setWorkflows] = useState<LeaveWorkflow[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [savingManagerId, setSavingManagerId] = useState<string | null>(null);
 
-  // Modal State for Add/Edit
+  // Modals
   const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState<'DEPT' | 'DESIG'>('DEPT');
+  const [modalType, setModalType] = useState<'DEPT' | 'DESIG' | 'HOLIDAY'>('DEPT');
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [modalValue, setModalValue] = useState('');
+  const [holidayForm, setHolidayForm] = useState<Partial<Holiday>>({ name: '', date: '', type: 'FESTIVAL', isGovernment: true });
 
-  useEffect(() => {
-    setDepartments(hrService.getDepartments());
-    setDesignations(hrService.getDesignations());
-    setHolidays(hrService.getHolidays());
-    setWorkflows(hrService.getWorkflows());
-    setEmployees(hrService.getEmployees());
-  }, []);
+  useEffect(() => { loadAllData(); }, []);
 
-  // Shared Handlers
-  const handleSaveConfig = () => {
-    hrService.setConfig(config);
-    alert('Organizational policies and terms updated successfully.');
+  const loadAllData = async () => {
+    setIsLoading(true);
+    try {
+      const [depts, desigs, hols, wfs, emps, appConfig] = await Promise.allSettled([
+        hrService.getDepartments(),
+        hrService.getDesignations(),
+        hrService.getHolidays(),
+        hrService.getWorkflows(),
+        hrService.getEmployees(),
+        hrService.getConfig()
+      ]);
+
+      if (depts.status === 'fulfilled') setDepartments(depts.value);
+      if (desigs.status === 'fulfilled') setDesignations(desigs.value);
+      if (hols.status === 'fulfilled') setHolidays(hols.value);
+      if (wfs.status === 'fulfilled') setWorkflows(wfs.value || []);
+      if (emps.status === 'fulfilled') setEmployees(emps.value);
+      if (appConfig.status === 'fulfilled') setConfig(appConfig.value);
+
+    } catch (err) {
+      console.error("Critical loading error:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleUpdateLineManager = (empId: string, managerId: string) => {
-    hrService.updateProfile(empId, { lineManagerId: managerId });
-    setEmployees(hrService.getEmployees());
+  const handleSaveConfig = async () => {
+    setIsSaving(true);
+    try {
+      await hrService.setConfig(config);
+      alert('Organizational policies updated.');
+    } catch (err) {
+      alert('Failed to save configuration. Ensure "settings" collection exists.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const openModal = (type: 'DEPT' | 'DESIG', index: number | null = null) => {
+  const handleSaveWorkflows = async () => {
+    setIsSaving(true);
+    try {
+      // Ensure we save a workflow for every current department
+      const finalWorkflows = departments.map(dept => {
+        const existing = workflows.find(w => w.department === dept);
+        return existing || { department: dept, approverRole: 'LINE_MANAGER' as const };
+      });
+      await hrService.setWorkflows(finalWorkflows);
+      setWorkflows(finalWorkflows);
+      alert('Leave workflows updated successfully.');
+    } catch (err) {
+      alert('Failed to save workflows.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const updateWorkflowRole = (dept: string, role: string) => {
+    setWorkflows(prev => {
+      const existing = prev.find(w => w.department === dept);
+      if (existing) {
+        return prev.map(w => w.department === dept ? { ...w, approverRole: role as any } : w);
+      } else {
+        return [...prev, { department: dept, approverRole: role as any }];
+      }
+    });
+  };
+
+  const handleUpdateLineManager = async (empId: string, managerId: string) => {
+    const originalEmps = [...employees];
+    setEmployees(prev => prev.map(e => e.id === empId ? { ...e, lineManagerId: managerId || undefined } : e));
+    
+    setSavingManagerId(empId);
+    try {
+      await hrService.updateProfile(empId, { lineManagerId: managerId });
+      const updatedEmps = await hrService.getEmployees();
+      setEmployees(updatedEmps);
+    } catch (err: any) {
+      setEmployees(originalEmps);
+      alert(`Hierarchy Update Failed. Ensure you have ADMIN role in PocketBase.`);
+    } finally {
+      setSavingManagerId(null);
+    }
+  };
+
+  const openModal = (type: 'DEPT' | 'DESIG' | 'HOLIDAY', index: number | null = null) => {
     setModalType(type);
     setEditIndex(index);
-    setModalValue(index !== null ? (type === 'DEPT' ? departments[index] : designations[index]) : '');
+    if (type === 'HOLIDAY') {
+      setHolidayForm(index !== null ? holidays[index] : { name: '', date: '', type: 'FESTIVAL', isGovernment: true });
+    } else {
+      setModalValue(index !== null ? (type === 'DEPT' ? departments[index] : designations[index]) : '');
+    }
     setShowModal(true);
   };
 
-  const handleModalSubmit = (e: React.FormEvent) => {
+  const handleModalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!modalValue.trim()) return;
-
-    if (modalType === 'DEPT') {
-      const next = [...departments];
-      if (editIndex !== null) {
-        next[editIndex] = modalValue.trim();
+    try {
+      if (modalType === 'HOLIDAY') {
+        const next = [...holidays];
+        if (editIndex !== null) next[editIndex] = { ...holidayForm, id: next[editIndex].id } as Holiday;
+        else next.push({ ...holidayForm, id: 'h-' + Date.now() } as Holiday);
+        setHolidays(next);
+        await hrService.setHolidays(next);
+      } else if (modalType === 'DEPT') {
+        const next = [...departments];
+        if (editIndex !== null) next[editIndex] = modalValue.trim();
+        else next.push(modalValue.trim());
+        setDepartments(next);
+        await hrService.setDepartments(next);
       } else {
-        next.push(modalValue.trim());
+        const next = [...designations];
+        if (editIndex !== null) next[editIndex] = modalValue.trim();
+        else next.push(modalValue.trim());
+        setDesignations(next);
+        await hrService.setDesignations(next);
       }
-      setDepartments(next);
-      hrService.setDepartments(next);
-    } else {
-      const next = [...designations];
-      if (editIndex !== null) {
-        next[editIndex] = modalValue.trim();
-      } else {
-        next.push(modalValue.trim());
-      }
-      setDesignations(next);
-      hrService.setDesignations(next);
-    }
-
-    setShowModal(false);
-  };
-
-  const deleteItem = (type: 'DEPT' | 'DESIG', index: number) => {
-    if (!confirm(`Are you sure you want to delete this ${type === 'DEPT' ? 'Department' : 'Designation'}?`)) return;
-    
-    if (type === 'DEPT') {
-      const updated = departments.filter((_, idx) => idx !== index);
-      setDepartments(updated);
-      hrService.setDepartments(updated);
-    } else {
-      const updated = designations.filter((_, idx) => idx !== index);
-      setDesignations(updated);
-      hrService.setDesignations(updated);
+      setShowModal(false);
+    } catch (err) {
+      alert('Operation failed. Check "settings" collection.');
     }
   };
 
-  const renderStructure = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-      {/* Departments Section */}
-      <section className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
-        <div className="p-6 bg-[#0f172a] text-white flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <Network size={20} className="text-slate-400" />
-            <h3 className="text-sm font-black uppercase tracking-wider">Departments</h3>
-          </div>
-          <button 
-            onClick={() => openModal('DEPT')} 
-            className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all flex items-center justify-center"
-          >
-            <Plus size={18} />
-          </button>
-        </div>
-        <div className="p-6 space-y-2">
-          {departments.map((dept, i) => (
-            <div key={i} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl group hover:bg-white hover:shadow-md transition-all">
-              <span className="font-bold text-slate-800">{dept}</span>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button 
-                  onClick={() => openModal('DEPT', i)}
-                  className="p-2 text-slate-400 hover:text-indigo-600 transition-colors"
-                >
-                  <Edit3 size={16} />
-                </button>
-                <button 
-                  onClick={() => deleteItem('DEPT', i)} 
-                  className="p-2 text-slate-400 hover:text-rose-500 transition-colors"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+  const deleteItem = async (type: 'DEPT' | 'DESIG' | 'HOLIDAY', index: number) => {
+    if (!confirm(`Confirm deletion?`)) return;
+    try {
+      if (type === 'DEPT') {
+        const next = departments.filter((_, idx) => idx !== index);
+        setDepartments(next); await hrService.setDepartments(next);
+      } else if (type === 'DESIG') {
+        const next = designations.filter((_, idx) => idx !== index);
+        setDesignations(next); await hrService.setDesignations(next);
+      } else {
+        const next = holidays.filter((_, idx) => idx !== index);
+        setHolidays(next); await hrService.setHolidays(next);
+      }
+    } catch (err) {
+      alert('Delete failed.');
+    }
+  };
 
-      {/* Designations Section */}
-      <section className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
-        <div className="p-6 bg-[#1e293b] text-white flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <Briefcase size={20} className="text-slate-400" />
-            <h3 className="text-sm font-black uppercase tracking-wider">Designations</h3>
-          </div>
-          <button 
-            onClick={() => openModal('DESIG')}
-            className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all flex items-center justify-center"
-          >
-            <Plus size={18} />
-          </button>
-        </div>
-        <div className="p-6 space-y-2">
-          {designations.map((des, i) => (
-            <div key={i} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl group hover:bg-white hover:shadow-md transition-all">
-              <span className="font-bold text-slate-800">{des}</span>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button 
-                  onClick={() => openModal('DESIG', i)}
-                  className="p-2 text-slate-400 hover:text-indigo-600 transition-colors"
-                >
-                  <Edit3 size={16} />
-                </button>
-                <button 
-                  onClick={() => deleteItem('DESIG', i)} 
-                  className="p-2 text-slate-400 hover:text-rose-500 transition-colors"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-    </div>
-  );
-
-  const renderPlacement = () => (
-    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 space-y-8">
-      <div>
-        <h3 className="text-xl font-black text-slate-900 mb-2">Reporting & Placements</h3>
-        <p className="text-sm text-slate-500">Configure Line Managers and departmental placements for employees</p>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="text-[10px] uppercase font-black text-slate-400 tracking-widest border-b border-slate-100">
-              <th className="pb-4">Employee</th>
-              <th className="pb-4">Department</th>
-              <th className="pb-4">Line Manager</th>
-              <th className="pb-4 text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
-            {employees.map((emp) => (
-              <tr key={emp.id}>
-                <td className="py-4">
-                  <div className="flex items-center gap-3">
-                    <img src={emp.avatar} className="w-8 h-8 rounded-lg" />
-                    <div>
-                      <p className="text-sm font-bold text-slate-900 leading-none">{emp.name}</p>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase">{emp.designation}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="py-4">
-                  <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-bold uppercase">{emp.department}</span>
-                </td>
-                <td className="py-4">
-                  <select 
-                    className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold"
-                    value={emp.lineManagerId || ''}
-                    onChange={(e) => handleUpdateLineManager(emp.id, e.target.value)}
-                  >
-                    <option value="">No Manager</option>
-                    {employees.filter(m => m.id !== emp.id).map(m => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
-                    ))}
-                  </select>
-                </td>
-                <td className="py-4 text-right">
-                  <button className="text-indigo-600 font-black text-[10px] uppercase hover:underline">View History</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-
-  const renderTerms = () => (
-    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 space-y-12">
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-xl font-black text-slate-900">Employment Terms & Compliance</h3>
-          <p className="text-sm text-slate-500">Configure global shift rules, grace periods, and workweek</p>
-        </div>
-        <button 
-          onClick={handleSaveConfig}
-          className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest"
-        >
-          <Save size={16} /> Save Changes
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-        <div className="space-y-8">
-          <div className="space-y-6">
-            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-              <Calendar size={14} className="text-indigo-600" /> Standard Working Days
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => {
-                const isActive = config.workingDays.includes(day);
-                return (
-                  <button 
-                    key={day}
-                    onClick={() => {
-                      const next = isActive 
-                        ? config.workingDays.filter(d => d !== day)
-                        : [...config.workingDays, day];
-                      setConfig({...config, workingDays: next});
-                    }}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
-                      isActive ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-100' : 'bg-white text-slate-400 border-slate-100'
-                    }`}
-                  >
-                    {day}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-              <Clock size={14} className="text-indigo-600" /> Fixed Shift Hours
-            </h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase px-1">Office Starts At</label>
-                <input 
-                  type="time" 
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" 
-                  value={config.officeStartTime} 
-                  onChange={e => setConfig({...config, officeStartTime: e.target.value})}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase px-1">Office Ends At</label>
-                <input 
-                  type="time" 
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" 
-                  value={config.officeEndTime} 
-                  onChange={e => setConfig({...config, officeEndTime: e.target.value})}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-8">
-          <div className="space-y-6">
-            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-              <Timer size={14} className="text-indigo-600" /> Attendance Policy Rules
-            </h4>
-            <div className="space-y-6">
-              <div className="p-6 bg-amber-50 rounded-2xl border border-amber-100 space-y-4">
-                <div className="flex justify-between items-center">
-                  <p className="text-xs font-black text-amber-900 uppercase">Late Entry Grace Period</p>
-                  <span className="text-xs font-black text-amber-600 px-3 py-1 bg-white rounded-lg">{config.lateGracePeriod} Mins</span>
-                </div>
-                <input 
-                  type="range" min="0" max="60" step="5" 
-                  className="w-full accent-amber-500"
-                  value={config.lateGracePeriod}
-                  onChange={e => setConfig({...config, lateGracePeriod: parseInt(e.target.value)})}
-                />
-                <p className="text-[9px] text-amber-700 font-medium">Any punch after {config.officeStartTime} + {config.lateGracePeriod}m will be marked as LATE.</p>
-              </div>
-
-              <div className="p-6 bg-rose-50 rounded-2xl border border-rose-100 space-y-4">
-                <div className="flex justify-between items-center">
-                  <p className="text-xs font-black text-rose-900 uppercase">Early Exit Grace Period</p>
-                  <span className="text-xs font-black text-rose-600 px-3 py-1 bg-white rounded-lg">{config.earlyOutGracePeriod} Mins</span>
-                </div>
-                <input 
-                  type="range" min="0" max="60" step="5" 
-                  className="w-full accent-rose-500"
-                  value={config.earlyOutGracePeriod}
-                  onChange={e => setConfig({...config, earlyOutGracePeriod: parseInt(e.target.value)})}
-                />
-                <p className="text-[9px] text-rose-700 font-medium">Punches before {config.officeEndTime} - {config.earlyOutGracePeriod}m flagged as EARLY EXIT.</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="p-5 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-start gap-4">
-             <AlertCircle className="text-indigo-600 shrink-0 mt-1" size={20} />
-             <div>
-               <p className="text-xs font-black text-indigo-900 uppercase">Flexible Staff Exclusion</p>
-               <p className="text-[10px] text-indigo-700 leading-relaxed mt-1">Staff marked as "FIELD" or "FACTORY" work type are automatically excluded from Late/Early Out calculations.</p>
-             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderWorkflow = () => (
-    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 space-y-8">
-      <div>
-        <h3 className="text-xl font-black text-slate-900 mb-2">Leave Approval Workflows</h3>
-        <p className="text-sm text-slate-500">Define routing for leave requests on a per-department basis</p>
-      </div>
-
-      <div className="space-y-4">
-        {workflows.map((wf, i) => (
-          <div key={i} className="flex items-center justify-between p-6 bg-slate-50 border border-slate-100 rounded-3xl hover:bg-white hover:shadow-md transition-all">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center">
-                <Workflow size={24} />
-              </div>
-              <div>
-                <h4 className="font-black text-slate-900 uppercase tracking-tight">{wf.department}</h4>
-                <p className="text-xs text-slate-500 font-medium">Standard Leave Routing Policy</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col items-end">
-                <label className="text-[9px] font-black text-slate-400 uppercase mb-1">Approver Type</label>
-                <select 
-                  className="bg-white border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold outline-none"
-                  value={wf.approverRole}
-                  onChange={(e) => {
-                    const next = [...workflows];
-                    next[i].approverRole = e.target.value as any;
-                    setWorkflows(next);
-                    hrService.setWorkflows(next);
-                  }}
-                >
-                  <option value="LINE_MANAGER">Line Manager</option>
-                  <option value="HR">HR Department</option>
-                  <option value="ADMIN">Company Administrator</option>
-                </select>
-              </div>
-              <ArrowRight className="text-slate-300" />
-              <div className="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-xl text-[10px] font-black uppercase tracking-widest">
-                Final Decision
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  const renderHolidays = () => (
-    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 space-y-8">
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-xl font-black text-slate-900">Organization Holiday List</h3>
-          <p className="text-sm text-slate-500">Government, Religious and Special Company holidays</p>
-        </div>
-        <button 
-          onClick={() => setShowModal(false)} // Placeholder for actual holiday add
-          className="flex items-center gap-2 px-6 py-2 bg-rose-600 text-white rounded-xl text-xs font-black uppercase tracking-widest"
-        >
-          <Plus size={16} /> Add Holiday
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {holidays.map((h) => (
-          <div key={h.id} className="p-6 bg-slate-50 border border-slate-100 rounded-3xl relative group overflow-hidden">
-            <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button onClick={() => {
-                const next = holidays.filter(item => item.id !== h.id);
-                setHolidays(next);
-                hrService.setHolidays(next);
-              }} className="p-2 text-rose-300 hover:text-rose-600"><Trash2 size={16} /></button>
-            </div>
-            <p className="text-[10px] font-black text-rose-600 uppercase mb-1 tracking-widest">{h.type}</p>
-            <h4 className="font-bold text-slate-900 mb-4">{h.name}</h4>
-            <div className="flex items-center gap-2 text-slate-500">
-              <Calendar size={14} />
-              <span className="text-xs font-black tracking-tight">{new Date(h.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
-            </div>
-          </div>
-        ))}
-      </div>
+  if (isLoading) return (
+    <div className="flex flex-col items-center justify-center h-64 text-slate-400">
+      <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mb-4" />
+      <p className="text-xs font-black uppercase tracking-widest">Initialising Organization Data...</p>
     </div>
   );
 
@@ -469,79 +222,236 @@ const Organization: React.FC = () => {
         ))}
       </div>
 
-      <div className="animate-in fade-in zoom-in-95 duration-300">
-        {activeTab === 'STRUCTURE' && renderStructure()}
-        {activeTab === 'PLACEMENT' && renderPlacement()}
-        {activeTab === 'TERMS' && renderTerms()}
-        {activeTab === 'WORKFLOW' && renderWorkflow()}
-        {activeTab === 'HOLIDAYS' && renderHolidays()}
-      </div>
-
-      <div className="p-8 bg-slate-900 rounded-3xl text-white shadow-xl flex items-center gap-8">
-        <div className="p-4 bg-indigo-600 rounded-2xl shadow-lg">
-          <Settings size={32} />
-        </div>
-        <div className="flex-1">
-          <h3 className="text-xl font-black mb-1">Global Configuration Center</h3>
-          <p className="text-sm text-slate-400">All changes made in these modules are audited and synchronized with individual employee portals instantly.</p>
-        </div>
-        <div className="hidden md:flex flex-col items-end gap-1">
-          <span className="flex items-center gap-1.5 text-[9px] font-black uppercase text-emerald-400 px-3 py-1 bg-emerald-400/10 rounded-full border border-emerald-400/20">
-            <UserCheck size={12} /> Sync Active
-          </span>
-          <p className="text-[8px] text-slate-500 font-bold uppercase">v2.4.1 Compliant</p>
-        </div>
-      </div>
-
-      {/* Unified Add/Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
-          <div className="bg-white rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in duration-300">
-            <div className="bg-slate-900 p-6 flex justify-between items-center text-white">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/10 rounded-lg">
-                  {modalType === 'DEPT' ? <Network size={20} /> : <Briefcase size={20} />}
-                </div>
-                <h3 className="text-lg font-black uppercase tracking-tight">
-                  {editIndex !== null ? 'Edit' : 'New'} {modalType === 'DEPT' ? 'Department' : 'Designation'}
-                </h3>
+      <div className="animate-in fade-in duration-300">
+        {activeTab === 'STRUCTURE' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <section className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+              <div className="p-6 bg-[#0f172a] text-white flex justify-between items-center">
+                <div className="flex items-center gap-3"><Network size={20} /><h3 className="text-sm font-black uppercase tracking-wider">Departments</h3></div>
+                <button onClick={() => openModal('DEPT')} className="p-2 bg-white/10 rounded-lg"><Plus size={18} /></button>
               </div>
-              <button onClick={() => setShowModal(false)} className="hover:bg-white/10 p-2 rounded-xl">
-                <X size={24} />
+              <div className="p-6 space-y-2">
+                {departments.map((dept, i) => (
+                  <div key={i} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl group hover:bg-white transition-all">
+                    <span className="font-bold text-slate-800">{dept}</span>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => openModal('DEPT', i)} className="p-2 text-slate-400 hover:text-indigo-600"><Edit3 size={16} /></button>
+                      <button onClick={() => deleteItem('DEPT', i)} className="p-2 text-slate-400 hover:text-rose-500"><Trash2 size={16} /></button>
+                    </div>
+                  </div>
+                ))}
+                {departments.length === 0 && (
+                  <div className="p-8 text-center border-2 border-dashed border-slate-100 rounded-2xl text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                    No Departments Configured
+                  </div>
+                )}
+              </div>
+            </section>
+            <section className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+              <div className="p-6 bg-[#1e293b] text-white flex justify-between items-center">
+                <div className="flex items-center gap-3"><Briefcase size={20} /><h3 className="text-sm font-black uppercase tracking-wider">Designations</h3></div>
+                <button onClick={() => openModal('DESIG')} className="p-2 bg-white/10 rounded-lg"><Plus size={18} /></button>
+              </div>
+              <div className="p-6 space-y-2">
+                {designations.map((des, i) => (
+                  <div key={i} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl group hover:bg-white transition-all">
+                    <span className="font-bold text-slate-800">{des}</span>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => openModal('DESIG', i)} className="p-2 text-slate-400 hover:text-indigo-600"><Edit3 size={16} /></button>
+                      <button onClick={() => deleteItem('DESIG', i)} className="p-2 text-slate-400 hover:text-rose-500"><Trash2 size={16} /></button>
+                    </div>
+                  </div>
+                ))}
+                {designations.length === 0 && (
+                  <div className="p-8 text-center border-2 border-dashed border-slate-100 rounded-2xl text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                    No Designations Configured
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
+        )}
+
+        {activeTab === 'HOLIDAYS' && (
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden animate-in zoom-in duration-500">
+             <div className="p-6 bg-emerald-900 text-white flex justify-between items-center">
+                <div className="flex items-center gap-3"><Palmtree size={20} /><h3 className="text-sm font-black uppercase tracking-wider">Company Holiday Calendar</h3></div>
+                <button onClick={() => openModal('HOLIDAY')} className="px-6 py-2 bg-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2"><Plus size={14}/> Add Holiday</button>
+             </div>
+             <div className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {holidays.sort((a,b) => a.date.localeCompare(b.date)).map((hol, i) => (
+                   <div key={hol.id} className="p-6 bg-slate-50 border border-slate-100 rounded-[2rem] group relative hover:bg-white transition-all">
+                      <div className="flex justify-between items-start mb-3">
+                         <div className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${hol.type === 'ISLAMIC' ? 'bg-emerald-100 text-emerald-700' : hol.type === 'NATIONAL' ? 'bg-rose-100 text-rose-700' : 'bg-indigo-100 text-indigo-700'}`}>
+                            {hol.type}
+                         </div>
+                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => openModal('HOLIDAY', i)} className="p-2 text-slate-400 hover:text-indigo-600"><Edit3 size={14} /></button>
+                            <button onClick={() => deleteItem('HOLIDAY', i)} className="p-2 text-slate-400 hover:text-rose-500"><Trash2 size={14} /></button>
+                         </div>
+                      </div>
+                      <h4 className="font-black text-slate-900 text-sm mb-1">{hol.name}</h4>
+                      <div className="flex items-center gap-2 text-slate-400">
+                         <Calendar size={12} />
+                         <span className="text-[10px] font-black uppercase tracking-widest">{new Date(hol.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric'})}</span>
+                      </div>
+                      {hol.isGovernment && <div className="mt-4 flex items-center gap-1.5 text-emerald-600 text-[8px] font-black uppercase tracking-widest"><ShieldCheck size={10} /> Public Holiday</div>}
+                   </div>
+                ))}
+             </div>
+          </div>
+        )}
+
+        {activeTab === 'WORKFLOW' && (
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 space-y-8">
+            <div className="flex justify-between items-center">
+               <div><h3 className="text-xl font-black text-slate-900">Leave Approval Matrix</h3><p className="text-sm text-slate-500">Define first-level approvers for each department</p></div>
+               <button onClick={handleSaveWorkflows} disabled={isSaving || departments.length === 0} className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-xl disabled:opacity-50">
+                  {isSaving ? <RefreshCw className="animate-spin" size={14}/> : <Save size={14}/>} Save Workflow
+               </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+               {departments.map((dept) => {
+                 const currentWf = workflows.find(w => w.department === dept);
+                 const currentRole = currentWf?.approverRole || 'LINE_MANAGER';
+                 
+                 return (
+                  <div key={dept} className="p-6 bg-slate-50 border border-slate-100 rounded-[2rem]">
+                     <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2.5 bg-white rounded-xl shadow-sm text-indigo-600"><Workflow size={18}/></div>
+                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Department</span>
+                     </div>
+                     <h4 className="text-sm font-black text-slate-900 mb-6">{dept}</h4>
+                     <div className="space-y-3">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Approver Role</p>
+                        <select 
+                           className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs font-black outline-none focus:ring-4 focus:ring-indigo-50"
+                           value={currentRole}
+                           onChange={e => updateWorkflowRole(dept, e.target.value)}
+                        >
+                           <option value="LINE_MANAGER">Line Manager</option>
+                           <option value="HR">HR Dept (Centralized)</option>
+                           <option value="ADMIN">Executive Office</option>
+                        </select>
+                     </div>
+                  </div>
+                 );
+               })}
+               {departments.length === 0 && (
+                 <div className="col-span-full py-12 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest">
+                   Define departments first in the Structure tab to configure workflows.
+                 </div>
+               )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'TERMS' && (
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 space-y-12">
+            <div className="flex justify-between items-center">
+              <div><h3 className="text-xl font-black text-slate-900">Compliance & Hours</h3><p className="text-sm text-slate-500">Configure shifts and workweek</p></div>
+              <button onClick={handleSaveConfig} disabled={isSaving} className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-xl disabled:opacity-50">
+                {isSaving ? <RefreshCw className="animate-spin" size={14}/> : <Save size={14}/>} Save Policy
               </button>
             </div>
-            
-            <form onSubmit={handleModalSubmit} className="p-8 space-y-6">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
-                  {modalType === 'DEPT' ? 'Department Name' : 'Designation Title'}
-                </label>
-                <input 
-                  type="text" 
-                  autoFocus
-                  required 
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none focus:ring-4 focus:ring-indigo-100 transition-all" 
-                  value={modalValue} 
-                  onChange={e => setModalValue(e.target.value)}
-                  placeholder={`e.g. ${modalType === 'DEPT' ? 'Logistics' : 'Senior Specialist'}`}
-                />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+              <div className="space-y-6">
+                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Clock size={14} className="text-indigo-600" /> Fixed Shift Hours</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5"><label className="text-[10px] font-black text-slate-400 uppercase px-1">Office Start</label><input type="time" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs" value={config.officeStartTime} onChange={e => setConfig({...config, officeStartTime: e.target.value})} /></div>
+                  <div className="space-y-1.5"><label className="text-[10px] font-black text-slate-400 uppercase px-1">Office End</label><input type="time" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs" value={config.officeEndTime} onChange={e => setConfig({...config, officeEndTime: e.target.value})} /></div>
+                </div>
               </div>
+              <div className="space-y-6">
+                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Timer size={14} className="text-indigo-600" /> Late Entry Grace</h4>
+                <div className="p-6 bg-amber-50 rounded-2xl border border-amber-100 space-y-4">
+                  <div className="flex justify-between items-center"><p className="text-[10px] font-black text-amber-900 uppercase">Buffer Minutes</p><span className="text-xs font-black text-amber-600 px-3 py-1 bg-white rounded-lg">{config.lateGracePeriod}m</span></div>
+                  <input type="range" min="0" max="60" step="5" className="w-full accent-amber-500" value={config.lateGracePeriod} onChange={e => setConfig({...config, lateGracePeriod: parseInt(e.target.value)})} />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {activeTab === 'PLACEMENT' && (
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 animate-in slide-in-from-bottom-4 duration-500">
+            <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-3"><UserCircle className="text-indigo-600"/> Staff Hierarchy (Reporting Lines)</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead><tr className="text-[10px] uppercase font-black text-slate-400 tracking-widest border-b border-slate-100"><th className="pb-4 px-4">Employee Name</th><th className="pb-4 px-4">Direct Supervisor / Manager</th></tr></thead>
+                <tbody className="divide-y divide-slate-50">
+                  {employees.length === 0 ? (
+                    <tr><td colSpan={2} className="py-10 text-center text-slate-400 font-bold uppercase text-xs tracking-widest">No employees found in the "users" collection.</td></tr>
+                  ) : (
+                    employees.map(emp => (
+                      <tr key={emp.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center font-black text-indigo-600 text-[10px] uppercase">
+                               {emp.avatar ? <img src={emp.avatar} className="w-full h-full object-cover rounded-lg" /> : emp.name[0]}
+                            </div>
+                            <div>
+                               <p className="font-bold text-slate-700 leading-none">{emp.name}</p>
+                               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">{emp.department} • {emp.designation}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-3 relative max-w-xs">
+                            <label htmlFor={`lm-${emp.id}`} className="sr-only">Select Manager for {emp.name}</label>
+                            <select 
+                              id={`lm-${emp.id}`}
+                              name={`lm-${emp.id}`}
+                              disabled={savingManagerId === emp.id}
+                              className={`w-full bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-bold outline-none focus:ring-4 focus:ring-indigo-50 transition-all ${savingManagerId === emp.id ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                              value={emp.lineManagerId || ''} 
+                              onChange={(e) => handleUpdateLineManager(emp.id, e.target.value)}
+                            >
+                              <option value="">No Manager Assigned</option>
+                              {employees.filter(m => m.id !== emp.id).map(m => (
+                                <option key={m.id} value={m.id}>{m.name}</option>
+                              ))}
+                            </select>
+                            {savingManagerId === emp.id && (
+                              <RefreshCw size={14} className="animate-spin text-indigo-600 absolute right-3 pointer-events-none" />
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
 
-              <div className="flex gap-4">
-                <button 
-                  type="button" 
-                  onClick={() => setShowModal(false)} 
-                  className="flex-1 py-4 bg-slate-100 text-slate-700 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-200 transition-all"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit" 
-                  className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
-                >
-                  <Save size={16} /> {editIndex !== null ? 'Update' : 'Create'}
-                </button>
-              </div>
+      {showModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in">
+            <div className="bg-slate-900 p-6 flex justify-between items-center text-white">
+               <h3 className="text-lg font-black uppercase">{modalType === 'HOLIDAY' ? 'Holiday Profile' : 'Manage ' + modalType}</h3>
+               <button onClick={() => setShowModal(false)}><X size={24} /></button>
+            </div>
+            <form onSubmit={handleModalSubmit} className="p-8 space-y-6">
+              {modalType === 'HOLIDAY' ? (
+                <div className="space-y-4">
+                   <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase px-1">Holiday Title</label><input required className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none" value={holidayForm.name} onChange={e => setHolidayForm({...holidayForm, name: e.target.value})} /></div>
+                   <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase px-1">Event Date</label><input type="date" required className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none" value={holidayForm.date} onChange={e => setHolidayForm({...holidayForm, date: e.target.value})} /></div>
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase px-1">Category</label>
+                      <select className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none" value={holidayForm.type} onChange={e => setHolidayForm({...holidayForm, type: e.target.value as any})}>
+                         <option value="FESTIVAL">Festival</option>
+                         <option value="ISLAMIC">Islamic</option>
+                         <option value="NATIONAL">National Day</option>
+                      </select>
+                   </div>
+                </div>
+              ) : (
+                <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase px-1">Entry Name</label><input autoFocus required className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none" value={modalValue} onChange={e => setModalValue(e.target.value)} /></div>
+              )}
+              <div className="flex gap-4 pt-4"><button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 bg-slate-100 rounded-2xl font-black uppercase text-[10px] tracking-widest">Cancel</button><button type="submit" className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2"><Save size={16} /> Confirm Entry</button></div>
             </form>
           </div>
         </div>

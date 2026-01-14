@@ -6,21 +6,18 @@ import {
   Upload, 
   X, 
   Camera, 
-  Key, 
   Edit, 
   Trash2,
   Save,
   ShieldCheck,
-  CreditCard,
-  Briefcase,
   Mail,
   RefreshCw,
-  Lock,
-  Globe,
-  MapPin
+  AlertCircle,
+  Eye,
+  EyeOff,
+  Hash
 } from 'lucide-react';
 import { hrService } from '../services/hrService';
-import { emailService } from '../services/emailService';
 import { Employee } from '../types';
 
 const EmployeeDirectory: React.FC = () => {
@@ -28,27 +25,51 @@ const EmployeeDirectory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   
   const [depts, setDepts] = useState<string[]>([]);
   const [desigs, setDesigs] = useState<string[]>([]);
 
-  const fetchEmployees = () => {
-    setEmployees(hrService.getEmployees());
+  const fetchEmployees = async () => {
+    setIsLoading(true);
+    try {
+      const data = await hrService.getEmployees();
+      setEmployees(data);
+    } catch (err) {
+      console.error("Error fetching employees:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
-    fetchEmployees();
-    setDepts(hrService.getDepartments());
-    setDesigs(hrService.getDesignations());
+    const loadInitialData = async () => {
+      await fetchEmployees();
+      const [departmentsList, designationsList] = await Promise.all([
+        hrService.getDepartments(),
+        hrService.getDesignations()
+      ]);
+      setDepts(departmentsList);
+      setDesigs(designationsList);
+    };
+    loadInitialData();
+
+    const unsubscribe = hrService.subscribe(() => {
+      fetchEmployees();
+    });
+    return () => { unsubscribe(); };
   }, []);
   
   const initialNewEmpState = {
     name: '',
     email: '',
+    employeeId: '', // Custom ID field
     username: '',
     password: '',
-    id: '',
     nid: '',
     role: 'EMPLOYEE' as any,
     department: '',
@@ -67,9 +88,10 @@ const EmployeeDirectory: React.FC = () => {
   const [formState, setFormState] = useState(initialNewEmpState);
 
   const filtered = employees.filter(emp => 
-    emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    emp.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    emp.department.toLowerCase().includes(searchTerm.toLowerCase())
+    (emp.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (emp.employeeId || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (emp.department || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (emp.email || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,215 +107,232 @@ const EmployeeDirectory: React.FC = () => {
 
   const handleOpenAdd = () => {
     setEditingId(null);
+    setFormError(null);
     setFormState({
       ...initialNewEmpState,
-      id: `EMP${Math.floor(Math.random() * 900) + 100}`,
-      department: depts[0] || '',
-      designation: desigs[0] || ''
+      department: depts[0] || 'Unassigned',
+      designation: desigs[0] || 'New Employee'
     });
     setShowModal(true);
   };
 
   const handleOpenEdit = (emp: Employee) => {
     setEditingId(emp.id);
+    setFormError(null);
     setFormState({
       ...initialNewEmpState,
       ...emp,
-      salary: emp.salary || 0,
-      password: emp.password || '',
-      workType: emp.workType || 'OFFICE'
     } as any);
     setShowModal(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this employee? This action cannot be undone.')) {
-      hrService.deleteEmployee(id);
-      fetchEmployees();
+  const handleDelete = async (id: string) => {
+    if (confirm('Delete this user account? This cannot be undone.')) {
+      try {
+        await hrService.deleteEmployee(id);
+      } catch (err: any) {
+        alert(err.message);
+      }
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const finalAvatar = formState.avatar || `https://picsum.photos/seed/${formState.name}/200`;
+    setIsSubmitting(true);
+    setFormError(null);
     
-    if (editingId) {
-      hrService.updateProfile(editingId, {
-        ...formState,
-        avatar: finalAvatar
-      } as any);
-    } else {
-      const newEmp: Employee = {
-        ...formState,
-        avatar: finalAvatar
-      } as any;
-      hrService.addEmployee(newEmp);
-      
-      // Auto-trigger welcome email
-      if (hrService.getConfig().smtp?.isActive) {
-        await emailService.sendWelcomeEmail(newEmp);
+    try {
+      if (editingId) {
+        await hrService.updateProfile(editingId, formState as any);
+      } else {
+        await hrService.addEmployee(formState as any);
       }
+      setShowModal(false);
+    } catch (err: any) {
+      setFormError(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
-    fetchEmployees();
-    setShowModal(false);
-  };
-
-  const generatePassword = () => {
-    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
-    let pass = "";
-    for (let i = 0; i < 8; i++) {
-      pass += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setFormState({...formState, password: pass});
   };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Employee Directory</h1>
-          <p className="text-sm text-slate-500 font-medium tracking-tight">Managing {employees.length} active personnel</p>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Organization Directory</h1>
+          <p className="text-sm text-slate-500 font-medium tracking-tight">
+            Managing {employees.length} personnel accounts.
+          </p>
         </div>
         <div className="flex gap-2">
           <button 
             onClick={handleOpenAdd}
-            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-700 shadow-md transition-all"
+            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-700 shadow-xl transition-all"
           >
-            <UserPlus size={16} /> Add Employee
+            <UserPlus size={16} /> Provision New User
           </button>
         </div>
       </div>
 
-      <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4">
+      <div className="bg-white p-4 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input 
             type="text" 
-            placeholder="Search by name, ID or department..."
-            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all"
+            placeholder="Search by name, ID, or department..."
+            className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:ring-4 focus:ring-indigo-50 transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        <button onClick={fetchEmployees} className="p-4 bg-slate-50 text-slate-500 rounded-2xl border border-slate-200 hover:bg-white transition-all">
+          <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {filtered.map((emp) => (
-          <div key={emp.id} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-lg transition-all group relative">
-            <div className="flex items-start gap-4">
-              <img src={emp.avatar || `https://ui-avatars.com/api/?name=${emp.name}`} className="w-16 h-16 rounded-2xl object-cover bg-slate-100" />
+          <div key={emp.id} className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 transition-all group relative">
+            <div className="flex items-start gap-5">
+              <div className="relative">
+                <img src={emp.avatar || `https://ui-avatars.com/api/?name=${emp.name}`} className="w-20 h-20 rounded-[2rem] object-cover bg-slate-100 shadow-sm" />
+                <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-lg border-2 border-white flex items-center justify-center ${emp.role === 'ADMIN' ? 'bg-rose-500' : emp.role === 'HR' ? 'bg-indigo-500' : 'bg-emerald-500'}`}>
+                  <ShieldCheck size={12} className="text-white" />
+                </div>
+              </div>
+              
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-start">
-                  <h3 className="font-bold text-slate-900 truncate">{emp.name}</h3>
-                  <div className="flex gap-1">
-                    <button onClick={() => handleOpenEdit(emp)} className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg transition-all"><Edit size={14} /></button>
-                    <button onClick={() => handleDelete(emp.id)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition-all"><Trash2 size={14} /></button>
+                  <div>
+                    <h3 className="font-black text-slate-900 truncate text-lg leading-tight">{emp.name}</h3>
+                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mt-1">{emp.designation || 'Staff'}</p>
                   </div>
-                </div>
-                <p className="text-[10px] font-black text-indigo-600 uppercase mt-0.5">{emp.designation}</p>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${emp.workType === 'FIELD' ? 'bg-amber-100 text-amber-700' : 'bg-indigo-100 text-indigo-700'}`}>
-                    {emp.workType === 'FIELD' ? 'Flexible (Field)' : 'Fixed (Office)'}
-                  </span>
+                  <div className="flex gap-1">
+                    <button onClick={() => handleOpenEdit(emp)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"><Edit size={16} /></button>
+                    <button onClick={() => handleDelete(emp.id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"><Trash2 size={16} /></button>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="mt-6 grid grid-cols-2 gap-4">
-              <div className="bg-slate-50 p-2.5 rounded-xl">
-                <p className="text-[9px] text-slate-400 uppercase font-black">Employee ID</p>
-                <p className="text-sm font-black text-slate-700">{emp.id}</p>
+            
+            <div className="mt-8 grid grid-cols-2 gap-4">
+              <div className="bg-slate-50 p-4 rounded-[1.5rem]">
+                <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest mb-1">Employee ID</p>
+                <p className="text-xs font-black text-slate-700 font-mono truncate">{emp.employeeId || 'N/A'}</p>
               </div>
-              <div className="bg-slate-50 p-2.5 rounded-xl">
-                <p className="text-[9px] text-slate-400 uppercase font-black">Department</p>
-                <p className="text-[11px] font-black text-slate-700 uppercase truncate">{emp.department}</p>
+              <div className="bg-slate-50 p-4 rounded-[1.5rem]">
+                <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest mb-1">Department</p>
+                <p className="text-[10px] font-black text-slate-700 uppercase truncate">{emp.department || 'N/A'}</p>
               </div>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-slate-400">
+                <Mail size={12} />
+                <span className="text-[10px] font-bold truncate max-w-[150px]">{emp.email}</span>
+              </div>
+              <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${emp.role === 'ADMIN' ? 'bg-rose-100 text-rose-700' : 'bg-indigo-100 text-indigo-700'}`}>
+                {emp.role}
+              </span>
             </div>
           </div>
         ))}
+        {filtered.length === 0 && !isLoading && (
+          <div className="col-span-full py-20 text-center space-y-4">
+             <AlertCircle size={48} className="mx-auto text-slate-200" />
+             <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">No matching personnel found.</p>
+          </div>
+        )}
       </div>
 
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden animate-in zoom-in duration-300">
-            <div className="bg-slate-900 p-6 flex justify-between items-center text-white">
-              <div className="flex items-center gap-3">
-                <h3 className="text-xl font-black uppercase tracking-tight">{editingId ? 'Modify Profile' : 'New Onboarding'}</h3>
+          <div className="bg-white rounded-[3rem] w-full max-w-3xl shadow-2xl overflow-hidden animate-in zoom-in duration-300">
+            <div className="bg-slate-900 p-8 flex justify-between items-center text-white">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-white/10 rounded-2xl"><UserPlus size={24}/></div>
+                <h3 className="text-xl font-black uppercase tracking-tight">{editingId ? 'Modify Account' : 'Provision Account'}</h3>
               </div>
-              <button onClick={() => setShowModal(false)} className="hover:bg-white/10 p-2 rounded-xl"><X size={24} /></button>
+              <button onClick={() => setShowModal(false)} className="hover:bg-white/10 p-2 rounded-xl"><X size={28} /></button>
             </div>
             
-            <form onSubmit={handleSubmit} className="p-8 space-y-8 max-h-[85vh] overflow-y-auto no-scrollbar">
-              <div className="flex flex-col md:flex-row gap-8 items-center pb-8 border-b border-slate-100">
-                <div className="w-32 h-32 rounded-3xl bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center relative overflow-hidden cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                  {formState.avatar ? <img src={formState.avatar} className="w-full h-full object-cover" /> : <Camera size={40} className="text-slate-400" />}
+            <form onSubmit={handleSubmit} className="p-10 space-y-8 max-h-[80vh] overflow-y-auto no-scrollbar">
+              {formError && (
+                <div className="p-5 bg-rose-50 border border-rose-100 rounded-2xl flex items-start gap-4 text-rose-700 animate-in shake">
+                  <AlertCircle size={20} className="mt-0.5 flex-shrink-0" />
+                  <p className="text-xs font-bold leading-relaxed">{formError}</p>
+                </div>
+              )}
+
+              <div className="flex flex-col md:flex-row gap-10 items-center pb-10 border-b border-slate-100">
+                <div 
+                  className="w-40 h-40 rounded-[2.5rem] bg-slate-50 border-4 border-slate-100 shadow-inner flex items-center justify-center relative overflow-hidden cursor-pointer group"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {formState.avatar ? <img src={formState.avatar} className="w-full h-full object-cover" /> : <Camera size={40} className="text-slate-300" />}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                    <Upload className="text-white" size={24} />
+                  </div>
                   <input type="file" ref={fileInputRef} hidden accept="image/*" onChange={handleFileChange} />
                 </div>
                 
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase px-1">Full Employee Name</label>
-                    <input type="text" required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none" value={formState.name} onChange={e => setFormState({...formState, name: e.target.value})} />
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                  <div className="md:col-span-2 space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Full Name</label>
+                    <input type="text" required className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm outline-none" value={formState.name} onChange={e => setFormState({...formState, name: e.target.value})} />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase px-1">Identity ID</label>
-                    <input type="text" readOnly={!!editingId} className={`w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold outline-none ${editingId ? 'text-slate-400' : ''}`} value={formState.id} onChange={e => !editingId && setFormState({...formState, id: e.target.value})} />
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-1"><Hash size={10} /> Official Employee ID</label>
+                    <input type="text" placeholder="e.g. EMP-2024-001" required className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm outline-none border-indigo-100" value={formState.employeeId} onChange={e => setFormState({...formState, employeeId: e.target.value})} />
                   </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase px-1">Work Type (Attendance Rules)</label>
-                  <select className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" value={formState.workType} onChange={e => setFormState({...formState, workType: e.target.value as any})}>
-                    <option value="OFFICE">Office (Fixed Shift)</option>
-                    <option value="FIELD">Field (Flexible/Factory)</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase px-1">Account Role</label>
-                  <select className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" value={formState.role} onChange={e => setFormState({...formState, role: e.target.value as any})}>
-                    <option value="EMPLOYEE">Employee</option>
-                    <option value="MANAGER">Manager</option>
-                    <option value="HR">HR Specialist</option>
-                    <option value="ADMIN">Administrator</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase px-1">Department</label>
-                  <select className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" value={formState.department} onChange={e => setFormState({...formState, department: e.target.value})}>
-                    {depts.map(d => <option key={d}>{d}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1 lg:col-span-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase px-1">Designation</label>
-                  <select className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" value={formState.designation} onChange={e => setFormState({...formState, designation: e.target.value})}>
-                    {desigs.map(d => <option key={d}>{d}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase px-1">Monthly Salary (BDT)</label>
-                  <input type="number" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" value={formState.salary} onChange={e => setFormState({...formState, salary: parseInt(e.target.value) || 0})} />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase px-1">Work Email</label>
-                  <input type="email" required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" value={formState.email} onChange={e => setFormState({...formState, email: e.target.value})} />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase px-1">Username</label>
-                  <input type="text" required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" value={formState.username} onChange={e => setFormState({...formState, username: e.target.value})} />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase px-1">Password</label>
-                  <div className="relative">
-                    <input type="text" placeholder="Set or regenerate" className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none" value={formState.password} onChange={e => setFormState({...formState, password: e.target.value})} />
-                    <button type="button" onClick={generatePassword} className="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-600"><RefreshCw size={16} /></button>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Access Level</label>
+                    <select className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm outline-none" value={formState.role} onChange={e => setFormState({...formState, role: e.target.value as any})}>
+                      <option value="EMPLOYEE">Employee</option>
+                      <option value="MANAGER">Manager</option>
+                      <option value="HR">HR Specialist</option>
+                      <option value="ADMIN">Administrator</option>
+                    </select>
                   </div>
                 </div>
               </div>
 
-              <div className="pt-8 border-t border-slate-100 flex gap-4">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 bg-slate-100 text-slate-700 rounded-2xl font-black uppercase text-xs">Cancel</button>
-                <button type="submit" className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs shadow-lg flex items-center justify-center gap-2"><Save size={18} /> {editingId ? 'Save Profile' : 'Complete Onboarding'}</button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Work Email (Login Identity)</label>
+                  <input type="email" required disabled={!!editingId} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm outline-none disabled:opacity-50" value={formState.email} onChange={e => setFormState({...formState, email: e.target.value})} />
+                </div>
+                {!editingId && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Initial Password</label>
+                    <div className="relative">
+                       <input type={showPassword ? "text" : "password"} required className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm outline-none" value={formState.password} onChange={e => setFormState({...formState, password: e.target.value})} />
+                       <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400">
+                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                       </button>
+                    </div>
+                  </div>
+                )}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Department</label>
+                  <select className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm outline-none" value={formState.department} onChange={e => setFormState({...formState, department: e.target.value})}>
+                    {depts.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Designation</label>
+                  <select className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm outline-none" value={formState.designation} onChange={e => setFormState({...formState, designation: e.target.value})}>
+                    {desigs.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-8 border-t border-slate-50 flex flex-col sm:flex-row gap-4">
+                <button type="button" disabled={isSubmitting} onClick={() => setShowModal(false)} className="flex-1 py-5 bg-slate-100 text-slate-600 rounded-[2rem] font-black uppercase text-[11px] tracking-widest">Cancel</button>
+                <button type="submit" disabled={isSubmitting} className="flex-1 py-5 bg-indigo-600 text-white rounded-[2rem] font-black uppercase text-[11px] tracking-widest shadow-2xl flex items-center justify-center gap-3">
+                   {isSubmitting ? <RefreshCw className="animate-spin" size={18} /> : <Save size={18} />}
+                   {editingId ? 'Update Profile' : 'Provision User'}
+                </button>
               </div>
             </form>
           </div>

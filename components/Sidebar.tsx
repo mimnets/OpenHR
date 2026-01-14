@@ -10,7 +10,8 @@ import {
   LogOut,
   ShieldCheck,
   Globe,
-  Network
+  Network,
+  UserCircle
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -25,12 +26,13 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPath, onNavigate, onLogout, ro
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'HR', 'MANAGER', 'EMPLOYEE'] },
+    { id: 'profile', label: 'My Profile', icon: UserCircle, roles: ['ADMIN', 'HR', 'MANAGER', 'EMPLOYEE'] },
     { id: 'employees', label: 'Employees', icon: Users, roles: ['ADMIN', 'HR'] },
     { id: 'organization', label: 'Organization', icon: Network, roles: ['ADMIN', 'HR'] },
     { id: 'attendance', label: 'Attendance', icon: Clock, roles: ['ADMIN', 'HR', 'MANAGER', 'EMPLOYEE'] },
     { id: 'leave', label: 'Leave', icon: CalendarDays, roles: ['ADMIN', 'HR', 'MANAGER', 'EMPLOYEE'] },
     { id: 'reports', label: 'Reports', icon: BarChart3, roles: ['ADMIN', 'HR'] },
-    { id: 'settings', label: 'Settings', icon: Settings, roles: ['ADMIN', 'HR', 'MANAGER', 'EMPLOYEE'] },
+    { id: 'settings', label: 'System Settings', icon: Settings, roles: ['ADMIN', 'HR'] },
   ];
 
   const filteredItems = menuItems.filter(item => item.roles.includes(role));
@@ -60,9 +62,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPath, onNavigate, onLogout, ro
           >
             <item.icon size={20} />
             <span className="font-medium">{item.label}</span>
-            {item.id === 'dashboard' && currentPath !== 'dashboard' && (
-              <div className="ml-auto w-2 h-2 rounded-full bg-indigo-500"></div>
-            )}
           </button>
         ))}
       </nav>
@@ -73,7 +72,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPath, onNavigate, onLogout, ro
             <ShieldCheck size={14} className="text-emerald-500" />
             <span>Compliance Active</span>
           </div>
-          <p className="text-[10px] text-slate-500">v2.4.1 (BD Labor Code 2006)</p>
+          <p className="text-[10px] text-slate-500">v2.5.0 (PocketBase)</p>
         </div>
         
         <button 

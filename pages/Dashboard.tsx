@@ -24,7 +24,7 @@ import {
 import DashboardCard from '../components/DashboardCard';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { hrService } from '../services/hrService';
-import { LeaveRequest, Attendance, LeaveBalance } from '../types';
+import { LeaveRequest, Attendance, LeaveBalance, Employee } from '../types';
 
 interface DashboardProps {
   user: any;
@@ -33,7 +33,7 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
   const isAdmin = user.role === 'ADMIN' || user.role === 'HR';
-  const isManager = hrService.isManagerOfSomeone(user.id);
+  const [isManager, setIsManager] = useState(false);
   
   const [pendingLeaves, setPendingLeaves] = useState<LeaveRequest[]>([]);
   const [activeShift, setActiveShift] = useState<Attendance | undefined>(undefined);
@@ -46,25 +46,33 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
 
   useEffect(() => {
     refreshDashboardData();
-  }, [isAdmin, isManager, user.id]);
+  }, [isAdmin, user.id]);
 
-  const refreshDashboardData = () => {
-    setActiveShift(hrService.getActiveAttendance(user.id));
-    setUserBalance(hrService.getLeaveBalance(user.id));
+  const refreshDashboardData = async () => {
+    // Correctly await async service calls
+    const active = await hrService.getActiveAttendance(user.id);
+    setActiveShift(active);
+
+    const balance = await hrService.getLeaveBalance(user.id);
+    setUserBalance(balance);
     
-    const userHistory = hrService.getAttendance()
+    const allAttendance = await hrService.getAttendance();
+    const userHistory = allAttendance
       .filter(a => a.employeeId === user.id)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 5);
     setAttendanceHistory(userHistory);
 
-    if (isAdmin || isManager) {
-      const allLeaves = hrService.getLeaves();
-      const allEmployees = hrService.getEmployees();
+    const allEmployees = await hrService.getEmployees();
+    const managerStatus = hrService.isManagerOfSomeone(user.id, allEmployees);
+    setIsManager(managerStatus);
+
+    if (isAdmin || managerStatus) {
+      const allLeaves = await hrService.getLeaves();
       const reportIds = allEmployees.filter(e => e.lineManagerId === user.id).map(e => e.id);
       
       const hrTasks = isAdmin ? allLeaves.filter(l => l.status === 'PENDING_HR') : [];
-      const managerTasks = isManager ? allLeaves.filter(l => l.status === 'PENDING_MANAGER' && reportIds.includes(l.employeeId)) : [];
+      const managerTasks = managerStatus ? allLeaves.filter(l => l.status === 'PENDING_MANAGER' && reportIds.includes(l.employeeId)) : [];
 
       const combined = [...hrTasks];
       managerTasks.forEach(task => {
@@ -77,13 +85,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
     }
   };
 
-  const handleAction = (status: 'APPROVED' | 'REJECTED') => {
+  const handleAction = async (status: 'APPROVED' | 'REJECTED') => {
     if (!showReviewModal) return;
     let roleToUse = user.role;
     if (showReviewModal.status === 'PENDING_MANAGER' && !isAdmin) {
       roleToUse = 'MANAGER';
     }
-    hrService.updateLeaveStatus(showReviewModal.id, status, reviewRemarks, roleToUse);
+    await hrService.updateLeaveStatus(showReviewModal.id, status, reviewRemarks, roleToUse);
     setPendingLeaves(prev => prev.filter(l => l.id !== showReviewModal.id));
     refreshDashboardData();
     setShowReviewModal(null);

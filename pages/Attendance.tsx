@@ -1,4 +1,5 @@
 
+// Added React to imports to resolve namespace error
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   MapPin, 
@@ -17,7 +18,10 @@ import {
   ShieldCheck,
   CameraOff,
   Maximize2,
-  AlertCircle
+  AlertCircle,
+  Eye,
+  Activity,
+  Loader2
 } from 'lucide-react';
 import { hrService } from '../services/hrService';
 import { OFFICE_LOCATIONS } from '../constants.tsx';
@@ -29,11 +33,15 @@ const Attendance: React.FC<{ user: any }> = ({ user }) => {
   const [status, setStatus] = useState<'idle' | 'pushed' | 'loading'>('idle');
   const [activeRecord, setActiveRecord] = useState<AttendanceType | undefined>(undefined);
   const [todayHistory, setTodayHistory] = useState<AttendanceType[]>([]);
+  const [allAttendance, setAllAttendance] = useState<AttendanceType[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [location, setLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
   const [remarks, setRemarks] = useState('');
   const [cameraEnabled, setCameraEnabled] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [isReconciling, setIsReconciling] = useState(false);
+  const [previewSelfie, setPreviewSelfie] = useState<string | null>(null);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -41,9 +49,20 @@ const Attendance: React.FC<{ user: any }> = ({ user }) => {
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    refreshData();
-    detectLocation();
-    initCamera();
+    
+    // Initial data sync sequence
+    const initData = async () => {
+      setIsInitialLoading(true);
+      try {
+        await refreshData();
+        detectLocation();
+        await initCamera();
+      } finally {
+        setIsInitialLoading(false);
+      }
+    };
+
+    initData();
     
     return () => {
       clearInterval(timer);
@@ -51,15 +70,34 @@ const Attendance: React.FC<{ user: any }> = ({ user }) => {
     };
   }, [user.id]);
 
-  useEffect(() => {
-    if (cameraEnabled && videoRef.current && streamRef.current) {
-      videoRef.current.srcObject = streamRef.current;
+  const refreshData = async () => {
+    try {
+      const active = await hrService.getActiveAttendance(user.id);
+      setActiveRecord(active);
+      
+      const today = await hrService.getTodayAttendance(user.id);
+      setTodayHistory(today);
+      
+      if (isAdmin) {
+        const all = await hrService.getAttendance();
+        setAllAttendance(all);
+      }
+    } catch (e) {
+      console.error("Refresh failed", e);
     }
-  }, [cameraEnabled, status]);
+  };
 
-  const refreshData = () => {
-    setActiveRecord(hrService.getActiveAttendance(user.id));
-    setTodayHistory(hrService.getTodayAttendance(user.id));
+  const handleReconcile = async () => {
+    setIsReconciling(true);
+    try {
+      const count = await hrService.autoCheckOutStaleSessions();
+      alert(`Reconciliation complete. ${count} session(s) automatically clocked out.`);
+      await refreshData();
+    } catch (e) {
+      alert("Failed to reconcile sessions.");
+    } finally {
+      setIsReconciling(false);
+    }
   };
 
   const initCamera = async () => {
@@ -68,19 +106,24 @@ const Attendance: React.FC<{ user: any }> = ({ user }) => {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: 'user',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        } 
+        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } 
       });
       streamRef.current = stream;
       setCameraEnabled(true);
       setCameraError(null);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
+      
+      // Delay setting srcObject slightly to ensure DOM is ready
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          // Suppress AbortError which occurs when a play request is interrupted by a load request
+          videoRef.current.play().catch(e => {
+            if (e.name !== 'AbortError') console.error("Video play failed:", e);
+          });
+        }
+      }, 100);
     } catch (err) {
+      console.error("Camera Init Error:", err);
       setCameraError("Camera access required for verification.");
       setCameraEnabled(false);
     }
@@ -131,50 +174,57 @@ const Attendance: React.FC<{ user: any }> = ({ user }) => {
     return null;
   };
 
-  const handlePunch = () => {
+  const handlePunch = async () => {
     if (!location) {
       alert("Location lock required.");
       detectLocation();
       return;
     }
 
+    if (!activeRecord && status === 'loading') return;
+
     const selfieData = captureSelfie();
-    if (!selfieData) {
-      alert("Camera feed not ready.");
+    if (!selfieData && !activeRecord) {
+      alert("Biometric verification (Selfie) required for clock-in.");
       initCamera();
       return;
     }
-
-    setStatus('loading');
     
-    setTimeout(() => {
+    setStatus('loading');
+    try {
       const punchTime = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
       
       if (activeRecord) {
-        hrService.updateAttendance(activeRecord.id, {
-          checkOut: punchTime,
-          remarks: remarks || activeRecord.remarks,
+        await hrService.updateAttendance(activeRecord.id, { 
+          checkOut: punchTime, 
+          remarks: remarks || activeRecord.remarks 
         });
       } else {
         const newRecord: AttendanceType = {
-          id: Math.random().toString(36).substr(2, 9),
-          employeeId: user.id,
-          employeeName: user.name,
+          id: '', 
+          employeeId: user.id, 
+          employeeName: user.name, 
           date: new Date().toISOString().split('T')[0],
-          checkIn: punchTime,
-          status: 'PRESENT',
+          checkIn: punchTime, 
+          status: 'PRESENT', 
           location: { lat: location.lat, lng: location.lng, address: location.address },
-          selfie: selfieData,
+          selfie: selfieData || '', 
           remarks: remarks || undefined
         };
-        hrService.saveAttendance(newRecord);
+        await hrService.saveAttendance(newRecord);
       }
       
-      refreshData();
       setStatus('pushed');
       setRemarks('');
+      
+      if (activeRecord) setActiveRecord(undefined);
+      
+      await refreshData();
       setTimeout(() => setStatus('idle'), 2500);
-    }, 1000);
+    } catch (err: any) {
+      alert("Attendance verification failed: " + err.message);
+      setStatus('idle');
+    }
   };
 
   const getStatusBadge = (status: AttendanceType['status']) => {
@@ -186,13 +236,31 @@ const Attendance: React.FC<{ user: any }> = ({ user }) => {
     }
   };
 
+  if (isInitialLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96 space-y-4 text-slate-400">
+        <Loader2 className="w-12 h-12 animate-spin text-indigo-600" />
+        <p className="text-xs font-black uppercase tracking-widest animate-pulse">Initializing Security Protocol...</p>
+      </div>
+    );
+  }
+
   if (isAdmin) {
-    const allAttendance = hrService.getAttendance();
     return (
       <div className="space-y-8 animate-in fade-in duration-500">
-        <header>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Organization Attendance Logs</h1>
-          <p className="text-slate-500 font-medium tracking-tight">Monitoring compliance with shift policies and grace periods</p>
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Organization Attendance Logs</h1>
+            <p className="text-slate-500 font-medium tracking-tight">Monitoring compliance with shift policies and biometric verification</p>
+          </div>
+          <button 
+            onClick={handleReconcile}
+            disabled={isReconciling}
+            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-700 shadow-xl transition-all disabled:opacity-50"
+          >
+            {isReconciling ? <RefreshCw size={14} className="animate-spin" /> : <Activity size={14} />}
+            Force Global Reconcile
+          </button>
         </header>
 
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8">
@@ -213,23 +281,29 @@ const Attendance: React.FC<{ user: any }> = ({ user }) => {
             <table className="w-full text-left">
               <thead>
                 <tr className="text-[10px] uppercase font-black text-slate-400 tracking-widest border-b border-slate-100">
-                  <th className="pb-4">Employee</th>
+                  <th className="pb-4 px-4">Employee & Verification</th>
                   <th className="pb-4 text-center">Status</th>
                   <th className="pb-4 text-center">Punch Details</th>
-                  <th className="pb-4 text-center">Verified GPS</th>
-                  <th className="pb-4 text-right">Remarks</th>
+                  <th className="pb-4 text-center">GPS Tracking</th>
+                  <th className="pb-4 text-right pr-4">Remarks</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {allAttendance.filter(r => (r.employeeName || '').toLowerCase().includes(searchTerm.toLowerCase())).reverse().map((row, i) => (
+                {allAttendance.filter(r => (r.employeeName || '').toLowerCase().includes(searchTerm.toLowerCase())).map((row, i) => (
                   <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="py-4">
+                    <td className="py-4 px-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl border border-slate-100 overflow-hidden bg-slate-100">
-                          {row.selfie && <img src={row.selfie} className="w-full h-full object-cover" />}
+                        <div 
+                          onClick={() => row.selfie && setPreviewSelfie(row.selfie)}
+                          className="w-14 h-14 rounded-xl border border-slate-100 overflow-hidden bg-slate-100 shadow-sm cursor-zoom-in group relative"
+                        >
+                          {row.selfie && <img src={row.selfie} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />}
+                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                             <Eye size={16} className="text-white" />
+                          </div>
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-slate-900 leading-none">{row.employeeName}</p>
+                          <p className="text-sm font-black text-slate-900 leading-none">{row.employeeName}</p>
                           <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase">{row.date}</p>
                         </div>
                       </div>
@@ -240,13 +314,18 @@ const Attendance: React.FC<{ user: any }> = ({ user }) => {
                     <td className="py-4 text-center">
                       <div className="flex flex-col items-center">
                          <span className="text-sm font-black text-slate-900 tabular-nums">IN: {row.checkIn}</span>
-                         <span className={`text-[10px] font-bold tabular-nums mt-0.5 ${row.checkOut ? 'text-slate-400' : 'text-emerald-500 animate-pulse'}`}>{row.checkOut ? `OUT: ${row.checkOut}` : 'ACTIVE'}</span>
+                         <span className={`text-[10px] font-bold tabular-nums mt-0.5 ${row.checkOut ? 'text-slate-400' : 'text-emerald-500 animate-pulse font-black'}`}>{row.checkOut ? `OUT: ${row.checkOut}` : 'LIVE SESSION'}</span>
                       </div>
                     </td>
                     <td className="py-4 text-center">
-                       <p className="text-[10px] font-black text-slate-700 uppercase leading-none">{row.location?.address}</p>
+                       <div className="flex flex-col">
+                          <p className="text-[10px] font-black text-slate-900 uppercase leading-none">{row.location?.address}</p>
+                          <p className="text-[9px] font-bold text-slate-400 mt-1 tabular-nums">
+                            {row.location?.lat.toFixed(6)}, {row.location?.lng.toFixed(6)}
+                          </p>
+                       </div>
                     </td>
-                    <td className="py-4 text-right max-w-[180px]">
+                    <td className="py-4 text-right pr-4 max-w-[200px]">
                       {row.remarks ? <p className="text-[11px] font-medium text-slate-500 italic leading-tight">"{row.remarks}"</p> : <span className="text-[10px] text-slate-300">N/A</span>}
                     </td>
                   </tr>
@@ -255,6 +334,19 @@ const Attendance: React.FC<{ user: any }> = ({ user }) => {
             </table>
           </div>
         </div>
+
+        {previewSelfie && (
+          <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-xl z-[150] flex items-center justify-center p-4 animate-in fade-in zoom-in duration-300">
+             <button onClick={() => setPreviewSelfie(null)} className="absolute top-8 right-8 p-3 bg-white/10 text-white rounded-full hover:bg-white/20 transition-all"><X size={32}/></button>
+             <div className="max-w-4xl w-full aspect-square md:aspect-video rounded-[3rem] overflow-hidden border-8 border-white/10 shadow-2xl relative">
+                <img src={previewSelfie} className="w-full h-full object-cover scale-x-[-1]" />
+                <div className="absolute bottom-10 left-10 p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 text-white">
+                   <p className="text-[10px] font-black uppercase tracking-widest">Biometric Identity Verification</p>
+                   <p className="text-xs font-medium opacity-80">Full Resolution Capture</p>
+                </div>
+             </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -267,16 +359,17 @@ const Attendance: React.FC<{ user: any }> = ({ user }) => {
             <ShieldCheck size={14} className={activeRecord ? 'text-emerald-400' : 'text-indigo-400'} />
             Biometric Station
           </div>
-          
           <h2 className="text-6xl sm:text-7xl md:text-8xl font-black mb-4 tracking-tighter tabular-nums drop-shadow-2xl">
             {currentTime.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </h2>
-          
           <div className="flex flex-col items-center gap-2">
             <div className="flex items-center justify-center gap-2 text-white/80 font-bold text-sm tracking-wide">
               <MapPin size={16} className="text-indigo-400" />
               {location ? location.address : 'Acquiring GPS Signal...'}
             </div>
+            {location && (
+              <p className="text-[10px] font-mono opacity-50">{location.lat.toFixed(6)}, {location.lng.toFixed(6)}</p>
+            )}
           </div>
         </div>
 
@@ -305,14 +398,12 @@ const Attendance: React.FC<{ user: any }> = ({ user }) => {
                   <canvas ref={canvasRef} className="hidden" />
                 </div>
               </div>
-
               <textarea 
                 placeholder="Log activities for this session..."
                 className={`w-full p-5 rounded-[32px] text-sm font-bold min-h-[120px] outline-none shadow-sm border transition-all resize-none ${activeRecord ? 'bg-emerald-50/30 border-emerald-100' : 'bg-slate-50 border-slate-100'}`}
                 value={remarks}
                 onChange={e => setRemarks(e.target.value)}
               />
-
               <button 
                 onClick={handlePunch}
                 disabled={!location || status !== 'idle' || !cameraEnabled}
@@ -342,7 +433,6 @@ const Attendance: React.FC<{ user: any }> = ({ user }) => {
                    </div>
                 </div>
               </div>
-
               <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm p-8 flex-1 overflow-hidden flex flex-col">
                 <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight flex items-center gap-2 mb-6">
                   <History size={20} className="text-indigo-600" /> Personal Daily Log

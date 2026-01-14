@@ -1,0 +1,70 @@
+# OpenHR PocketBase Setup Playbook
+
+PocketBase is the easiest way to run OpenHR locally or on a private server.
+
+## 1. Installation
+1. Download the executable from [pocketbase.io](https://pocketbase.io/).
+2. Extract it and run: `./pocketbase serve`
+3. Access the Admin UI at `http://127.0.0.1:8090/_/`
+
+## 2. Admin Creation
+1. On the first run, create your **Primary Admin Account**. This is for the database UI, not the HR system.
+
+## 3. Creating Collections (CRITICAL)
+Create the following collections exactly as named. **Note:** Use snake_case for all field names.
+
+### users (System Collection)
+Add these fields to the default `users` collection:
+- `role` (select: ADMIN, HR, MANAGER, EMPLOYEE)
+- `department` (text)
+- `designation` (text)
+- `employee_id` (text) - *Organizational ID like EMP-001*
+- `line_manager_id` (relation: users, single) - *Reporting supervisor (Link to another user record)*
+- `avatar` (file)
+
+**IMPORTANT:** After creating your user in the app, go to the PocketBase Admin UI, find your user record, and manually change the `role` field to **ADMIN**. If you don't do this, the app will deny your requests to manage other users or settings.
+
+### settings (New Collection - MANDATORY)
+This collection stores departments, designations, and policies. **If this is missing, you cannot add departments.**
+- `key` (text, non-empty, unique)
+- `value` (json)
+
+### attendance
+- `employee_id` (relation: users, single)
+- `employee_name` (text)
+- `date` (text)
+- `check_in` (text)
+- `check_out` (text)
+- `status` (text)
+- `selfie` (file)
+- `remarks` (text)
+- `location` (text)
+
+### leaves
+- `employee_id` (relation: users, single)
+- `employee_name` (text)
+- `type` (text)
+- `start_date` (text)
+- `end_date` (text)
+- `total_days` (number)
+- `status` (text)
+- `applied_date` (text)
+- `reason` (text)
+- `approver_remarks` (text)
+- `manager_remarks` (text)
+
+## 4. API Rules Matrix
+Go to each collection, click **API Rules**, and paste these strings exactly.
+
+| Collection | List/Search & View | Create | Update |
+|------------|---------------------|--------|--------|
+| **users** | `@request.auth.id != ""` | Admin only | `id = @request.auth.id || @request.auth.role = "ADMIN" || @request.auth.role = "HR"` |
+| **settings** | `@request.auth.id != ""` | `@request.auth.role = "ADMIN" || @request.auth.role = "HR"` | `@request.auth.role = "ADMIN" || @request.auth.role = "HR"` |
+| **attendance** | `@request.auth.id != ""` | `@request.auth.id != ""` | `employee_id = @request.auth.id || @request.auth.role = "ADMIN" || @request.auth.role = "HR"` |
+| **leaves** | `@request.auth.id != ""` | `@request.auth.id != ""` | `employee_id = @request.auth.id || @request.auth.role = "ADMIN" || @request.auth.role = "HR" || @request.auth.role = "MANAGER"` |
+
+## 5. Troubleshooting "Operation Failed"
+If you cannot add departments or save settings:
+1. Ensure the `settings` collection exists.
+2. Ensure the `key` field in the `settings` collection is marked as **Unique**.
+3. Ensure your logged-in user in the app has the **ADMIN** or **HR** role assigned in the PocketBase `users` collection.

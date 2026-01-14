@@ -1,9 +1,9 @@
-
 export type Role = 'ADMIN' | 'MANAGER' | 'HR' | 'EMPLOYEE';
 export type WorkType = 'OFFICE' | 'FIELD';
 
 export interface User {
   id: string;
+  employeeId: string;
   name: string;
   email: string;
   role: Role;
@@ -44,6 +44,7 @@ export interface LeaveRequest {
   id: string;
   employeeId: string;
   employeeName: string;
+  lineManagerId?: string; // New field added by user
   type: 'ANNUAL' | 'CASUAL' | 'SICK' | 'MATERNITY' | 'PATERNITY' | 'EARNED' | 'UNPAID';
   startDate: string;
   endDate: string;
@@ -90,6 +91,8 @@ export interface RelayConfig {
   fromName: string;
   isActive: boolean;
   relayUrl: string;
+  resendApiKey?: string;
+  useDirectResend?: boolean;
 }
 
 export interface AppConfig {
@@ -103,5 +106,5 @@ export interface AppConfig {
   lateGracePeriod: number;
   earlyOutGracePeriod: number;
   defaultReportRecipient?: string;
-  smtp?: RelayConfig; // Keeping key name for backward compatibility with hrService
+  smtp?: RelayConfig;
 }
