@@ -1,45 +1,44 @@
-
-// Added React to imports to resolve namespace error
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { 
   MapPin, 
   Clock, 
   CheckCircle2, 
-  AlertTriangle,
-  Search,
+  Camera, 
+  X, 
+  LogOut, 
+  RefreshCw, 
+  History, 
+  ShieldCheck, 
+  CameraOff, 
+  Activity, 
+  Loader2,
+  BarChart3,
+  ChevronRight,
   UserCheck,
-  Camera,
-  X,
-  LogOut,
-  Navigation,
-  RefreshCw,
-  MessageSquare,
-  History,
-  ShieldCheck,
-  CameraOff,
-  Maximize2,
-  AlertCircle,
-  Eye,
-  Activity,
-  Loader2
+  TrendingUp,
+  FileText,
+  CalendarCheck,
+  UserMinus,
+  Briefcase
 } from 'lucide-react';
 import { hrService } from '../services/hrService';
 import { OFFICE_LOCATIONS } from '../constants.tsx';
-import { Attendance as AttendanceType } from '../types';
+import { Attendance as AttendanceType, LeaveRequest } from '../types';
 
 const Attendance: React.FC<{ user: any }> = ({ user }) => {
   const isAdmin = user.role === 'ADMIN' || user.role === 'HR';
+  const [currentTab, setCurrentTab] = useState<'STATION' | 'ACTIVITY'>(isAdmin ? 'ACTIVITY' : 'STATION');
   const [currentTime, setCurrentTime] = useState(new Date());
   const [status, setStatus] = useState<'idle' | 'pushed' | 'loading'>('idle');
   const [activeRecord, setActiveRecord] = useState<AttendanceType | undefined>(undefined);
-  const [todayHistory, setTodayHistory] = useState<AttendanceType[]>([]);
   const [allAttendance, setAllAttendance] = useState<AttendanceType[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [userLeaves, setUserLeaves] = useState<LeaveRequest[]>([]);
   const [location, setLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
   const [remarks, setRemarks] = useState('');
   const [cameraEnabled, setCameraEnabled] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [isReconciling, setIsReconciling] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [dataError, setDataError] = useState<string | null>(null);
   const [previewSelfie, setPreviewSelfie] = useState<string | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   
@@ -47,423 +46,369 @@ const Attendance: React.FC<{ user: any }> = ({ user }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    
-    // Initial data sync sequence
-    const initData = async () => {
-      setIsInitialLoading(true);
-      try {
-        await refreshData();
-        detectLocation();
-        await initCamera();
-      } finally {
-        setIsInitialLoading(false);
-      }
-    };
-
-    initData();
-    
-    return () => {
-      clearInterval(timer);
-      stopCamera();
-    };
+  const refreshData = useCallback(async () => {
+    try {
+      const [active, today, allLeaves] = await Promise.all([
+        hrService.getActiveAttendance(user.id),
+        hrService.getTodayAttendance(user.id),
+        hrService.getLeaves()
+      ]);
+      
+      setActiveRecord(active);
+      setUserLeaves(allLeaves.filter(l => l.employeeId === user.id));
+      
+      const all = await hrService.getAttendance();
+      setAllAttendance(all);
+      setDataError(null);
+    } catch (e: any) {
+      setDataError('Failed to sync records');
+    }
   }, [user.id]);
 
-  const refreshData = async () => {
-    try {
-      const active = await hrService.getActiveAttendance(user.id);
-      setActiveRecord(active);
-      
-      const today = await hrService.getTodayAttendance(user.id);
-      setTodayHistory(today);
-      
-      if (isAdmin) {
-        const all = await hrService.getAttendance();
-        setAllAttendance(all);
-      }
-    } catch (e) {
-      console.error("Refresh failed", e);
-    }
-  };
+  const analytics = useMemo(() => {
+    const userRecords = allAttendance.filter(a => a.employeeId === user.id);
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    const monthlyRecords = userRecords.filter(a => {
+      const d = new Date(a.date);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    });
 
-  const handleReconcile = async () => {
-    setIsReconciling(true);
-    try {
-      const count = await hrService.autoCheckOutStaleSessions();
-      alert(`Reconciliation complete. ${count} session(s) automatically clocked out.`);
-      await refreshData();
-    } catch (e) {
-      alert("Failed to reconcile sessions.");
-    } finally {
-      setIsReconciling(false);
-    }
-  };
+    const pendingLeaves = userLeaves.filter(l => l.status.startsWith('PENDING')).length;
+    const approvedLeaves = userLeaves.filter(l => l.status === 'APPROVED').length;
+    const rejectedLeaves = userLeaves.filter(l => l.status === 'REJECTED').length;
 
-  const initCamera = async () => {
+    return {
+      present: monthlyRecords.filter(a => a.status === 'PRESENT').length,
+      late: monthlyRecords.filter(a => a.status === 'LATE').length,
+      absent: monthlyRecords.filter(a => a.status === 'ABSENT').length,
+      pendingLeaves,
+      approvedLeaves,
+      rejectedLeaves,
+      totalLeavesThisYear: userLeaves.filter(l => l.status === 'APPROVED' && new Date(l.startDate).getFullYear() === currentYear).reduce((acc, l) => acc + l.totalDays, 0),
+      lastThreeDays: userRecords.slice(0, 3),
+      monthlyHistory: monthlyRecords.sort((a,b) => b.date.localeCompare(a.date))
+    };
+  }, [allAttendance, userLeaves, user.id]);
+
+  const initCamera = useCallback(async () => {
     try {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
+      if (streamRef.current) streamRef.current.getTracks().forEach(track => track.stop());
+      setCameraError(null);
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } 
+        video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 720 } } 
       });
       streamRef.current = stream;
       setCameraEnabled(true);
-      setCameraError(null);
-      
-      // Delay setting srcObject slightly to ensure DOM is ready
       setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          // Suppress AbortError which occurs when a play request is interrupted by a load request
-          videoRef.current.play().catch(e => {
-            if (e.name !== 'AbortError') console.error("Video play failed:", e);
-          });
+          videoRef.current.play().catch(e => console.warn("Video playback blocked", e));
         }
-      }, 100);
-    } catch (err) {
-      console.error("Camera Init Error:", err);
-      setCameraError("Camera access required for verification.");
+      }, 300);
+    } catch (err: any) {
+      setCameraError("Camera access required.");
       setCameraEnabled(false);
     }
-  };
+  }, []);
 
-  const stopCamera = () => {
+  const stopCamera = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
-  };
+  }, []);
 
-  const detectLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          let matchedOffice = "Field Area";
-          for (const office of OFFICE_LOCATIONS) {
-             if (Math.abs(office.lat - lat) < 0.05 && Math.abs(office.lng - lng) < 0.05) {
-                matchedOffice = office.name;
-                break;
-             }
-          }
-          setLocation({ lat, lng, address: matchedOffice });
-        },
-        () => setLocation(null),
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
+  const detectLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setLocationError("No GPS");
+      return;
     }
-  };
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        let matchedOffice = "Field Area";
+        for (const office of OFFICE_LOCATIONS) {
+           if (Math.abs(office.lat - lat) < 0.05 && Math.abs(office.lng - lng) < 0.05) {
+              matchedOffice = office.name;
+              break;
+           }
+        }
+        setLocation({ lat, lng, address: matchedOffice });
+        setLocationError(null);
+      },
+      () => setLocationError("GPS Signal Lost"),
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  }, []);
 
-  const captureSelfie = (): string | null => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.translate(canvas.width, 0);
-        ctx.scale(-1, 1);
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        return canvas.toDataURL('image/jpeg', 0.8);
-      }
-    }
-    return null;
-  };
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    const initData = async () => {
+      setIsInitialLoading(true);
+      await refreshData();
+      detectLocation();
+      if (currentTab === 'STATION') await initCamera();
+      setIsInitialLoading(false);
+    };
+    initData();
+    return () => { clearInterval(timer); stopCamera(); };
+  }, [refreshData, detectLocation]);
+
+  useEffect(() => {
+    if (currentTab === 'STATION') initCamera();
+    else stopCamera();
+  }, [currentTab, initCamera, stopCamera]);
 
   const handlePunch = async () => {
-    if (!location) {
-      alert("Location lock required.");
-      detectLocation();
-      return;
-    }
-
-    if (!activeRecord && status === 'loading') return;
-
-    const selfieData = captureSelfie();
-    if (!selfieData && !activeRecord) {
-      alert("Biometric verification (Selfie) required for clock-in.");
-      initCamera();
-      return;
-    }
+    if (!location) { detectLocation(); return; }
+    if (status === 'loading') return;
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    if (!video || !canvas) return;
     
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx?.translate(canvas.width, 0);
+    ctx?.scale(-1, 1);
+    ctx?.drawImage(video, 0, 0);
+    const selfieData = canvas.toDataURL('image/jpeg', 0.9);
+
     setStatus('loading');
     try {
       const punchTime = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-      
       if (activeRecord) {
-        await hrService.updateAttendance(activeRecord.id, { 
-          checkOut: punchTime, 
-          remarks: remarks || activeRecord.remarks 
-        });
+        await hrService.updateAttendance(activeRecord.id, { checkOut: punchTime, remarks });
       } else {
-        const newRecord: AttendanceType = {
-          id: '', 
-          employeeId: user.id, 
-          employeeName: user.name, 
-          date: new Date().toISOString().split('T')[0],
-          checkIn: punchTime, 
-          status: 'PRESENT', 
-          location: { lat: location.lat, lng: location.lng, address: location.address },
-          selfie: selfieData || '', 
-          remarks: remarks || undefined
-        };
-        await hrService.saveAttendance(newRecord);
+        await hrService.saveAttendance({
+          id: '', employeeId: user.id, employeeName: user.name, date: new Date().toISOString().split('T')[0],
+          checkIn: punchTime, status: 'PRESENT', location, selfie: selfieData, remarks
+        });
       }
-      
-      setStatus('pushed');
-      setRemarks('');
-      
-      if (activeRecord) setActiveRecord(undefined);
-      
       await refreshData();
+      setRemarks('');
+      setStatus('pushed');
       setTimeout(() => setStatus('idle'), 2500);
     } catch (err: any) {
-      alert("Attendance verification failed: " + err.message);
+      setDataError(err.message);
       setStatus('idle');
     }
   };
 
-  const getStatusBadge = (status: AttendanceType['status']) => {
-    switch (status) {
-      case 'LATE': return <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-md text-[8px] font-black uppercase flex items-center gap-1"><Clock size={10} /> Late</span>;
-      case 'EARLY_OUT': return <span className="px-2 py-0.5 bg-rose-100 text-rose-700 rounded-md text-[8px] font-black uppercase flex items-center gap-1"><AlertCircle size={10} /> Early Exit</span>;
-      case 'PRESENT': return <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-md text-[8px] font-black uppercase flex items-center gap-1"><CheckCircle2 size={10} /> Present</span>;
-      default: return <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md text-[8px] font-black uppercase">{status}</span>;
-    }
+  const getStatusBadge = (s: AttendanceType['status']) => {
+    const map: any = {
+      'LATE': 'bg-amber-100 text-amber-700',
+      'EARLY_OUT': 'bg-rose-100 text-rose-700',
+      'PRESENT': 'bg-emerald-100 text-emerald-700',
+      'ABSENT': 'bg-slate-100 text-slate-500',
+      'LEAVE': 'bg-indigo-100 text-indigo-700'
+    };
+    return <span className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase ${map[s] || 'bg-slate-100 text-slate-500'}`}>{s}</span>;
   };
 
-  if (isInitialLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-96 space-y-4 text-slate-400">
-        <Loader2 className="w-12 h-12 animate-spin text-indigo-600" />
-        <p className="text-xs font-black uppercase tracking-widest animate-pulse">Initializing Security Protocol...</p>
-      </div>
-    );
-  }
-
-  if (isAdmin) {
-    return (
-      <div className="space-y-8 animate-in fade-in duration-500">
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Organization Attendance Logs</h1>
-            <p className="text-slate-500 font-medium tracking-tight">Monitoring compliance with shift policies and biometric verification</p>
-          </div>
-          <button 
-            onClick={handleReconcile}
-            disabled={isReconciling}
-            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-700 shadow-xl transition-all disabled:opacity-50"
-          >
-            {isReconciling ? <RefreshCw size={14} className="animate-spin" /> : <Activity size={14} />}
-            Force Global Reconcile
-          </button>
-        </header>
-
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8">
-          <div className="flex flex-col md:flex-row gap-4 mb-8">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input 
-                type="text" 
-                placeholder="Search by staff name..."
-                className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none"
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="text-[10px] uppercase font-black text-slate-400 tracking-widest border-b border-slate-100">
-                  <th className="pb-4 px-4">Employee & Verification</th>
-                  <th className="pb-4 text-center">Status</th>
-                  <th className="pb-4 text-center">Punch Details</th>
-                  <th className="pb-4 text-center">GPS Tracking</th>
-                  <th className="pb-4 text-right pr-4">Remarks</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {allAttendance.filter(r => (r.employeeName || '').toLowerCase().includes(searchTerm.toLowerCase())).map((row, i) => (
-                  <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="py-4 px-4">
-                      <div className="flex items-center gap-4">
-                        <div 
-                          onClick={() => row.selfie && setPreviewSelfie(row.selfie)}
-                          className="w-14 h-14 rounded-xl border border-slate-100 overflow-hidden bg-slate-100 shadow-sm cursor-zoom-in group relative"
-                        >
-                          {row.selfie && <img src={row.selfie} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />}
-                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                             <Eye size={16} className="text-white" />
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-sm font-black text-slate-900 leading-none">{row.employeeName}</p>
-                          <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase">{row.date}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-4 text-center">
-                      <div className="flex justify-center">{getStatusBadge(row.status)}</div>
-                    </td>
-                    <td className="py-4 text-center">
-                      <div className="flex flex-col items-center">
-                         <span className="text-sm font-black text-slate-900 tabular-nums">IN: {row.checkIn}</span>
-                         <span className={`text-[10px] font-bold tabular-nums mt-0.5 ${row.checkOut ? 'text-slate-400' : 'text-emerald-500 animate-pulse font-black'}`}>{row.checkOut ? `OUT: ${row.checkOut}` : 'LIVE SESSION'}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 text-center">
-                       <div className="flex flex-col">
-                          <p className="text-[10px] font-black text-slate-900 uppercase leading-none">{row.location?.address}</p>
-                          <p className="text-[9px] font-bold text-slate-400 mt-1 tabular-nums">
-                            {row.location?.lat.toFixed(6)}, {row.location?.lng.toFixed(6)}
-                          </p>
-                       </div>
-                    </td>
-                    <td className="py-4 text-right pr-4 max-w-[200px]">
-                      {row.remarks ? <p className="text-[11px] font-medium text-slate-500 italic leading-tight">"{row.remarks}"</p> : <span className="text-[10px] text-slate-300">N/A</span>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {previewSelfie && (
-          <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-xl z-[150] flex items-center justify-center p-4 animate-in fade-in zoom-in duration-300">
-             <button onClick={() => setPreviewSelfie(null)} className="absolute top-8 right-8 p-3 bg-white/10 text-white rounded-full hover:bg-white/20 transition-all"><X size={32}/></button>
-             <div className="max-w-4xl w-full aspect-square md:aspect-video rounded-[3rem] overflow-hidden border-8 border-white/10 shadow-2xl relative">
-                <img src={previewSelfie} className="w-full h-full object-cover scale-x-[-1]" />
-                <div className="absolute bottom-10 left-10 p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 text-white">
-                   <p className="text-[10px] font-black uppercase tracking-widest">Biometric Identity Verification</p>
-                   <p className="text-xs font-medium opacity-80">Full Resolution Capture</p>
-                </div>
-             </div>
-          </div>
-        )}
-      </div>
-    );
-  }
+  if (isInitialLoading) return <div className="h-screen flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-indigo-600" size={48} /></div>;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500 pb-12">
-      <div className={`rounded-[40px] shadow-2xl overflow-hidden border transition-all duration-700 ${activeRecord ? 'border-emerald-100' : 'border-indigo-100'}`}>
-        <div className={`p-10 md:p-12 text-center text-white relative transition-all duration-700 ${activeRecord ? 'bg-gradient-to-br from-emerald-900 to-slate-900' : 'bg-gradient-to-br from-slate-900 to-indigo-900'}`}>
-          <div className="md:absolute md:top-6 md:left-6 mb-4 md:mb-0 inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/5 backdrop-blur-md">
-            <ShieldCheck size={14} className={activeRecord ? 'text-emerald-400' : 'text-indigo-400'} />
-            Biometric Station
-          </div>
-          <h2 className="text-6xl sm:text-7xl md:text-8xl font-black mb-4 tracking-tighter tabular-nums drop-shadow-2xl">
-            {currentTime.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-          </h2>
-          <div className="flex flex-col items-center gap-2">
-            <div className="flex items-center justify-center gap-2 text-white/80 font-bold text-sm tracking-wide">
-              <MapPin size={16} className="text-indigo-400" />
-              {location ? location.address : 'Acquiring GPS Signal...'}
-            </div>
-            {location && (
-              <p className="text-[10px] font-mono opacity-50">{location.lat.toFixed(6)}, {location.lng.toFixed(6)}</p>
-            )}
-          </div>
-        </div>
+    <div className="h-full flex flex-col space-y-3 animate-in fade-in duration-500 overflow-hidden">
+      {/* Reduced Height Segmented Control */}
+      <div className="flex p-1 bg-white border border-slate-100 rounded-xl shadow-sm self-center">
+        <button 
+          onClick={() => setCurrentTab('STATION')} 
+          className={`px-5 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${currentTab === 'STATION' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400'}`}
+        >
+          <Camera size={12} /> Station
+        </button>
+        <button 
+          onClick={() => setCurrentTab('ACTIVITY')} 
+          className={`px-5 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${currentTab === 'ACTIVITY' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400'}`}
+        >
+          <Activity size={12} /> Activity
+        </button>
+      </div>
 
-        <div className="p-8 md:p-12 bg-white">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <div className="space-y-8">
-              <div className="relative">
-                <div className={`w-full aspect-video rounded-[48px] overflow-hidden border-8 relative shadow-xl transition-all duration-500 ${activeRecord ? 'border-emerald-50 bg-emerald-100/20' : 'border-slate-50 bg-slate-100'}`}>
-                  {status === 'loading' ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm z-20">
-                      <div className={`w-12 h-12 border-4 rounded-full animate-spin ${activeRecord ? 'border-emerald-600 border-t-transparent' : 'border-indigo-600 border-t-transparent'}`}></div>
-                    </div>
-                  ) : status === 'pushed' ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-emerald-500 text-white z-20 animate-in zoom-in duration-300">
-                      <CheckCircle2 size={64} />
-                      <h3 className="text-2xl font-black uppercase tracking-tighter mt-4">Verified</h3>
-                    </div>
-                  ) : cameraEnabled ? (
-                    <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
-                  ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
-                      <CameraOff size={48} className="text-slate-300" />
-                      <button onClick={initCamera} className="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase">Enable Verification</button>
-                    </div>
-                  )}
-                  <canvas ref={canvasRef} className="hidden" />
-                </div>
+      {currentTab === 'STATION' ? (
+        <div className="flex-1 flex flex-col max-w-lg mx-auto w-full space-y-3 min-h-0 pt-1">
+          {/* Tighter constraints for the camera view to prevent button overlap */}
+          <div className={`relative flex-1 rounded-[2rem] overflow-hidden border-[4px] shadow-lg transition-all duration-1000 ${activeRecord ? 'border-emerald-500/10 bg-emerald-950' : 'border-white bg-slate-900'} max-h-[48vh] sm:max-h-[50vh]`}>
+            {/* Minimal Clock Overlay */}
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20">
+              <div className="bg-black/40 backdrop-blur-lg border border-white/5 px-4 py-1.5 rounded-xl text-white text-center">
+                <p className="text-[7px] font-black uppercase tracking-[0.2em] opacity-40">Standard Time</p>
+                <p className="text-lg font-black tabular-nums">{currentTime.toLocaleTimeString('en-US', { hour12: false })}</p>
               </div>
-              <textarea 
-                placeholder="Log activities for this session..."
-                className={`w-full p-5 rounded-[32px] text-sm font-bold min-h-[120px] outline-none shadow-sm border transition-all resize-none ${activeRecord ? 'bg-emerald-50/30 border-emerald-100' : 'bg-slate-50 border-slate-100'}`}
+            </div>
+
+            {cameraEnabled ? (
+              <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-white/40">
+                <CameraOff size={32} className="mb-2 opacity-20" />
+                <p className="font-black uppercase tracking-widest text-[9px] mb-4">{cameraError || 'Camera Offline'}</p>
+                <button onClick={initCamera} className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-black uppercase tracking-widest text-[9px]">Enable Camera</button>
+              </div>
+            )}
+            <canvas ref={canvasRef} className="hidden" />
+            
+            {status === 'loading' && (
+              <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm z-30 flex flex-col items-center justify-center text-white">
+                <RefreshCw className="animate-spin mb-2 text-indigo-400" size={32} />
+                <p className="font-black uppercase tracking-widest text-[9px]">Verifying...</p>
+              </div>
+            )}
+            
+            {/* Contextual Bottom UI (Tighter) */}
+            <div className="absolute bottom-4 left-3 right-3 flex items-center justify-between pointer-events-none gap-2">
+              <div className="bg-black/30 backdrop-blur-md border border-white/5 px-3 py-1.5 rounded-full text-white">
+                 <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest">
+                   <MapPin size={10} className={location ? 'text-emerald-400' : 'text-rose-400'} />
+                   <span className="truncate max-w-[70px]">{location ? location.address : 'GPS Linking...'}</span>
+                 </div>
+              </div>
+              <div className="bg-emerald-500/10 backdrop-blur-md border border-emerald-500/20 px-3 py-1.5 rounded-full text-emerald-400 flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest">
+                <ShieldCheck size={10} /> Verified
+              </div>
+            </div>
+          </div>
+
+          {/* Action Center - Optimized for Visibility above Nav Bar */}
+          <div className="space-y-2 bg-white p-4 rounded-[1.5rem] border border-slate-100 shadow-md">
+            <div className="relative">
+               <input 
+                type="text"
+                placeholder="Session notes (Optional)"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-bold outline-none focus:ring-2 focus:ring-indigo-100 transition-all"
                 value={remarks}
                 onChange={e => setRemarks(e.target.value)}
               />
-              <button 
-                onClick={handlePunch}
-                disabled={!location || status !== 'idle' || !cameraEnabled}
-                className={`w-full py-6 rounded-[32px] font-black uppercase tracking-[0.2em] text-sm shadow-2xl transition-all disabled:opacity-40 flex items-center justify-center gap-4 ${
-                  activeRecord ? 'bg-rose-600 text-white shadow-rose-100' : 'bg-indigo-600 text-white shadow-indigo-100'
-                }`}
-              >
-                {activeRecord ? <LogOut size={24} /> : <Camera size={24} />}
-                {activeRecord ? 'Clock Out' : 'Clock In'}
-              </button>
+            </div>
+            
+            <button 
+              onClick={handlePunch}
+              disabled={!location || status !== 'idle' || !cameraEnabled}
+              className={`w-full py-4 rounded-lg font-black uppercase tracking-[0.1em] text-[11px] shadow-lg transition-all active:scale-[0.97] flex items-center justify-center gap-2 ${
+                activeRecord ? 'bg-rose-600 text-white' : 'bg-indigo-600 text-white'
+              }`}
+            >
+              {activeRecord ? <LogOut size={14}/> : <CalendarCheck size={14}/>}
+              {activeRecord ? 'End Session' : 'Clock In Now'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-auto no-scrollbar space-y-5 animate-in slide-in-from-bottom-8 duration-700">
+          {/* Summary Dashboard */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <div className="bg-white p-4 rounded-[1.5rem] border border-slate-100 shadow-sm col-span-2 flex flex-col justify-between">
+              <div className="flex justify-between items-start mb-3">
+                <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg"><CalendarCheck size={18} /></div>
+                <span className="text-[7px] font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">Monthly</span>
+              </div>
+              <div>
+                <h4 className="text-xl font-black text-slate-900 tabular-nums">{analytics.present}</h4>
+                <p className="text-[7px] text-slate-400 font-bold uppercase mt-0.5">Days Logged</p>
+              </div>
+            </div>
+            
+            <div className="bg-white p-4 rounded-[1.5rem] border border-slate-100 shadow-sm flex flex-col justify-between">
+              <div className="p-1.5 bg-amber-50 text-amber-600 rounded-lg w-fit mb-2"><Clock size={18} /></div>
+              <div>
+                <h4 className="text-lg font-black text-slate-900 tabular-nums">{analytics.late}</h4>
+                <p className="text-[7px] text-slate-400 font-black uppercase">Late</p>
+              </div>
             </div>
 
-            <div className="space-y-8">
-              <div className="grid grid-cols-2 gap-6">
-                <div className={`p-6 rounded-[32px] border flex flex-col justify-between h-40 transition-all ${location ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100 animate-pulse'}`}>
-                   <Navigation size={20} className="text-indigo-500" />
-                   <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">GPS Lock</p>
-                      <p className="text-sm font-black text-slate-900 truncate leading-tight">{location ? location.address : 'Scanning...'}</p>
-                   </div>
-                </div>
-                <div className="p-6 rounded-[32px] border bg-indigo-50 border-indigo-100 flex flex-col justify-between h-40">
-                   <ShieldCheck size={20} className="text-indigo-500" />
-                   <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Biometric Status</p>
-                      <p className="text-sm font-black text-slate-900 leading-tight">{cameraEnabled ? 'Live Feed Active' : 'Offline'}</p>
-                   </div>
-                </div>
+            <div className="bg-white p-4 rounded-[1.5rem] border border-slate-100 shadow-sm flex flex-col justify-between">
+              <div className="p-1.5 bg-rose-50 text-rose-600 rounded-lg w-fit mb-2"><UserMinus size={18} /></div>
+              <div>
+                <h4 className="text-lg font-black text-slate-900 tabular-nums">{analytics.absent}</h4>
+                <p className="text-[7px] text-slate-400 font-black uppercase">Absent</p>
               </div>
-              <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm p-8 flex-1 overflow-hidden flex flex-col">
-                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight flex items-center gap-2 mb-6">
-                  <History size={20} className="text-indigo-600" /> Personal Daily Log
-                </h3>
-                <div className="space-y-4 overflow-y-auto pr-1 flex-1 no-scrollbar">
-                   {todayHistory.length === 0 ? (
-                      <div className="py-12 text-center text-slate-300">
-                        <p className="text-xs font-black uppercase">No records today</p>
-                      </div>
-                   ) : todayHistory.map((h, i) => (
-                      <div key={i} className="flex items-center justify-between p-5 bg-slate-50 border border-slate-100 rounded-3xl group">
-                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-white shadow-sm overflow-hidden">
-                               {h.selfie && <img src={h.selfie} className="w-full h-full object-cover" />}
-                            </div>
-                            <div>
-                               <p className="text-[10px] font-bold text-slate-500">In: {h.checkIn} — {h.checkOut || 'Active'}</p>
-                               <div className="mt-1">{getStatusBadge(h.status)}</div>
-                            </div>
-                         </div>
-                         <div className={`px-3 py-1 rounded-full text-[8px] font-black uppercase ${h.checkOut ? 'bg-slate-200 text-slate-400' : 'bg-emerald-500 text-white animate-pulse'}`}>
-                            {h.checkOut ? 'Completed' : 'Running'}
-                         </div>
-                      </div>
-                   ))}
+            </div>
+
+            <div className="bg-white p-4 rounded-[1.5rem] border border-slate-100 shadow-sm flex flex-col justify-between col-span-2">
+              <div className="flex justify-between items-start mb-3">
+                <div className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg"><Briefcase size={18} /></div>
+                <span className="text-[7px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Leaves</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                   <h4 className="text-lg font-black text-slate-900 tabular-nums">{analytics.totalLeavesThisYear}</h4>
+                   <p className="text-[7px] text-slate-400 font-black uppercase tracking-tight">Approved</p>
+                </div>
+                <div>
+                   <h4 className="text-lg font-black text-slate-900 tabular-nums">{analytics.pendingLeaves}</h4>
+                   <p className="text-[7px] text-slate-400 font-black uppercase tracking-tight">Pending</p>
                 </div>
               </div>
             </div>
           </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div className="lg:col-span-2 space-y-3">
+              <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-base font-black text-slate-900 flex items-center gap-2"><History size={18} className="text-indigo-600" /> Monthly Audit</h3>
+                  <span className="text-[7px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">Current</span>
+                </div>
+                <div className="space-y-2">
+                  {analytics.monthlyHistory.map((h, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-xl group hover:bg-white hover:shadow-sm transition-all">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-white shadow-sm overflow-hidden flex items-center justify-center cursor-zoom-in" onClick={() => h.selfie && setPreviewSelfie(h.selfie)}>
+                          {h.selfie ? <img src={h.selfie} className="w-full h-full object-cover" /> : <Clock size={14} className="text-slate-200" />}
+                        </div>
+                        <div>
+                          <p className="text-xs font-black text-slate-900 tabular-nums">{new Date(h.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5 text-[8px] font-bold text-slate-400 uppercase tracking-tight">
+                            {h.checkIn} — {h.checkOut || <span className="text-indigo-600 animate-pulse">Live</span>}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(h.status)}
+                        <ChevronRight size={14} className="text-slate-300" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="bg-[#0f172a] p-6 rounded-[1.5rem] text-white shadow-xl">
+                 <h3 className="text-xs font-black mb-4 flex items-center gap-2 text-indigo-400"><TrendingUp size={16}/> Recent</h3>
+                 <div className="space-y-3">
+                    {analytics.lastThreeDays.map((h, i) => (
+                      <div key={i} className="p-3 bg-white/5 rounded-xl border border-white/10">
+                        <div className="flex justify-between items-start mb-0.5">
+                          <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest">{new Date(h.date).toLocaleDateString()}</p>
+                          {getStatusBadge(h.status)}
+                        </div>
+                        <p className="font-black text-[10px]">Shift {h.checkIn} → {h.checkOut || 'Active'}</p>
+                      </div>
+                    ))}
+                 </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Selfie Detail Modal */}
+      {previewSelfie && (
+        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-2xl z-[150] flex items-center justify-center p-4 animate-in fade-in zoom-in duration-300" onClick={() => setPreviewSelfie(null)}>
+           <div className="max-w-md w-full aspect-square rounded-[2rem] overflow-hidden border-4 border-white/5 shadow-2xl relative">
+              <img src={previewSelfie} className="w-full h-full object-cover scale-x-[-1]" />
+              <button className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-white hover:text-black transition-all" onClick={() => setPreviewSelfie(null)}>
+                <X size={16} />
+              </button>
+           </div>
+        </div>
+      )}
     </div>
   );
 };

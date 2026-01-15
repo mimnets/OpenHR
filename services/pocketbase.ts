@@ -1,17 +1,46 @@
-
 import PocketBase from 'https://esm.sh/pocketbase@0.25.0';
 
+/**
+ * PocketBase Configuration Service
+ * Optimized for Production Builds
+ */
+
+// Detect environment variables across different bundlers (Vite/CRA)
+const getEnvUrl = () => {
+  const metaEnv = (import.meta as any).env;
+  const procEnv = typeof process !== 'undefined' ? process.env : {};
+
+  return (
+    metaEnv?.VITE_POCKETBASE_URL || 
+    metaEnv?.REACT_APP_POCKETBASE_URL || 
+    procEnv?.VITE_POCKETBASE_URL || 
+    procEnv?.REACT_APP_POCKETBASE_URL || 
+    ''
+  );
+};
+
+const ENV_POCKETBASE_URL = getEnvUrl();
+
 export const getPocketBaseConfig = () => {
+  // Priority 1: Environment Variable (Injected at Build Time)
+  if (ENV_POCKETBASE_URL && ENV_POCKETBASE_URL.length > 5) {
+    return { url: ENV_POCKETBASE_URL, source: 'ENV' };
+  }
+
+  // Priority 2: localStorage (Manual Runtime Override)
   const saved = localStorage.getItem('pocketbase_config');
   if (saved) {
     try {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      if (parsed.url) return parsed;
     } catch (e) {
       console.error("Failed to parse local PocketBase config", e);
     }
   }
+
+  // Priority 3: Development Fallback
   return {
-    url: '',
+    url: 'https://pocketbase.mimnets.com',
     source: 'NONE'
   };
 };
@@ -19,15 +48,16 @@ export const getPocketBaseConfig = () => {
 const getCleanUrl = (url: string) => {
   if (!url) return '';
   
-  // 1. Remove whitespace and trailing slashes
+  // Normalize whitespace and remove trailing slashes
   let cleaned = url.trim().replace(/\/+$/, '');
   
-  // 2. Remove trailing /api if the user included it (the SDK adds it automatically)
+  // Strip trailing /api if added manually (SDK appends it)
   cleaned = cleaned.replace(/\/api$/, '');
 
-  // 3. Ensure protocol exists
+  // Force HTTPS in production unless it's a local/development IP
   if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
-    cleaned = 'http://' + cleaned;
+    const isLocal = cleaned.includes('localhost') || cleaned.includes('127.0.0.1') || cleaned.match(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/);
+    cleaned = (isLocal ? 'http://' : 'https://') + cleaned;
   }
   
   return cleaned;
@@ -36,15 +66,17 @@ const getCleanUrl = (url: string) => {
 const config = getPocketBaseConfig();
 const finalUrl = getCleanUrl(config.url);
 
-// IMPORTANT: Disable autoCancellation to prevent simultaneous requests from killing each other
+// Initialize the PocketBase client
 export const pb = finalUrl ? new PocketBase(finalUrl) : null;
+
 if (pb) {
+  // CRITICAL: Disable autoCancellation to prevent concurrent requests from killing each other
   pb.autoCancellation(false);
 }
 
 export const isPocketBaseConfigured = () => {
-  const config = getPocketBaseConfig();
-  return !!(config.url && config.url.trim().length > 5);
+  const currentConfig = getPocketBaseConfig();
+  return !!(currentConfig.url && currentConfig.url.trim().length > 5);
 };
 
 export const updatePocketBaseConfig = (newConfig: any, shouldReload = true) => {

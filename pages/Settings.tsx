@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Network, Shield, Globe, Database, Lock, User, ArrowLeft, Save, RefreshCw, Server, Key, Activity, AlertCircle, Clock, Timer, UserCircle, Mail, Phone, Briefcase, CreditCard
@@ -106,7 +105,7 @@ const Settings: React.FC<SettingsProps> = ({ user, onBack }) => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className={`grid grid-cols-1 ${isAdmin ? 'lg:grid-cols-3' : 'lg:grid-cols-2'} gap-8`}>
         <div className="lg:col-span-2 space-y-8">
           
           {/* PERSONAL PROFILE TAB (For Everyone) */}
@@ -152,15 +151,29 @@ const Settings: React.FC<SettingsProps> = ({ user, onBack }) => {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Current Role</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Department</label>
                   <div className="relative">
-                    <Shield className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                    <select className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm outline-none" value={profile.role || 'EMPLOYEE'} onChange={e => setProfile({...profile, role: e.target.value as any})}>
-                       <option value="EMPLOYEE">Employee</option>
-                       <option value="MANAGER">Manager</option>
-                       <option value="HR">HR Specialist</option>
-                       <option value="ADMIN">Administrator</option>
-                    </select>
+                    <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                    <input 
+                      type="text" 
+                      disabled={!isAdmin}
+                      className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm outline-none disabled:opacity-60" 
+                      value={profile.department || ''} 
+                      onChange={e => setProfile({...profile, department: e.target.value})} 
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Designation</label>
+                  <div className="relative">
+                    <UserCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                    <input 
+                      type="text" 
+                      disabled={!isAdmin}
+                      className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm outline-none disabled:opacity-60" 
+                      value={profile.designation || ''} 
+                      onChange={e => setProfile({...profile, designation: e.target.value})} 
+                    />
                   </div>
                 </div>
               </div>
@@ -216,25 +229,27 @@ const Settings: React.FC<SettingsProps> = ({ user, onBack }) => {
           )}
         </div>
 
-        <div className="space-y-6">
-           <div className="bg-[#0f172a] rounded-[2.5rem] p-8 text-white shadow-2xl">
-              <h3 className="font-black text-lg mb-4 flex items-center gap-2"><Globe className="text-indigo-400" /> Global Environment</h3>
-              <div className="space-y-4">
-                 <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Company Entity</p>
-                    <p className="font-bold text-sm truncate">{config.companyName}</p>
-                 </div>
-                 <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Auth Identity</p>
-                    <p className="font-bold text-sm truncate">{user.email}</p>
-                 </div>
-                 <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Local Network IP</p>
-                    <p className="font-mono text-xs text-indigo-300">{pbConfig.url}</p>
-                 </div>
-              </div>
-           </div>
-        </div>
+        {isAdmin && (
+          <div className="space-y-6">
+             <div className="bg-[#0f172a] rounded-[2.5rem] p-8 text-white shadow-2xl">
+                <h3 className="font-black text-lg mb-4 flex items-center gap-2"><Globe className="text-indigo-400" /> Global Environment</h3>
+                <div className="space-y-4">
+                   <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Company Entity</p>
+                      <p className="font-bold text-sm truncate">{config.companyName}</p>
+                   </div>
+                   <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Auth Identity</p>
+                      <p className="font-bold text-sm truncate">{user.email}</p>
+                   </div>
+                   <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Local Network IP</p>
+                      <p className="font-mono text-xs text-indigo-300">{pbConfig.url}</p>
+                   </div>
+                </div>
+             </div>
+          </div>
+        )}
       </div>
 
       <div className="flex justify-end pt-4">

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   LayoutDashboard, 
@@ -66,15 +65,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPath, onNavigate, onLogout, ro
         ))}
       </nav>
 
-      <div className="p-4 border-t border-slate-800">
-        <div className="bg-slate-800/50 p-3 rounded-xl mb-4">
-          <div className="flex items-center gap-2 text-xs text-slate-400 mb-2">
-            <ShieldCheck size={14} className="text-emerald-500" />
-            <span>Compliance Active</span>
-          </div>
-          <p className="text-[10px] text-slate-500">v2.5.0 (PocketBase)</p>
-        </div>
-        
+      <div className="p-4 border-t border-slate-800 space-y-2">
         <button 
           onClick={onLogout}
           className="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-rose-900/40 rounded-lg transition-all"
@@ -82,6 +73,14 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPath, onNavigate, onLogout, ro
           <LogOut size={20} />
           <span className="font-medium">Sign Out</span>
         </button>
+
+        <div className="bg-slate-800/50 p-3 rounded-xl">
+          <div className="flex items-center gap-2 text-xs text-slate-400 mb-1">
+            <ShieldCheck size={14} className="text-emerald-500" />
+            <span>Compliance Active</span>
+          </div>
+          <p className="text-[10px] text-slate-500">v2.5.0 (PocketBase)</p>
+        </div>
       </div>
     </aside>
   );
