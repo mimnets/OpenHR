@@ -12,7 +12,8 @@ import {
   History as HistoryIcon,
   Loader2,
   FileText,
-  CalendarDays
+  CalendarDays,
+  RefreshCw
 } from 'lucide-react';
 import { hrService } from '../services/hrService';
 import { emailService } from '../services/emailService';
@@ -27,6 +28,7 @@ const Leave: React.FC<{ user: any }> = ({ user }) => {
   const [showReviewModal, setShowReviewModal] = useState<LeaveRequest | null>(null);
   const [reviewRemarks, setReviewRemarks] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   const [formData, setFormData] = useState({ 
     type: 'ANNUAL', 
@@ -78,9 +80,9 @@ const Leave: React.FC<{ user: any }> = ({ user }) => {
 
   const handleSubmitLeave = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsProcessing(true);
     const days = calculateDays(formData.start, formData.end);
     
-    // Find current user's line manager
     const me = allEmployees.find(emp => emp.id === user.id);
     const lineManagerId = me?.lineManagerId;
 
@@ -95,10 +97,10 @@ const Leave: React.FC<{ user: any }> = ({ user }) => {
         });
       } else {
         await hrService.saveLeaveRequest({
-          id: '', // PocketBase generates ID
+          id: '', 
           employeeId: user.id,
           employeeName: user.name,
-          lineManagerId: lineManagerId, // Pass the user added field
+          lineManagerId: lineManagerId,
           type: formData.type as any,
           startDate: formData.start,
           endDate: formData.end,
@@ -114,31 +116,29 @@ const Leave: React.FC<{ user: any }> = ({ user }) => {
       setEditingRequest(null);
       setFormData({ type: 'ANNUAL', start: '', end: '', reason: '' });
     } catch (err) {
-      alert("Failed to submit leave. Check your collection fields in PocketBase.");
+      alert("Submission failed. Ensure 'leaves' collection is correctly configured in PocketBase.");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const handleAction = async (request: LeaveRequest, action: 'APPROVED' | 'REJECTED') => {
+    setIsProcessing(true);
     let decisionRole = user.role;
     if (request.status === 'PENDING_MANAGER' && !isAdmin) {
        decisionRole = 'MANAGER';
     }
 
-    await hrService.updateLeaveStatus(request.id, action, reviewRemarks, decisionRole);
-    
-    const emp = allEmployees.find(e => e.id === request.employeeId);
-    const config = await hrService.getConfig();
-    if (emp && config.smtp?.isActive) {
-      const currentLeaves = await hrService.getLeaves();
-      const updatedRequest = currentLeaves.find(l => l.id === request.id);
-      if (updatedRequest && (updatedRequest.status === 'APPROVED' || updatedRequest.status === 'REJECTED')) {
-        await emailService.sendLeaveStatusAlert(updatedRequest, emp);
-      }
+    try {
+      // Backend JS Hook (onRecordAfterUpdate) handles the email notification automatically
+      await hrService.updateLeaveStatus(request.id, action, reviewRemarks, decisionRole);
+      
+      await refreshData();
+      setShowReviewModal(null);
+      setReviewRemarks('');
+    } finally {
+      setIsProcessing(false);
     }
-
-    await refreshData();
-    setShowReviewModal(null);
-    setReviewRemarks('');
   };
 
   const getFilteredLeavesForManagement = () => {
@@ -182,7 +182,7 @@ const Leave: React.FC<{ user: any }> = ({ user }) => {
               <button onClick={() => setActiveTab('MY')} className={`px-6 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'MY' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>My Portal</button>
             </div>
           )}
-          <button onClick={() => { setShowForm(true); }} className="flex items-center gap-2 px-6 py-3.5 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl hover:bg-indigo-700">
+          <button onClick={() => { setShowForm(true); }} className="flex items-center gap-2 px-6 py-3.5 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl hover:bg-indigo-700 transition-all">
             <Plus size={18} /> New Request
           </button>
         </div>
@@ -218,11 +218,17 @@ const Leave: React.FC<{ user: any }> = ({ user }) => {
             {activeTab === 'MY' ? <HistoryIcon className="text-indigo-600" /> : <Filter className="text-indigo-600" />}
             {activeTab === 'MY' ? 'Application History' : 'Action Queue'}
           </h3>
+          {activeTab === 'MANAGEMENT' && (
+            <div className="flex p-1 bg-slate-50 rounded-xl border border-slate-200">
+               <button onClick={() => setFilterMode('TASKS')} className={`px-4 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all ${filterMode === 'TASKS' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>To Review</button>
+               <button onClick={() => setFilterMode('ALL')} className={`px-4 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all ${filterMode === 'ALL' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>All History</button>
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">
           {(activeTab === 'MY' ? myLeaves : managementLeaves).sort((a,b) => b.appliedDate.localeCompare(a.appliedDate)).map(req => (
-            <div key={req.id} className="p-6 rounded-[32px] bg-slate-50 border border-slate-100 flex items-center justify-between">
+            <div key={req.id} className="p-6 rounded-[32px] bg-slate-50 border border-slate-100 flex items-center justify-between group hover:bg-white hover:shadow-lg transition-all">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center font-black text-indigo-600 shadow-sm uppercase">{req.employeeName[0]}</div>
                 <div>
@@ -232,7 +238,7 @@ const Leave: React.FC<{ user: any }> = ({ user }) => {
               </div>
               <div className="flex items-center gap-3">
                 {activeTab === 'MANAGEMENT' && (req.status.includes('PENDING')) ? (
-                  <button onClick={() => setShowReviewModal(req)} className="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Review</button>
+                  <button onClick={() => setShowReviewModal(req)} className="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all">Review</button>
                 ) : (
                   <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase ${req.status === 'APPROVED' ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-500'}`}>
                     {req.status.replace('_', ' ')}
@@ -257,10 +263,9 @@ const Leave: React.FC<{ user: any }> = ({ user }) => {
                 <div className="p-2 bg-white/20 rounded-xl"><UserCheck size={20}/></div>
                 <h3 className="text-xl font-black uppercase tracking-tight">{showReviewModal.status === 'PENDING_HR' ? 'HR Final Approval' : 'Review & Verify'}</h3>
               </div>
-              <button onClick={() => setShowReviewModal(null)} className="hover:bg-white/10 p-2 rounded-xl"><X size={28} /></button>
+              <button onClick={() => setShowReviewModal(null)}><X size={28} /></button>
             </div>
             <div className="p-10 space-y-6 max-h-[75vh] overflow-y-auto no-scrollbar">
-              {/* Detailed Summary Card */}
               <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-6">
                  <div className="flex items-center gap-4 border-b border-slate-200 pb-4">
                     <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center font-black text-indigo-600 shadow-sm uppercase text-xl">{showReviewModal.employeeName[0]}</div>
@@ -269,40 +274,26 @@ const Leave: React.FC<{ user: any }> = ({ user }) => {
                       <p className="font-black text-slate-900 text-lg leading-none">{showReviewModal.employeeName}</p>
                     </div>
                  </div>
-
-                 <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1"><CalendarDays size={10} className="text-indigo-600" /> Date Range</p>
-                       <p className="text-xs font-black text-slate-700">{showReviewModal.startDate} to {showReviewModal.endDate}</p>
-                    </div>
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1"><Clock size={10} className="text-indigo-600" /> Duration</p>
-                       <p className="text-xs font-black text-slate-700">{showReviewModal.totalDays} Work Days ({showReviewModal.type})</p>
-                    </div>
-                 </div>
-
                  <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1"><FileText size={10} className="text-indigo-600" /> Reason for Leave</p>
-                    <p className="text-sm font-medium text-slate-600 italic">
-                      {showReviewModal.reason ? `"${showReviewModal.reason}"` : "No reason provided."}
-                    </p>
+                    <p className="text-sm font-medium text-slate-600 italic">"{showReviewModal.reason || "No reason provided."}"</p>
                  </div>
               </div>
 
               <div className="space-y-3">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Your Evaluation / Remarks</label>
                 <textarea 
-                  placeholder="Provide context for your decision..."
-                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-3xl text-sm font-bold min-h-[100px] outline-none focus:ring-4 focus:ring-indigo-50 transition-all"
+                  placeholder="Evaluation remarks..."
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-3xl text-sm font-bold min-h-[100px] outline-none"
                   value={reviewRemarks}
                   onChange={e => setReviewRemarks(e.target.value)}
                 />
               </div>
 
               <div className="flex gap-4 pt-4">
-                <button onClick={() => handleAction(showReviewModal, 'REJECTED')} className="flex-1 py-5 bg-rose-50 text-rose-600 rounded-[32px] font-black uppercase text-[10px] tracking-widest hover:bg-rose-100 transition-all">Reject Application</button>
-                <button onClick={() => handleAction(showReviewModal, 'APPROVED')} className="flex-1 py-5 bg-indigo-600 text-white rounded-[32px] font-black uppercase text-[10px] tracking-widest shadow-2xl hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
-                   Confirm Approval <ArrowRight size={16} />
+                <button disabled={isProcessing} onClick={() => handleAction(showReviewModal, 'REJECTED')} className="flex-1 py-5 bg-rose-50 text-rose-600 rounded-[32px] font-black uppercase text-[10px] tracking-widest hover:bg-rose-100 transition-all">Reject</button>
+                <button disabled={isProcessing} onClick={() => handleAction(showReviewModal, 'APPROVED')} className="flex-1 py-5 bg-indigo-600 text-white rounded-[32px] font-black uppercase text-[10px] tracking-widest shadow-2xl hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
+                   {isProcessing ? <RefreshCw className="animate-spin" size={16} /> : <><ArrowRight size={16} /> Approve</>}
                 </button>
               </div>
             </div>
@@ -331,7 +322,9 @@ const Leave: React.FC<{ user: any }> = ({ user }) => {
                 <input type="date" required className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-3xl font-bold text-sm" value={formData.end} onChange={e => setFormData({...formData, end: e.target.value})} />
               </div>
               <textarea required placeholder="Briefly describe the reason..." className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-3xl font-bold text-sm min-h-[100px] outline-none" value={formData.reason} onChange={e => setFormData({...formData, reason: e.target.value})} />
-              <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-[32px] font-black uppercase tracking-widest text-[10px] shadow-xl flex items-center justify-center gap-2">Send Application <Send size={16} /></button>
+              <button type="submit" disabled={isProcessing} className="w-full py-5 bg-indigo-600 text-white rounded-[32px] font-black uppercase tracking-widest text-[10px] shadow-xl flex items-center justify-center gap-2">
+                 {isProcessing ? <RefreshCw className="animate-spin" size={16} /> : <><Send size={16} /> Send Application</>}
+              </button>
             </form>
           </div>
         </div>

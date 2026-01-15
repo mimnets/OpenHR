@@ -8,7 +8,7 @@ const cleanPayload = (data: any) => {
   const systemFields = [
     'id', 'created', 'updated', 'collectionId', 'collectionName', 
     'expand', 'username', 'verified', 'emailVisibility',
-    'lineManagerId', 'employeeId'
+    'managerName', 'managerEmail'
   ];
   const cleaned = { ...data };
   systemFields.forEach(field => delete cleaned[field]);
@@ -83,7 +83,7 @@ const mapAttendance = (r: any): Attendance => ({
   checkIn: r.check_in,
   checkOut: r.check_out || "",
   employeeName: r.employee_name,
-  employeeId: r.employee_id,
+  employeeId: r.employee_id || "", 
   location: parseLocation(r.location),
   selfie: r.selfie ? pb.files.getURL(r, r.selfie) : undefined,
   status: r.status as any,
@@ -109,7 +109,7 @@ export const hrService = {
       const m = authData.record;
       const userObj: User = {
         id: m.id,
-        employeeId: m.employee_id || m.id,
+        employeeId: m.employee_id || '', 
         email: m.email,
         name: m.name || 'User',
         role: (m.role || 'EMPLOYEE').toString().toUpperCase() as any,
@@ -131,12 +131,17 @@ export const hrService = {
   async getEmployees(): Promise<Employee[]> {
     if (!pb || !isPocketBaseConfigured()) return [];
     try {
-      const records = await pb.collection('users').getFullList({ sort: '-created' });
+      const records = await pb.collection('users').getFullList({ 
+        sort: '-created',
+        expand: 'line_manager_id'
+      });
       return records.map(r => ({
         ...r,
         id: r.id,
-        employeeId: r.employee_id || r.id,
+        employeeId: r.employee_id || '', 
         lineManagerId: r.line_manager_id || undefined, 
+        managerName: r.expand?.line_manager_id?.name || 'Not Assigned',
+        managerEmail: r.expand?.line_manager_id?.email || '',
         name: r.name || 'No Name',
         email: r.email,
         role: (r.role || 'EMPLOYEE').toString().toUpperCase(),
@@ -149,20 +154,36 @@ export const hrService = {
 
   async addEmployee(emp: Partial<Employee>) {
     if (!pb || !isPocketBaseConfigured()) return;
-    const payload = {
-      ...emp,
-      role: (emp.role || 'EMPLOYEE').toUpperCase(),
-      employee_id: emp.employeeId, 
-      line_manager_id: emp.lineManagerId || null, 
-      password: emp.password || 'OpenHR@123',
-      passwordConfirm: emp.password || 'OpenHR@123',
-      emailVisibility: true,
-    };
-    const cleaned = cleanPayload(payload);
-    if (payload.avatar && payload.avatar.startsWith('data:')) {
-      await pb.collection('users').create(toFormData(cleaned, 'avatar.jpg'));
+    const pbData: any = cleanPayload(emp);
+    pbData.role = (emp.role || 'EMPLOYEE').toUpperCase();
+    pbData.employee_id = emp.employeeId || '';
+    pbData.line_manager_id = emp.lineManagerId || null; 
+    pbData.password = emp.password || 'OpenHR@123';
+    pbData.passwordConfirm = emp.password || 'OpenHR@123';
+    pbData.emailVisibility = true;
+
+    if (emp.avatar && emp.avatar.startsWith('data:')) {
+      await pb.collection('users').create(toFormData(pbData, 'avatar.jpg'));
     } else {
-      await pb.collection('users').create(cleaned);
+      await pb.collection('users').create(pbData);
+    }
+    this.notify();
+  },
+
+  async updateProfile(id: string, updates: Partial<Employee>) {
+    if (!pb || !isPocketBaseConfigured()) return;
+    const pbData: any = cleanPayload(updates);
+    if (updates.role) pbData.role = updates.role.toUpperCase();
+    if (updates.employeeId !== undefined) pbData.employee_id = updates.employeeId;
+    if (updates.lineManagerId !== undefined) pbData.line_manager_id = updates.lineManagerId || null; 
+    
+    if (updates.avatar && updates.avatar.startsWith('data:')) {
+      await pb.collection('users').update(id, toFormData(pbData, 'avatar.jpg'));
+    } else {
+      if (pbData.avatar && typeof pbData.avatar === 'string' && pbData.avatar.startsWith('http')) {
+        delete pbData.avatar;
+      }
+      await pb.collection('users').update(id, pbData);
     }
     this.notify();
   },
@@ -172,23 +193,6 @@ export const hrService = {
       await pb.collection('users').delete(id);
       this.notify();
     }
-  },
-
-  async updateProfile(id: string, updates: Partial<Employee>) {
-    if (!pb || !isPocketBaseConfigured()) return;
-    const pbData: any = cleanPayload(updates);
-    if (updates.role) pbData.role = updates.role.toUpperCase();
-    if (updates.employeeId !== undefined) pbData.employee_id = updates.employeeId;
-    if (updates.lineManagerId !== undefined) pbData.line_manager_id = updates.lineManagerId || null; 
-    if (!pbData.password) delete pbData.password;
-    delete pbData.emailVisibility;
-    if (updates.avatar && updates.avatar.startsWith('data:')) {
-      await pb.collection('users').update(id, toFormData(pbData, 'avatar.jpg'));
-    } else {
-      if (pbData.avatar && pbData.avatar.startsWith('http')) delete pbData.avatar;
-      await pb.collection('users').update(id, pbData);
-    }
-    this.notify();
   },
 
   async getAttendance(): Promise<Attendance[]> {
@@ -221,9 +225,7 @@ export const hrService = {
         return mapAttendance(result.items[0]);
       }
       return undefined;
-    } catch (e) { 
-      return undefined; 
-    }
+    } catch (e) { return undefined; }
   },
 
   async saveAttendance(data: Attendance) {
@@ -262,19 +264,6 @@ export const hrService = {
     this.notify();
   },
 
-  async autoCheckOutStaleSessions() {
-    if (!pb || !isPocketBaseConfigured()) return 0;
-    try {
-      const stale = await pb.collection('attendance').getFullList({
-        filter: 'check_out = "" && created < @now' 
-      });
-      for (const s of stale) {
-        await pb.collection('attendance').update(s.id, { check_out: '23:59', remarks: 'Auto Clock-out' });
-      }
-      return stale.length;
-    } catch (e) { return 0; }
-  },
-
   async getLeaves(): Promise<LeaveRequest[]> {
     if (!pb || !isPocketBaseConfigured()) return [];
     try {
@@ -287,7 +276,7 @@ export const hrService = {
         appliedDate: r.applied_date,
         approverRemarks: r.approver_remarks,
         managerRemarks: r.manager_remarks,
-        employeeId: r.employee_id, 
+        employeeId: r.employee_id || "", 
         employeeName: r.employee_name,
         lineManagerId: r.line_manager_id || undefined
       })) as any;
@@ -322,10 +311,15 @@ export const hrService = {
 
   async modifyLeaveRequest(id: string, updates: Partial<LeaveRequest>) {
     if (!pb || !isPocketBaseConfigured()) return;
-    const pbUpdates: any = cleanPayload(updates);
-    if (updates.startDate) pbUpdates.start_date = updates.startDate;
-    if (updates.endDate) pbUpdates.end_date = updates.endDate;
-    if (updates.totalDays) pbUpdates.total_days = updates.totalDays;
+    const pbUpdates: any = {};
+    if (updates.type !== undefined) pbUpdates.type = updates.type;
+    if (updates.startDate !== undefined) pbUpdates.start_date = updates.startDate;
+    if (updates.endDate !== undefined) pbUpdates.end_date = updates.endDate;
+    if (updates.totalDays !== undefined) pbUpdates.total_days = updates.totalDays;
+    if (updates.reason !== undefined) pbUpdates.reason = updates.reason;
+    if (updates.status !== undefined) pbUpdates.status = updates.status;
+    if (updates.lineManagerId !== undefined) pbUpdates.line_manager_id = updates.lineManagerId || null;
+
     await pb.collection('leaves').update(id, pbUpdates);
     this.notify();
   },
@@ -342,6 +336,21 @@ export const hrService = {
       await pb.collection('leaves').update(id, update);
       this.notify();
     } catch (e) { }
+  },
+
+  async sendCustomEmail(payload: { recipientEmail: string, subject?: string, html: string }) {
+    if (!pb || !isPocketBaseConfigured()) return;
+    try {
+        // ENSURE field names match exactly what pb_hooks/main.pb.js expects
+        return await pb.collection('reports_queue').create({
+            recipient_email: payload.recipientEmail,
+            subject: payload.subject || "OpenHR Report",
+            html_content: payload.html
+        });
+    } catch (err: any) {
+        console.error("PocketBase Email Queueing Error: ", err);
+        throw err;
+    }
   },
 
   async getConfig(): Promise<AppConfig> {

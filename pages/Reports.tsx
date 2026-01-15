@@ -1,9 +1,9 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
-  FileText, Calendar, Clock, RefreshCw, User as UserIcon, Search, FileSpreadsheet, MapPin, AlertTriangle, Layout, CheckCircle2, CheckCircle, Settings2
+  FileText, Calendar, Clock, RefreshCw, User as UserIcon, Search, FileSpreadsheet, MapPin, AlertTriangle, Layout, CheckCircle2, CheckCircle, Settings2, Mail
 } from 'lucide-react';
 import { hrService } from '../services/hrService';
+import { emailService } from '../services/emailService';
 import { DEPARTMENTS } from '../constants.tsx';
 import { User, Employee, Attendance, LeaveRequest } from '../types';
 
@@ -22,6 +22,7 @@ const Reports: React.FC<ReportsProps> = ({ user }) => {
   const [startDate, setStartDate] = useState(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isEmailing, setIsEmailing] = useState(false);
 
   const [enabledColumns, setEnabledColumns] = useState<Record<string, boolean>>({
     'Employee_ID': true, 'Name': true, 'Date': true, 'Status_Type': true,
@@ -109,13 +110,33 @@ const Reports: React.FC<ReportsProps> = ({ user }) => {
     }, 500);
   };
 
+  const handleEmailSummary = async () => {
+    if (reportData.length === 0) return;
+    setIsEmailing(true);
+    try {
+      // Find today's attendance only for a daily summary
+      const today = new Date().toISOString().split('T')[0];
+      const todayAtt = attendance.filter(a => a.date === today);
+      
+      const config = await hrService.getConfig();
+      const target = config.defaultReportRecipient || user.email;
+      
+      await emailService.sendDailyAttendanceSummary(target, todayAtt);
+      alert(`Daily summary emailed to ${target}.`);
+    } catch (err) {
+      alert("Failed to send email summary. Verify SMTP settings.");
+    } finally {
+      setIsEmailing(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div><h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Data Exports</h1><p className="text-slate-500 font-medium">Generate system-wide audit logs in CSV format</p></div>
+        <div><h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Data Exports</h1><p className="text-slate-500 font-medium">Generate system-wide audit logs and summaries</p></div>
         <div className="flex p-1 bg-white border border-slate-100 rounded-3xl shadow-sm">
-          <button onClick={() => setActiveTab('GENERATOR')} className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'GENERATOR' ? 'bg-slate-900 text-white' : 'text-slate-400'}`}>Generator</button>
-          <button onClick={() => setActiveTab('CONFIG')} className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'CONFIG' ? 'bg-slate-900 text-white' : 'text-slate-400'}`}>Columns</button>
+          <button onClick={() => setActiveTab('GENERATOR')} className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'GENERATOR' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>Generator</button>
+          <button onClick={() => setActiveTab('CONFIG')} className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'CONFIG' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>Columns</button>
         </div>
       </header>
 
@@ -146,6 +167,11 @@ const Reports: React.FC<ReportsProps> = ({ user }) => {
                         <option>Entire Organization</option>
                         {DEPARTMENTS.map(d => <option key={d}>{d}</option>)}
                      </select>
+                  </div>
+                  <div className="pt-4">
+                    <button onClick={handleEmailSummary} disabled={isEmailing} className="w-full py-4 bg-slate-100 text-slate-600 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-indigo-50 hover:text-indigo-600 transition-all">
+                       {isEmailing ? <RefreshCw className="animate-spin" size={16}/> : <Mail size={16}/>} Email Today's Summary
+                    </button>
                   </div>
                 </div>
               </div>

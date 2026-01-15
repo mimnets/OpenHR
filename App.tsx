@@ -37,7 +37,7 @@ const App: React.FC = () => {
 
       setCurrentUser({
         id: model.id,
-        employeeId: model.employee_id || model.id,
+        employeeId: model.employee_id || '', // Standardized to lowercase
         name: model.name || 'User',
         email: model.email,
         role: normalizedRole,
@@ -53,7 +53,7 @@ const App: React.FC = () => {
          const normalized = (m.role || 'EMPLOYEE').toString().toUpperCase() as any;
          setCurrentUser({
             id: m.id,
-            employeeId: m.employee_id || m.id,
+            employeeId: m.employee_id || '', // Standardized to lowercase
             name: m.name || 'User',
             email: m.email,
             role: normalized,

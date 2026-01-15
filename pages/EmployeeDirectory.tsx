@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Search, 
@@ -67,7 +66,7 @@ const EmployeeDirectory: React.FC = () => {
   const initialNewEmpState = {
     name: '',
     email: '',
-    employeeId: '', // Custom ID field
+    employeeId: '', 
     username: '',
     password: '',
     nid: '',
@@ -82,7 +81,8 @@ const EmployeeDirectory: React.FC = () => {
     status: 'ACTIVE' as any,
     employmentType: 'PERMANENT' as any,
     location: 'Dhaka',
-    workType: 'OFFICE' as any
+    workType: 'OFFICE' as any,
+    lineManagerId: ''
   };
 
   const [formState, setFormState] = useState(initialNewEmpState);
@@ -119,10 +119,29 @@ const EmployeeDirectory: React.FC = () => {
   const handleOpenEdit = (emp: Employee) => {
     setEditingId(emp.id);
     setFormError(null);
+    
+    // Cleanly map existing employee to form state, avoiding snake_case DB fields
     setFormState({
-      ...initialNewEmpState,
-      ...emp,
-    } as any);
+      name: emp.name || '',
+      email: emp.email || '',
+      employeeId: emp.employeeId || '', // Strictly uses our custom ID
+      username: emp.username || '',
+      password: '',
+      nid: emp.nid || '',
+      role: (emp.role || 'EMPLOYEE') as any,
+      department: emp.department || '',
+      designation: emp.designation || '',
+      avatar: emp.avatar || '',
+      joiningDate: emp.joiningDate || new Date().toISOString().split('T')[0],
+      mobile: emp.mobile || '',
+      emergencyContact: emp.emergencyContact || '',
+      salary: emp.salary || 0,
+      status: emp.status || 'ACTIVE',
+      employmentType: emp.employmentType || 'PERMANENT',
+      location: emp.location || '',
+      workType: emp.workType || 'OFFICE',
+      lineManagerId: emp.lineManagerId || ''
+    });
     setShowModal(true);
   };
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Network, Shield, Globe, Database, Lock, User, ArrowLeft, Save, RefreshCw, Server, Key, Activity, AlertCircle, Clock, Timer, UserCircle, Mail, Phone, Briefcase, CreditCard
+  Network, Shield, Globe, Database, Lock, User, ArrowLeft, Save, RefreshCw, Server, Key, Activity, AlertCircle, Clock, Timer, UserCircle, Mail, Phone, Briefcase, CreditCard, Hash, UserCheck
 } from 'lucide-react';
 import { hrService } from '../services/hrService';
 import { updatePocketBaseConfig, getPocketBaseConfig } from '../services/pocketbase';
@@ -17,7 +17,7 @@ const Settings: React.FC<SettingsProps> = ({ user, onBack }) => {
   const isAdmin = user.role === 'ADMIN' || user.role === 'HR';
   const [activeTab, setActiveTab] = useState<SettingsTab>('PROFILE');
   const [config, setConfig] = useState<AppConfig | null>(null);
-  const [profile, setProfile] = useState<Partial<Employee> | null>(null);
+  const [profile, setProfile] = useState<Partial<Employee> & { managerName?: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   
   const [pbConfig, setPbConfig] = useState(getPocketBaseConfig());
@@ -25,24 +25,31 @@ const Settings: React.FC<SettingsProps> = ({ user, onBack }) => {
 
   useEffect(() => {
     const load = async () => {
-      const [appConfig, employees] = await Promise.all([
-        hrService.getConfig(),
-        hrService.getEmployees()
-      ]);
-      setConfig(appConfig);
-      
-      const myData = employees.find(e => e.id === user.id);
-      if (myData) {
-        setProfile(myData);
-      } else {
-        // Fallback to basic user info if employee record not found
-        setProfile({
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          department: user.department,
-          designation: user.designation
-        } as any);
+      try {
+        const [appConfig, employees] = await Promise.all([
+          hrService.getConfig(),
+          hrService.getEmployees()
+        ]);
+        setConfig(appConfig);
+        
+        // Find latest data from database to ensure employeeId and managerName are accurate
+        const myData = employees.find(e => e.id === user.id);
+        if (myData) {
+          setProfile(myData);
+        } else {
+          // Fallback to basic session user if record lookup fails
+          setProfile({
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            department: user.department,
+            designation: user.designation,
+            employeeId: user.employeeId,
+            managerName: 'Not Assigned'
+          } as any);
+        }
+      } catch (err) {
+        console.error("Settings load failed:", err);
       }
     };
     load();
@@ -112,8 +119,8 @@ const Settings: React.FC<SettingsProps> = ({ user, onBack }) => {
           {activeTab === 'PROFILE' && (
             <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-10 space-y-8 animate-in slide-in-from-left-4">
               <div className="flex items-center gap-4 border-b border-slate-50 pb-8">
-                <div className="w-20 h-20 bg-indigo-50 rounded-[2rem] flex items-center justify-center text-indigo-600 font-black text-2xl uppercase">
-                   {profile.avatar ? <img src={profile.avatar} className="w-full h-full object-cover rounded-[2rem]" /> : profile.name?.[0]}
+                <div className="w-20 h-20 bg-indigo-50 rounded-[2rem] flex items-center justify-center text-indigo-600 font-black text-2xl uppercase relative overflow-hidden">
+                   {profile.avatar ? <img src={profile.avatar} className="w-full h-full object-cover" /> : profile.name?.[0]}
                 </div>
                 <div>
                    <h3 className="text-xl font-black text-slate-900">{profile.name}</h3>
@@ -122,6 +129,30 @@ const Settings: React.FC<SettingsProps> = ({ user, onBack }) => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Official Employee ID</label>
+                  <div className="relative">
+                    <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                    <input 
+                      type="text" 
+                      readOnly 
+                      className="w-full pl-12 pr-4 py-4 bg-slate-100 border border-slate-200 rounded-2xl font-black text-sm text-slate-500 cursor-not-allowed" 
+                      value={profile.employeeId || 'Not Assigned'} 
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Reporting To</label>
+                  <div className="relative">
+                    <UserCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                    <input 
+                      type="text" 
+                      readOnly 
+                      className="w-full pl-12 pr-4 py-4 bg-slate-100 border border-slate-200 rounded-2xl font-black text-sm text-slate-500 cursor-not-allowed" 
+                      value={profile.managerName || 'No Direct Manager'} 
+                    />
+                  </div>
+                </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Full Name</label>
                   <div className="relative">
@@ -147,7 +178,13 @@ const Settings: React.FC<SettingsProps> = ({ user, onBack }) => {
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Gross Salary (BDT)</label>
                   <div className="relative">
                     <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                    <input type="number" className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm" value={profile.salary || 0} onChange={e => setProfile({...profile, salary: parseInt(e.target.value) || 0})} />
+                    <input 
+                      type="number" 
+                      disabled={!isAdmin}
+                      className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm outline-none disabled:bg-slate-100 disabled:text-slate-500" 
+                      value={profile.salary || 0} 
+                      onChange={e => setProfile({...profile, salary: parseInt(e.target.value) || 0})} 
+                    />
                   </div>
                 </div>
                 <div className="space-y-1.5">
@@ -157,7 +194,7 @@ const Settings: React.FC<SettingsProps> = ({ user, onBack }) => {
                     <input 
                       type="text" 
                       disabled={!isAdmin}
-                      className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm outline-none disabled:opacity-60" 
+                      className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm outline-none disabled:bg-slate-100 disabled:text-slate-500" 
                       value={profile.department || ''} 
                       onChange={e => setProfile({...profile, department: e.target.value})} 
                     />
@@ -170,7 +207,7 @@ const Settings: React.FC<SettingsProps> = ({ user, onBack }) => {
                     <input 
                       type="text" 
                       disabled={!isAdmin}
-                      className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm outline-none disabled:opacity-60" 
+                      className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm outline-none disabled:bg-slate-100 disabled:text-slate-500" 
                       value={profile.designation || ''} 
                       onChange={e => setProfile({...profile, designation: e.target.value})} 
                     />
