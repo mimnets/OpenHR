@@ -217,12 +217,24 @@ export const hrService = {
 
   async getActiveAttendance(employeeId: string): Promise<Attendance | undefined> {
     if (!pb || !isPocketBaseConfigured()) return undefined;
+    const today = new Date().toISOString().split('T')[0];
     try {
       const result = await pb.collection('attendance').getList(1, 1, {
         filter: `employee_id = "${employeeId}" && check_out = ""`
       });
+      
       if (result.items.length > 0) {
-        return mapAttendance(result.items[0]);
+        const item = result.items[0];
+        // AUTO-CLOSE STALE SESSIONS: 
+        // If the session is from a previous date, close it at 18:00 of that day automatically.
+        if (item.date !== today) {
+          await pb.collection('attendance').update(item.id, { 
+            check_out: "18:00", 
+            remarks: (item.remarks || "") + " (Auto-closed by System)" 
+          });
+          return undefined;
+        }
+        return mapAttendance(item);
       }
       return undefined;
     } catch (e) { return undefined; }
@@ -250,6 +262,7 @@ export const hrService = {
   async updateAttendance(id: string, data: Partial<Attendance>) {
     if (!pb || !isPocketBaseConfigured()) return;
     const pbUpdates: any = {};
+    if (data.date !== undefined) pbUpdates.date = data.date;
     if (data.checkIn !== undefined) pbUpdates.check_in = data.checkIn;
     if (data.checkOut !== undefined) pbUpdates.check_out = data.checkOut;
     if (data.remarks !== undefined) pbUpdates.remarks = data.remarks;
@@ -261,6 +274,12 @@ export const hrService = {
     } else {
       await pb.collection('attendance').update(id, pbUpdates);
     }
+    this.notify();
+  },
+
+  async deleteAttendance(id: string) {
+    if (!pb || !isPocketBaseConfigured()) return;
+    await pb.collection('attendance').delete(id);
     this.notify();
   },
 
@@ -341,7 +360,6 @@ export const hrService = {
   async sendCustomEmail(payload: { recipientEmail: string, subject?: string, html: string }) {
     if (!pb || !isPocketBaseConfigured()) return;
     try {
-        // ENSURE field names match exactly what pb_hooks/main.pb.js expects
         return await pb.collection('reports_queue').create({
             recipient_email: payload.recipientEmail,
             subject: payload.subject || "OpenHR Report",

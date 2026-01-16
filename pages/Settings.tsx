@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Network, Shield, Globe, Database, Lock, User, ArrowLeft, Save, RefreshCw, Server, Key, Activity, AlertCircle, Clock, Timer, UserCircle, Mail, Phone, Briefcase, CreditCard, Hash, UserCheck
+  Network, Globe, Database, User, ArrowLeft, Save, RefreshCw, Server, Activity, Clock, Timer, UserCircle, Mail, Phone, Briefcase, CreditCard, Hash, UserCheck, Send
 } from 'lucide-react';
 import { hrService } from '../services/hrService';
 import { updatePocketBaseConfig, getPocketBaseConfig } from '../services/pocketbase';
@@ -19,6 +19,7 @@ const Settings: React.FC<SettingsProps> = ({ user, onBack }) => {
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [profile, setProfile] = useState<Partial<Employee> & { managerName?: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isTestingEmail, setIsTestingEmail] = useState(false);
   
   const [pbConfig, setPbConfig] = useState(getPocketBaseConfig());
   const [testingBackend, setTestingBackend] = useState(false);
@@ -32,12 +33,10 @@ const Settings: React.FC<SettingsProps> = ({ user, onBack }) => {
         ]);
         setConfig(appConfig);
         
-        // Find latest data from database to ensure employeeId and managerName are accurate
         const myData = employees.find(e => e.id === user.id);
         if (myData) {
           setProfile(myData);
         } else {
-          // Fallback to basic session user if record lookup fails
           setProfile({
             name: user.name,
             email: user.email,
@@ -76,6 +75,22 @@ const Settings: React.FC<SettingsProps> = ({ user, onBack }) => {
     }
   };
 
+  const testEmailConnection = async () => {
+    setIsTestingEmail(true);
+    try {
+        await hrService.sendCustomEmail({
+            recipientEmail: user.email,
+            subject: "PocketBase SMTP Test Result",
+            html: `<h3>System Test Successful</h3><p>This email proves your PocketBase SMTP and JS Hooks are correctly linked. Sent at: ${new Date().toLocaleString()}</p>`
+        });
+        alert("Success: A test record was created in 'reports_queue'. If you don't receive an email within 2 minutes, check your PocketBase Mail Settings dashboard.");
+    } catch (e) {
+        alert("Failed: Could not queue email. Check if the 'reports_queue' collection exists.");
+    } finally {
+        setIsTestingEmail(false);
+    }
+  };
+
   const testBackend = async () => {
     setTestingBackend(true);
     const result = await hrService.testPocketBaseConnection(pbConfig.url);
@@ -102,7 +117,6 @@ const Settings: React.FC<SettingsProps> = ({ user, onBack }) => {
         </div>
         <div className="flex p-1 bg-white border border-slate-100 rounded-3xl shadow-sm">
           <button onClick={() => setActiveTab('PROFILE')} className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'PROFILE' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>My Profile</button>
-          
           {isAdmin && (
             <>
               <button onClick={() => setActiveTab('GENERAL')} className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'GENERAL' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400'}`}>Policies</button>
@@ -114,8 +128,6 @@ const Settings: React.FC<SettingsProps> = ({ user, onBack }) => {
 
       <div className={`grid grid-cols-1 ${isAdmin ? 'lg:grid-cols-3' : 'lg:grid-cols-2'} gap-8`}>
         <div className="lg:col-span-2 space-y-8">
-          
-          {/* PERSONAL PROFILE TAB (For Everyone) */}
           {activeTab === 'PROFILE' && (
             <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-10 space-y-8 animate-in slide-in-from-left-4">
               <div className="flex items-center gap-4 border-b border-slate-50 pb-8">
@@ -133,24 +145,14 @@ const Settings: React.FC<SettingsProps> = ({ user, onBack }) => {
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Official Employee ID</label>
                   <div className="relative">
                     <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                    <input 
-                      type="text" 
-                      readOnly 
-                      className="w-full pl-12 pr-4 py-4 bg-slate-100 border border-slate-200 rounded-2xl font-black text-sm text-slate-500 cursor-not-allowed" 
-                      value={profile.employeeId || 'Not Assigned'} 
-                    />
+                    <input type="text" readOnly className="w-full pl-12 pr-4 py-4 bg-slate-100 border border-slate-200 rounded-2xl font-black text-sm text-slate-500 cursor-not-allowed" value={profile.employeeId || 'Not Assigned'} />
                   </div>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Reporting To</label>
                   <div className="relative">
                     <UserCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                    <input 
-                      type="text" 
-                      readOnly 
-                      className="w-full pl-12 pr-4 py-4 bg-slate-100 border border-slate-200 rounded-2xl font-black text-sm text-slate-500 cursor-not-allowed" 
-                      value={profile.managerName || 'No Direct Manager'} 
-                    />
+                    <input type="text" readOnly className="w-full pl-12 pr-4 py-4 bg-slate-100 border border-slate-200 rounded-2xl font-black text-sm text-slate-500 cursor-not-allowed" value={profile.managerName || 'No Direct Manager'} />
                   </div>
                 </div>
                 <div className="space-y-1.5">
@@ -167,57 +169,10 @@ const Settings: React.FC<SettingsProps> = ({ user, onBack }) => {
                     <input type="email" className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm" value={profile.email || ''} onChange={e => setProfile({...profile, email: e.target.value})} />
                   </div>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Mobile Contact</label>
-                  <div className="relative">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                    <input type="tel" className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm" value={profile.mobile || ''} onChange={e => setProfile({...profile, mobile: e.target.value})} />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Gross Salary (BDT)</label>
-                  <div className="relative">
-                    <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                    <input 
-                      type="number" 
-                      disabled={!isAdmin}
-                      className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm outline-none disabled:bg-slate-100 disabled:text-slate-500" 
-                      value={profile.salary || 0} 
-                      onChange={e => setProfile({...profile, salary: parseInt(e.target.value) || 0})} 
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Department</label>
-                  <div className="relative">
-                    <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                    <input 
-                      type="text" 
-                      disabled={!isAdmin}
-                      className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm outline-none disabled:bg-slate-100 disabled:text-slate-500" 
-                      value={profile.department || ''} 
-                      onChange={e => setProfile({...profile, department: e.target.value})} 
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Designation</label>
-                  <div className="relative">
-                    <UserCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                    <input 
-                      type="text" 
-                      disabled={!isAdmin}
-                      className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm outline-none disabled:bg-slate-100 disabled:text-slate-500" 
-                      value={profile.designation || ''} 
-                      onChange={e => setProfile({...profile, designation: e.target.value})} 
-                    />
-                  </div>
-                </div>
               </div>
             </div>
           )}
 
-          {/* POLICY TAB (Admins Only) */}
           {activeTab === 'GENERAL' && isAdmin && (
             <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-10 space-y-12 animate-in slide-in-from-left-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -229,64 +184,30 @@ const Settings: React.FC<SettingsProps> = ({ user, onBack }) => {
                   </div>
                 </div>
                 <div className="space-y-6">
-                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Timer size={14} className="text-indigo-600" /> Late Entry Grace</h4>
-                  <div className="p-6 bg-amber-50 rounded-2xl border border-amber-100 space-y-4">
-                    <div className="flex justify-between items-center"><p className="text-[10px] font-black text-amber-900 uppercase">Buffer Minutes</p><span className="text-xs font-black text-amber-600 px-3 py-1 bg-white rounded-lg">{config.lateGracePeriod}m</span></div>
-                    <input type="range" min="0" max="60" step="5" className="w-full accent-amber-500" value={config.lateGracePeriod} onChange={e => setConfig({...config, lateGracePeriod: parseInt(e.target.value)})} />
-                  </div>
+                   <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Mail size={14} className="text-indigo-600" /> Communication Diagnostic</h4>
+                   <button onClick={testEmailConnection} disabled={isTestingEmail} className="w-full py-4 bg-indigo-50 text-indigo-600 rounded-2xl font-black uppercase text-[10px] tracking-widest border border-indigo-100 flex items-center justify-center gap-2 hover:bg-indigo-600 hover:text-white transition-all">
+                      {isTestingEmail ? <RefreshCw className="animate-spin" size={14}/> : <Send size={14}/>} Test SMTP Delivery
+                   </button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* INFRASTRUCTURE TAB (Admins Only) */}
           {activeTab === 'INFRASTRUCTURE' && isAdmin && (
             <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-10 space-y-8 animate-in slide-in-from-right-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-black text-slate-900 flex items-center gap-2"><Server className="text-indigo-600" /> Backend Infrastructure</h3>
                 <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest">PocketBase SDK</span>
               </div>
-
               <div className="space-y-4">
-                <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl text-[11px] text-blue-700">
-                   <p className="font-black uppercase mb-1">Server Access Warning</p>
-                   <p>Changing these values will re-initialize the app connection. Ensure your PocketBase server is reachable.</p>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Endpoint URL</label>
-                  <input type="text" placeholder="http://192.168.x.x:8090" className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm" value={pbConfig.url} onChange={e => setPbConfig({...pbConfig, url: e.target.value})} />
-                </div>
+                <input type="text" placeholder="http://192.168.x.x:8090" className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-sm" value={pbConfig.url} onChange={e => setPbConfig({...pbConfig, url: e.target.value})} />
+                <button onClick={testBackend} disabled={testingBackend} className="w-full py-4 bg-slate-100 text-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all flex items-center justify-center gap-2">
+                  {testingBackend ? <RefreshCw className="animate-spin" size={14} /> : <Activity size={14} />} Verify Connection
+                </button>
               </div>
-              
-              <button onClick={testBackend} disabled={testingBackend} className="w-full py-4 bg-slate-100 text-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all flex items-center justify-center gap-2">
-                {testingBackend ? <RefreshCw className="animate-spin" size={14} /> : <Activity size={14} />} 
-                Verify Database Connection
-              </button>
             </div>
           )}
         </div>
-
-        {isAdmin && (
-          <div className="space-y-6">
-             <div className="bg-[#0f172a] rounded-[2.5rem] p-8 text-white shadow-2xl">
-                <h3 className="font-black text-lg mb-4 flex items-center gap-2"><Globe className="text-indigo-400" /> Global Environment</h3>
-                <div className="space-y-4">
-                   <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Company Entity</p>
-                      <p className="font-bold text-sm truncate">{config.companyName}</p>
-                   </div>
-                   <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Auth Identity</p>
-                      <p className="font-bold text-sm truncate">{user.email}</p>
-                   </div>
-                   <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Local Network IP</p>
-                      <p className="font-mono text-xs text-indigo-300">{pbConfig.url}</p>
-                   </div>
-                </div>
-             </div>
-          </div>
-        )}
       </div>
 
       <div className="flex justify-end pt-4">

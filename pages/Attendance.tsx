@@ -1,9 +1,8 @@
+// Add React to the import list to resolve namespace errors
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { 
   MapPin, 
   Clock, 
-  CheckCircle2, 
-  Camera, 
   X, 
   LogOut, 
   RefreshCw, 
@@ -12,18 +11,23 @@ import {
   CameraOff, 
   Activity, 
   Loader2,
-  BarChart3,
   ChevronRight,
-  UserCheck,
   TrendingUp,
-  FileText,
   CalendarCheck,
   UserMinus,
-  Briefcase
+  Briefcase,
+  Search,
+  Edit2,
+  Trash2,
+  Save,
+  Camera,
+  Filter,
+  Building2,
+  Building
 } from 'lucide-react';
 import { hrService } from '../services/hrService';
 import { OFFICE_LOCATIONS } from '../constants.tsx';
-import { Attendance as AttendanceType, LeaveRequest } from '../types';
+import { Attendance as AttendanceType, LeaveRequest, AppConfig } from '../types';
 
 const Attendance: React.FC<{ user: any }> = ({ user }) => {
   const isAdmin = user.role === 'ADMIN' || user.role === 'HR';
@@ -33,8 +37,10 @@ const Attendance: React.FC<{ user: any }> = ({ user }) => {
   const [activeRecord, setActiveRecord] = useState<AttendanceType | undefined>(undefined);
   const [allAttendance, setAllAttendance] = useState<AttendanceType[]>([]);
   const [userLeaves, setUserLeaves] = useState<LeaveRequest[]>([]);
+  const [appConfig, setAppConfig] = useState<AppConfig | null>(null);
   const [location, setLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
   const [remarks, setRemarks] = useState('');
+  const [dutyType, setDutyType] = useState<'OFFICE' | 'FACTORY'>('OFFICE');
   const [cameraEnabled, setCameraEnabled] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -42,23 +48,27 @@ const Attendance: React.FC<{ user: any }> = ({ user }) => {
   const [previewSelfie, setPreviewSelfie] = useState<string | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   
+  // Admin Search/Edit states
+  const [adminSearch, setAdminSearch] = useState('');
+  const [editingRecord, setEditingRecord] = useState<AttendanceType | null>(null);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   const refreshData = useCallback(async () => {
     try {
-      const [active, today, allLeaves] = await Promise.all([
+      const [active, allAtt, allLeaves, config] = await Promise.all([
         hrService.getActiveAttendance(user.id),
-        hrService.getTodayAttendance(user.id),
-        hrService.getLeaves()
+        hrService.getAttendance(),
+        hrService.getLeaves(),
+        hrService.getConfig()
       ]);
       
       setActiveRecord(active);
+      setAllAttendance(allAtt);
       setUserLeaves(allLeaves.filter(l => l.employeeId === user.id));
-      
-      const all = await hrService.getAttendance();
-      setAllAttendance(all);
+      setAppConfig(config);
       setDataError(null);
     } catch (e: any) {
       setDataError('Failed to sync records');
@@ -76,22 +86,27 @@ const Attendance: React.FC<{ user: any }> = ({ user }) => {
       return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
     });
 
-    const pendingLeaves = userLeaves.filter(l => l.status.startsWith('PENDING')).length;
-    const approvedLeaves = userLeaves.filter(l => l.status === 'APPROVED').length;
-    const rejectedLeaves = userLeaves.filter(l => l.status === 'REJECTED').length;
-
     return {
       present: monthlyRecords.filter(a => a.status === 'PRESENT').length,
       late: monthlyRecords.filter(a => a.status === 'LATE').length,
       absent: monthlyRecords.filter(a => a.status === 'ABSENT').length,
-      pendingLeaves,
-      approvedLeaves,
-      rejectedLeaves,
+      pendingLeaves: userLeaves.filter(l => l.status.startsWith('PENDING')).length,
       totalLeavesThisYear: userLeaves.filter(l => l.status === 'APPROVED' && new Date(l.startDate).getFullYear() === currentYear).reduce((acc, l) => acc + l.totalDays, 0),
       lastThreeDays: userRecords.slice(0, 3),
-      monthlyHistory: monthlyRecords.sort((a,b) => b.date.localeCompare(a.date))
+      personalHistory: userRecords.sort((a,b) => b.date.localeCompare(a.date))
     };
   }, [allAttendance, userLeaves, user.id]);
+
+  const filteredAttendance = useMemo(() => {
+    if (!isAdmin) return analytics.personalHistory;
+    return allAttendance
+      .filter(a => 
+        (a.employeeName || '').toLowerCase().includes(adminSearch.toLowerCase()) ||
+        (a.employeeId || '').toLowerCase().includes(adminSearch.toLowerCase()) ||
+        (a.date || '').includes(adminSearch)
+      )
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [allAttendance, adminSearch, isAdmin, analytics.personalHistory]);
 
   const initCamera = useCallback(async () => {
     try {
@@ -181,12 +196,34 @@ const Attendance: React.FC<{ user: any }> = ({ user }) => {
     setStatus('loading');
     try {
       const punchTime = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+      
       if (activeRecord) {
         await hrService.updateAttendance(activeRecord.id, { checkOut: punchTime, remarks });
       } else {
+        // LATE LOGIC:
+        // Factory Duty is exempt from Late policy.
+        // Office Duty uses lateGracePeriod (Defaulting to 5 mins as requested).
+        let punchStatus: AttendanceType['status'] = 'PRESENT';
+        
+        if (dutyType === 'OFFICE' && appConfig) {
+          const [pH, pM] = punchTime.split(':').map(Number);
+          const [sH, sM] = appConfig.officeStartTime.split(':').map(Number);
+          const punchTotal = pH * 60 + pM;
+          const startTotal = sH * 60 + sM;
+          const grace = 5; // User specifically asked for 5 minute count
+          
+          if (punchTotal > (startTotal + grace)) {
+            punchStatus = 'LATE';
+          }
+        }
+
+        const finalRemarks = dutyType === 'FACTORY' 
+          ? `[FACTORY VISIT: ${remarks}]` 
+          : remarks;
+
         await hrService.saveAttendance({
           id: '', employeeId: user.id, employeeName: user.name, date: new Date().toISOString().split('T')[0],
-          checkIn: punchTime, status: 'PRESENT', location, selfie: selfieData, remarks
+          checkIn: punchTime, status: punchStatus, location, selfie: selfieData, remarks: finalRemarks
         });
       }
       await refreshData();
@@ -197,6 +234,27 @@ const Attendance: React.FC<{ user: any }> = ({ user }) => {
       setDataError(err.message);
       setStatus('idle');
     }
+  };
+
+  const handleAdminUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingRecord) return;
+    setStatus('loading');
+    try {
+      await hrService.updateAttendance(editingRecord.id, editingRecord);
+      await refreshData();
+      setEditingRecord(null);
+    } finally {
+      setStatus('idle');
+    }
+  };
+
+  const handleAdminDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this attendance record?")) return;
+    try {
+      await hrService.deleteAttendance(id);
+      await refreshData();
+    } catch (e) { alert("Failed to delete."); }
   };
 
   const getStatusBadge = (s: AttendanceType['status']) => {
@@ -214,7 +272,6 @@ const Attendance: React.FC<{ user: any }> = ({ user }) => {
 
   return (
     <div className="h-full flex flex-col space-y-3 animate-in fade-in duration-500 overflow-hidden">
-      {/* Reduced Height Segmented Control */}
       <div className="flex p-1 bg-white border border-slate-100 rounded-xl shadow-sm self-center">
         <button 
           onClick={() => setCurrentTab('STATION')} 
@@ -226,15 +283,33 @@ const Attendance: React.FC<{ user: any }> = ({ user }) => {
           onClick={() => setCurrentTab('ACTIVITY')} 
           className={`px-5 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${currentTab === 'ACTIVITY' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400'}`}
         >
-          <Activity size={12} /> Activity
+          <Activity size={12} /> {isAdmin ? 'Organization' : 'Activity'}
         </button>
       </div>
 
       {currentTab === 'STATION' ? (
         <div className="flex-1 flex flex-col max-w-lg mx-auto w-full space-y-3 min-h-0 pt-1">
-          {/* Tighter constraints for the camera view to prevent button overlap */}
+          {/* Duty Type Selector */}
+          {!activeRecord && (
+            <div className="flex gap-2 p-1 bg-white border border-slate-100 rounded-2xl shadow-sm">
+              <button 
+                onClick={() => setDutyType('OFFICE')}
+                className={`flex-1 py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all ${dutyType === 'OFFICE' ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-50 text-slate-400'}`}
+              >
+                <Building size={14} />
+                <span className="text-[10px] font-black uppercase tracking-widest">Office Duty</span>
+              </button>
+              <button 
+                onClick={() => setDutyType('FACTORY')}
+                className={`flex-1 py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all ${dutyType === 'FACTORY' ? 'bg-amber-600 text-white shadow-md' : 'bg-slate-50 text-slate-400'}`}
+              >
+                <Building2 size={14} />
+                <span className="text-[10px] font-black uppercase tracking-widest">Factory Duty</span>
+              </button>
+            </div>
+          )}
+
           <div className={`relative flex-1 rounded-[2rem] overflow-hidden border-[4px] shadow-lg transition-all duration-1000 ${activeRecord ? 'border-emerald-500/10 bg-emerald-950' : 'border-white bg-slate-900'} max-h-[48vh] sm:max-h-[50vh]`}>
-            {/* Minimal Clock Overlay */}
             <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20">
               <div className="bg-black/40 backdrop-blur-lg border border-white/5 px-4 py-1.5 rounded-xl text-white text-center">
                 <p className="text-[7px] font-black uppercase tracking-[0.2em] opacity-40">Standard Time</p>
@@ -260,7 +335,6 @@ const Attendance: React.FC<{ user: any }> = ({ user }) => {
               </div>
             )}
             
-            {/* Contextual Bottom UI (Tighter) */}
             <div className="absolute bottom-4 left-3 right-3 flex items-center justify-between pointer-events-none gap-2">
               <div className="bg-black/30 backdrop-blur-md border border-white/5 px-3 py-1.5 rounded-full text-white">
                  <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest">
@@ -274,33 +348,28 @@ const Attendance: React.FC<{ user: any }> = ({ user }) => {
             </div>
           </div>
 
-          {/* Action Center - Optimized for Visibility above Nav Bar */}
           <div className="space-y-2 bg-white p-4 rounded-[1.5rem] border border-slate-100 shadow-md">
-            <div className="relative">
-               <input 
-                type="text"
-                placeholder="Session notes (Optional)"
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-bold outline-none focus:ring-2 focus:ring-indigo-100 transition-all"
-                value={remarks}
-                onChange={e => setRemarks(e.target.value)}
-              />
-            </div>
-            
+            <input 
+              type="text"
+              placeholder={dutyType === 'FACTORY' ? "Enter Factory Name / Purpose (Required)" : "Session notes (Optional)"}
+              className={`w-full px-4 py-3 bg-slate-50 border rounded-lg text-[11px] font-bold outline-none focus:ring-2 focus:ring-indigo-100 transition-all ${dutyType === 'FACTORY' ? 'border-amber-200' : 'border-slate-200'}`}
+              value={remarks}
+              onChange={e => setRemarks(e.target.value)}
+            />
             <button 
               onClick={handlePunch}
-              disabled={!location || status !== 'idle' || !cameraEnabled}
+              disabled={!location || status !== 'idle' || !cameraEnabled || (dutyType === 'FACTORY' && !remarks && !activeRecord)}
               className={`w-full py-4 rounded-lg font-black uppercase tracking-[0.1em] text-[11px] shadow-lg transition-all active:scale-[0.97] flex items-center justify-center gap-2 ${
-                activeRecord ? 'bg-rose-600 text-white' : 'bg-indigo-600 text-white'
+                activeRecord ? 'bg-rose-600 text-white' : dutyType === 'FACTORY' ? 'bg-amber-600 text-white' : 'bg-indigo-600 text-white'
               }`}
             >
               {activeRecord ? <LogOut size={14}/> : <CalendarCheck size={14}/>}
-              {activeRecord ? 'End Session' : 'Clock In Now'}
+              {activeRecord ? 'End Session' : dutyType === 'FACTORY' ? 'Start Factory Visit' : 'Clock In Now'}
             </button>
           </div>
         </div>
       ) : (
         <div className="flex-1 overflow-auto no-scrollbar space-y-5 animate-in slide-in-from-bottom-8 duration-700">
-          {/* Summary Dashboard */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
             <div className="bg-white p-4 rounded-[1.5rem] border border-slate-100 shadow-sm col-span-2 flex flex-col justify-between">
               <div className="flex justify-between items-start mb-3">
@@ -347,58 +416,109 @@ const Attendance: React.FC<{ user: any }> = ({ user }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <div className="lg:col-span-2 space-y-3">
-              <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-base font-black text-slate-900 flex items-center gap-2"><History size={18} className="text-indigo-600" /> Monthly Audit</h3>
-                  <span className="text-[7px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">Current</span>
-                </div>
-                <div className="space-y-2">
-                  {analytics.monthlyHistory.map((h, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-xl group hover:bg-white hover:shadow-sm transition-all">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-white shadow-sm overflow-hidden flex items-center justify-center cursor-zoom-in" onClick={() => h.selfie && setPreviewSelfie(h.selfie)}>
-                          {h.selfie ? <img src={h.selfie} className="w-full h-full object-cover" /> : <Clock size={14} className="text-slate-200" />}
-                        </div>
-                        <div>
-                          <p className="text-xs font-black text-slate-900 tabular-nums">{new Date(h.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</p>
-                          <div className="flex items-center gap-1.5 mt-0.5 text-[8px] font-bold text-slate-400 uppercase tracking-tight">
-                            {h.checkIn} — {h.checkOut || <span className="text-indigo-600 animate-pulse">Live</span>}
-                          </div>
-                        </div>
+          <div className="space-y-4">
+            <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <History size={18} className="text-indigo-600" /> {isAdmin ? 'Organization Audit' : 'My Audit'}
+                </h3>
+                {isAdmin && (
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                    <input 
+                      type="text" 
+                      placeholder="Search employee name, ID or date..."
+                      className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-bold outline-none"
+                      value={adminSearch}
+                      onChange={e => setAdminSearch(e.target.value)}
+                    />
+                  </div>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                {filteredAttendance.map((h, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-xl group hover:bg-white hover:shadow-sm transition-all">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-white shadow-sm overflow-hidden flex items-center justify-center cursor-zoom-in" onClick={() => h.selfie && setPreviewSelfie(h.selfie)}>
+                        {h.selfie ? <img src={h.selfie} className="w-full h-full object-cover" /> : <Clock size={14} className="text-slate-200" />}
                       </div>
-                      <div className="flex items-center gap-2">
-                        {getStatusBadge(h.status)}
-                        <ChevronRight size={14} className="text-slate-300" />
+                      <div>
+                        <div className="flex items-center gap-2">
+                           <p className="text-xs font-black text-slate-900 tabular-nums">{new Date(h.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</p>
+                           {isAdmin && <span className="text-[8px] font-black text-indigo-500 uppercase tracking-tight bg-indigo-50 px-1.5 py-0.5 rounded-md">{h.employeeName}</span>}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5 text-[8px] font-bold text-slate-400 uppercase tracking-tight">
+                          {h.checkIn} — {h.checkOut || <span className="text-indigo-600 animate-pulse">Live</span>}
+                        </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="bg-[#0f172a] p-6 rounded-[1.5rem] text-white shadow-xl">
-                 <h3 className="text-xs font-black mb-4 flex items-center gap-2 text-indigo-400"><TrendingUp size={16}/> Recent</h3>
-                 <div className="space-y-3">
-                    {analytics.lastThreeDays.map((h, i) => (
-                      <div key={i} className="p-3 bg-white/5 rounded-xl border border-white/10">
-                        <div className="flex justify-between items-start mb-0.5">
-                          <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest">{new Date(h.date).toLocaleDateString()}</p>
-                          {getStatusBadge(h.status)}
+                    <div className="flex items-center gap-3">
+                      {getStatusBadge(h.status)}
+                      {isAdmin && (
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                           <button onClick={() => setEditingRecord(h)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"><Edit2 size={12}/></button>
+                           <button onClick={() => handleAdminDelete(h.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><Trash2 size={12}/></button>
                         </div>
-                        <p className="font-black text-[10px]">Shift {h.checkIn} → {h.checkOut || 'Active'}</p>
-                      </div>
-                    ))}
-                 </div>
+                      )}
+                      <ChevronRight size={14} className="text-slate-300" />
+                    </div>
+                  </div>
+                ))}
+                {filteredAttendance.length === 0 && (
+                  <div className="py-20 text-center text-slate-300 font-black uppercase text-[10px] tracking-widest">
+                    No matching records found.
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Selfie Detail Modal */}
+      {/* Edit Modal for Admin */}
+      {editingRecord && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[160] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[3rem] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in">
+             <div className="bg-slate-900 p-6 flex justify-between items-center text-white">
+                <h3 className="text-sm font-black uppercase tracking-widest">Adjust Session</h3>
+                <button onClick={() => setEditingRecord(null)}><X size={24}/></button>
+             </div>
+             <form onSubmit={handleAdminUpdate} className="p-8 space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Check In</label>
+                    <input type="time" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold" value={editingRecord.checkIn} onChange={e => setEditingRecord({...editingRecord, checkIn: e.target.value})} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Check Out</label>
+                    <input type="time" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold" value={editingRecord.checkOut} onChange={e => setEditingRecord({...editingRecord, checkOut: e.target.value})} />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Date</label>
+                  <input type="date" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold" value={editingRecord.date} onChange={e => setEditingRecord({...editingRecord, date: e.target.value})} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Status</label>
+                  <select className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold" value={editingRecord.status} onChange={e => setEditingRecord({...editingRecord, status: e.target.value as any})}>
+                    <option value="PRESENT">Present</option>
+                    <option value="LATE">Late</option>
+                    <option value="ABSENT">Absent</option>
+                    <option value="EARLY_OUT">Early Out</option>
+                  </select>
+                </div>
+                <div className="flex gap-4 pt-4">
+                  <button type="button" onClick={() => setEditingRecord(null)} className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black uppercase text-[10px] tracking-widest">Cancel</button>
+                  <button type="submit" disabled={status === 'loading'} className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2">
+                    {status === 'loading' ? <RefreshCw className="animate-spin" size={14}/> : <Save size={14}/>} Commit Edit
+                  </button>
+                </div>
+             </form>
+          </div>
+        </div>
+      )}
+
       {previewSelfie && (
         <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-2xl z-[150] flex items-center justify-center p-4 animate-in fade-in zoom-in duration-300" onClick={() => setPreviewSelfie(null)}>
            <div className="max-w-md w-full aspect-square rounded-[2rem] overflow-hidden border-4 border-white/5 shadow-2xl relative">

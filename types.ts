@@ -38,6 +38,7 @@ export interface Attendance {
   location?: { lat: number; lng: number; address?: string };
   remarks?: string;
   selfie?: string;
+  dutyType?: 'OFFICE' | 'FACTORY';
 }
 
 export interface LeaveRequest {
