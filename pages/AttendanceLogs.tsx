@@ -116,17 +116,14 @@ const AttendanceLogs: React.FC<AttendanceLogsProps> = ({ user, viewMode = 'MY' }
   };
 
   const filteredAndSortedLogs = useMemo(() => {
+    // 1. Initial Filtering
     let result = [...logs];
-
-    // Search filter (Date or Status)
     if (searchTerm) {
       result = result.filter(log => 
         (log.date || '').includes(searchTerm) || 
         (log.status || '').toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-
-    // Audit-specific filters
     if (isAuditMode) {
       if (employeeFilter !== 'ALL') {
         result = result.filter(log => log.employeeId === employeeFilter);
@@ -139,8 +136,38 @@ const AttendanceLogs: React.FC<AttendanceLogsProps> = ({ user, viewMode = 'MY' }
       }
     }
 
-    // Sorting
-    return result.sort((a, b) => {
+    // 2. CONSOLIDATION: Group by Employee + Date
+    // Find absolute FIRST Check-in and absolute LAST Check-out per day
+    const groupedMap = new Map<string, Attendance>();
+    
+    result.forEach(log => {
+      const key = `${log.employeeId}_${log.date}`;
+      if (!groupedMap.has(key)) {
+        groupedMap.set(key, { ...log });
+      } else {
+        const existing = groupedMap.get(key)!;
+        
+        // Update check-in to the earliest
+        if (log.checkIn && (!existing.checkIn || log.checkIn < existing.checkIn)) {
+          existing.checkIn = log.checkIn;
+        }
+        
+        // Update check-out to the latest
+        if (log.checkOut && (!existing.checkOut || log.checkOut > existing.checkOut)) {
+          existing.checkOut = log.checkOut;
+        }
+        
+        // Append remarks
+        if (log.remarks && !existing.remarks?.includes(log.remarks)) {
+          existing.remarks = existing.remarks ? `${existing.remarks} | ${log.remarks}` : log.remarks;
+        }
+      }
+    });
+
+    const consolidated = Array.from(groupedMap.values());
+
+    // 3. Final Sorting
+    return consolidated.sort((a, b) => {
       const dateCompare = (a.date || '').localeCompare(b.date || '');
       if (dateCompare !== 0) {
         return sortOrder === 'desc' ? -dateCompare : dateCompare;
@@ -166,7 +193,7 @@ const AttendanceLogs: React.FC<AttendanceLogsProps> = ({ user, viewMode = 'MY' }
             {isAuditMode ? 'Attendance Audit' : 'My Attendance History'}
           </h1>
           <p className="text-sm text-slate-500 font-medium">
-            {isAuditMode ? `Auditing ${logs.length} organizational records` : 'Review your historical logs and location proofs'}
+            {isAuditMode ? `Consolidated org-wide activity (First-In / Last-Out)` : 'Your consolidated workday records'}
           </p>
         </div>
         <button 
@@ -275,7 +302,7 @@ const AttendanceLogs: React.FC<AttendanceLogsProps> = ({ user, viewMode = 'MY' }
                     <div className="flex items-center gap-4 text-slate-400">
                       <div className="flex items-center gap-1.5">
                         <Clock size={12} className="text-indigo-500" />
-                        <span className="text-[10px] font-black uppercase tracking-tight">{log.checkIn} — {log.checkOut || 'Active'}</span>
+                        <span className="text-[10px] font-black uppercase tracking-tight">{log.checkIn || '--:--'} — {log.checkOut || 'Active'}</span>
                       </div>
                       <div className="flex items-center gap-1.5 truncate max-w-[150px]">
                         <MapPin size={12} className="text-rose-500" />
@@ -372,7 +399,7 @@ const AttendanceLogs: React.FC<AttendanceLogsProps> = ({ user, viewMode = 'MY' }
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Punch In</label>
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Earliest In</label>
                     <input 
                       type="time" 
                       readOnly={!isAuditMode}
@@ -382,7 +409,7 @@ const AttendanceLogs: React.FC<AttendanceLogsProps> = ({ user, viewMode = 'MY' }
                     />
                  </div>
                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Punch Out</label>
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Latest Out</label>
                     <input 
                       type="time" 
                       readOnly={!isAuditMode}
@@ -395,7 +422,7 @@ const AttendanceLogs: React.FC<AttendanceLogsProps> = ({ user, viewMode = 'MY' }
 
               <div className="space-y-1.5">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
-                  <MapPin size={12} className="text-rose-500" /> GPS Validation
+                  <MapPin size={12} className="text-rose-500" /> GPS Validation (Initial)
                 </label>
                 <div className="p-5 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between">
                    <div className="flex-1 pr-4">
@@ -414,7 +441,7 @@ const AttendanceLogs: React.FC<AttendanceLogsProps> = ({ user, viewMode = 'MY' }
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Remarks & Correction Reason</label>
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Workday Activity Remarks</label>
                 <textarea 
                   readOnly={!isAuditMode}
                   placeholder="Notes for this session..."

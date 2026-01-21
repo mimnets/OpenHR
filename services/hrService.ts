@@ -1,5 +1,4 @@
 
-
 import { Employee, Attendance, LeaveRequest, User, AppConfig, Holiday, LeaveWorkflow, LeaveBalance } from '../types';
 import { DEFAULT_CONFIG, BD_HOLIDAYS } from '../constants.tsx';
 import { pb, isPocketBaseConfigured } from './pocketbase';
@@ -161,8 +160,29 @@ export const hrService = {
   async getActiveAttendance(employeeId: string): Promise<Attendance | undefined> {
     if (!pb || !isPocketBaseConfigured()) return undefined;
     try {
-      const result = await pb.collection('attendance').getList(1, 1, { filter: `employee_id = "${employeeId.trim()}" && check_out = ""` });
-      return result.items.length > 0 ? mapAttendance(result.items[0]) : undefined;
+      const today = new Date().toISOString().split('T')[0];
+      const config = await this.getConfig();
+      
+      // 1. Fetch all unclosed sessions for this employee
+      const result = await pb.collection('attendance').getList(1, 50, { 
+        filter: `employee_id = "${employeeId.trim()}" && check_out = ""` 
+      });
+
+      let activeToday: Attendance | undefined = undefined;
+
+      // 2. Logic: If unclosed sessions from previous days exist, AUTO-CLOSE them
+      for (const item of result.items) {
+        if (item.date < today) {
+          await pb.collection('attendance').update(item.id, {
+            check_out: config.officeEndTime || "18:00",
+            remarks: (item.remarks || "") + " [System Auto-closed]"
+          });
+        } else if (item.date === today) {
+          activeToday = mapAttendance(item);
+        }
+      }
+
+      return activeToday;
     } catch (e) { return undefined; }
   },
 
@@ -224,7 +244,6 @@ export const hrService = {
   async saveLeaveRequest(data: Partial<LeaveRequest>) {
     if (!pb || !isPocketBaseConfigured()) return;
     
-    // Ensure all date fields include a time component for PocketBase Date field types
     const formatPbDate = (dateStr: string) => {
       if (!dateStr) return null;
       if (dateStr.length === 10) return `${dateStr} 00:00:00`;
@@ -235,7 +254,6 @@ export const hrService = {
     const now = new Date();
     const appliedAt = now.toISOString().replace('T', ' ').split('.')[0];
 
-    // FIX: Property 'total_days' does not exist on type 'Partial<LeaveRequest>'. Using 'totalDays'.
     const payload: any = {
       employee_id: data.employeeId?.trim(),
       employee_name: data.employeeName,
@@ -441,18 +459,14 @@ export const hrService = {
     };
 
     try {
-      // Direct result check to handle PocketBase SDK refetch behavior
       const result = await pb.collection('reports_queue').create(payload);
       return result;
     } catch (err: any) {
-      // Detailed error introspection for "Success but Forbidden View"
       if (err.response?.id || (err.status >= 400 && err.response?.recipient_email)) {
         console.warn("Email record successfully queued (ignoring UI view restriction).");
         return { id: err.response?.id || 'queued_ok' }; 
       }
-      
       console.error("Queue Email Error:", err);
-      // Only throw if the record definitely wasn't created (no ID in response)
       throw new Error(err.message || "Failed to create queue record.");
     }
   },

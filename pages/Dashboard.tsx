@@ -46,6 +46,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
       try {
         const today = new Date().toISOString().split('T')[0];
         
+        // hrService.getActiveAttendance now strictly filters for today's date
         const [active, balance, emps, leaves, hols, atts] = await Promise.all([
           hrService.getActiveAttendance(user.id),
           hrService.getLeaveBalance(user.id),
@@ -77,6 +78,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate }) => {
 
       } catch (err) {
         console.error("Dashboard data fetch failed", err);
+        setActiveShift(undefined);
       } finally {
         setIsLoading(false);
       }
