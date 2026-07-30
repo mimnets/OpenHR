@@ -674,41 +674,41 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({ user, selectedEmp
               </div>
               
               <div className="flex-1 flex flex-col min-w-0">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1 min-w-0 pr-2">
-                    <h3 className="font-semibold text-slate-900 text-sm md:text-base leading-tight break-words" title={emp.name}>
-                      {emp.name}
-                    </h3>
-                    <p className="text-[9px] md:text-[10px] font-semibold text-primary uppercase tracking-widest mt-1">
-                      {emp.designation || 'Staff'}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      {!emp.verified && (
-                        <span className="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700">Unverified</span>
-                      )}
-                      {emp.status === 'INACTIVE' && (
-                        <span className="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-rose-100 text-rose-700">Inactive</span>
-                      )}
-                      {emp.status === 'ON_LEAVE' && (
-                        <span className="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-blue-100 text-blue-700">On Leave</span>
-                      )}
-                    </div>
+                {/* Name and designation — full width */}
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-slate-900 text-sm md:text-base leading-tight break-words" title={emp.name}>
+                    {emp.name}
+                  </h3>
+                  <p className="text-[9px] md:text-[10px] font-semibold text-primary uppercase tracking-widest mt-1">
+                    {emp.designation || 'Staff'}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    {!emp.verified && (
+                      <span className="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700">Unverified</span>
+                    )}
+                    {emp.status === 'INACTIVE' && (
+                      <span className="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-rose-100 text-rose-700">Inactive</span>
+                    )}
+                    {emp.status === 'ON_LEAVE' && (
+                      <span className="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-blue-100 text-blue-700">On Leave</span>
+                    )}
                   </div>
-                  {isAdmin && (
-                    <div className="flex gap-0.5 flex-shrink-0 bg-slate-50/80 p-1 rounded-lg" onClick={(e) => e.stopPropagation()}>
-                      {!emp.verified && (
-                        <button onClick={() => handleActivate(emp)} title="Verify & activate account" className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-all"><BadgeCheck size={14} /></button>
-                      )}
-                      <button onClick={() => handleOpenEdit(emp)} className="p-1.5 text-slate-400 hover:text-primary hover:bg-white rounded-md transition-all"><Edit size={14} /></button>
-                      {emp.status === 'INACTIVE' ? (
-                        <button onClick={() => handleReactivate(emp)} title="Reactivate employee" className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-all"><UserCheck size={14} /></button>
-                      ) : (
-                        <button onClick={() => handleOffboard(emp)} title="Offboard employee" className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-all"><UserX size={14} /></button>
-                      )}
-                      <button onClick={() => handleDelete(emp)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all"><Trash2 size={14} /></button>
-                    </div>
-                  )}
                 </div>
+                {/* Action buttons on their own row so names never break */}
+                {isAdmin && (
+                  <div className="flex gap-0.5 mt-2 bg-slate-50/80 p-1 rounded-lg self-start" onClick={(e) => e.stopPropagation()}>
+                    {!emp.verified && (
+                      <button onClick={() => handleActivate(emp)} title="Verify & activate account" className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-all"><BadgeCheck size={14} /></button>
+                    )}
+                    <button onClick={() => handleOpenEdit(emp)} className="p-1.5 text-slate-400 hover:text-primary hover:bg-white rounded-md transition-all"><Edit size={14} /></button>
+                    {emp.status === 'INACTIVE' ? (
+                      <button onClick={() => handleReactivate(emp)} title="Reactivate employee" className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-all"><UserCheck size={14} /></button>
+                    ) : (
+                      <button onClick={() => handleOffboard(emp)} title="Offboard employee" className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-all"><UserX size={14} /></button>
+                    )}
+                    <button onClick={() => handleDelete(emp)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all"><Trash2 size={14} /></button>
+                  </div>
+                )}
               </div>
             </div>
             
