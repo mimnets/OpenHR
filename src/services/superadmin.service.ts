@@ -4,6 +4,10 @@ import { Organization, Employee, PlatformStats, SubscriptionStatus } from '../ty
 import { convertFileToWebP } from '../utils/imageConvert';
 import { sanitizeHtml } from '../utils/sanitize';
 
+const SUPABASE_FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_URL
+  ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`
+  : null;
+
 // ==================== BULK EMAIL TYPES ====================
 
 export type BulkEmailFilter =
@@ -284,9 +288,31 @@ export const superAdminService = {
   async deleteUser(userId: string): Promise<{ success: boolean; message: string }> {
     if (!isSupabaseConfigured()) return { success: false, message: 'Supabase not configured' };
     try {
-      // Delete profile — cascade handles child rows. Auth user cleanup requires service role.
-      const { error } = await supabase.from('profiles').delete().eq('id', userId);
-      if (error) throw error;
+      // Use the Edge Function to properly delete both auth.users and profiles.
+      // The client-side profiles.delete() only removes the profiles row — the FK
+      // cascade only goes auth→profiles, not profiles→auth.
+      if (SUPABASE_FUNCTIONS_URL) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/delete-employee`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ userId }),
+          });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(json.message || 'Delete failed');
+        } else {
+          // Fallback: no session (shouldn't happen for super admin, but be safe)
+          const { error } = await supabase.from('profiles').delete().eq('id', userId);
+          if (error) throw error;
+        }
+      } else {
+        const { error } = await supabase.from('profiles').delete().eq('id', userId);
+        if (error) throw error;
+      }
       apiClient.notify();
       return { success: true, message: 'User deleted successfully' };
     } catch (e: any) {

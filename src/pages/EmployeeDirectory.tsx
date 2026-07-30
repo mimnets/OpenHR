@@ -25,7 +25,10 @@ import {
   Filter,
   CheckSquare,
   Square,
-  ChevronDown
+  ChevronDown,
+  UserX,
+  UserCheck,
+  AlertTriangle,
 } from 'lucide-react';
 import { hrService } from '../services/hrService';
 import { organizationService } from '../services/organization.service';
@@ -98,6 +101,10 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({ user, selectedEmp
   const [selectedExportDepts, setSelectedExportDepts] = useState<string[]>([]);
   const [showDeptFilter, setShowDeptFilter] = useState(false);
   const [orgInfo, setOrgInfo] = useState<{ name: string; address: string; logoDataUrl: string | null }>({ name: '', address: '', logoDataUrl: null });
+
+  // Confirmation dialog state for delete / offboard / reactivate
+  const [confirmAction, setConfirmAction] = useState<{ type: 'delete' | 'offboard' | 'reactivate'; employee: Employee } | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -289,15 +296,46 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({ user, selectedEmp
     setShowModal(true);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (emp: Employee) => {
     if (!isAdmin) return;
-    if (confirm('Delete this user account? This cannot be undone.')) {
-      try {
-        await hrService.deleteEmployee(id);
-      } catch (err: any) {
-        showToast(err.message, 'error');
+    setConfirmAction({ type: 'delete', employee: emp });
+  };
+
+  const handleOffboard = (emp: Employee) => {
+    if (!isAdmin) return;
+    setConfirmAction({ type: 'offboard', employee: emp });
+  };
+
+  const handleReactivate = (emp: Employee) => {
+    if (!isAdmin) return;
+    setConfirmAction({ type: 'reactivate', employee: emp });
+  };
+
+  const handleConfirmAction = async () => {
+    if (!confirmAction) return;
+    setIsProcessing(true);
+    try {
+      const { type, employee } = confirmAction;
+      if (type === 'delete') {
+        await hrService.deleteEmployee(employee.id);
+        showToast(`${employee.name} has been permanently deleted`, 'success');
+      } else if (type === 'offboard') {
+        await hrService.offboardEmployee(employee.id);
+        showToast(`${employee.name} has been offboarded — login access revoked`, 'success');
+      } else if (type === 'reactivate') {
+        await hrService.reactivateEmployee(employee.id);
+        showToast(`${employee.name} has been reactivated`, 'success');
       }
+      setConfirmAction(null);
+    } catch (err: any) {
+      showToast(err.message || 'Action failed', 'error');
+    } finally {
+      setIsProcessing(false);
     }
+  };
+
+  const handleCancelAction = () => {
+    setConfirmAction(null);
   };
 
   const handleActivate = async (emp: Employee) => {
@@ -644,6 +682,17 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({ user, selectedEmp
                     <p className="text-[9px] md:text-[10px] font-semibold text-primary uppercase tracking-widest mt-1">
                       {emp.designation || 'Staff'}
                     </p>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      {!emp.verified && (
+                        <span className="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700">Unverified</span>
+                      )}
+                      {emp.status === 'INACTIVE' && (
+                        <span className="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-rose-100 text-rose-700">Inactive</span>
+                      )}
+                      {emp.status === 'ON_LEAVE' && (
+                        <span className="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-blue-100 text-blue-700">On Leave</span>
+                      )}
+                    </div>
                   </div>
                   {isAdmin && (
                     <div className="flex gap-0.5 flex-shrink-0 bg-slate-50/80 p-1 rounded-lg" onClick={(e) => e.stopPropagation()}>
@@ -651,7 +700,12 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({ user, selectedEmp
                         <button onClick={() => handleActivate(emp)} title="Verify & activate account" className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-all"><BadgeCheck size={14} /></button>
                       )}
                       <button onClick={() => handleOpenEdit(emp)} className="p-1.5 text-slate-400 hover:text-primary hover:bg-white rounded-md transition-all"><Edit size={14} /></button>
-                      <button onClick={() => handleDelete(emp.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all"><Trash2 size={14} /></button>
+                      {emp.status === 'INACTIVE' ? (
+                        <button onClick={() => handleReactivate(emp)} title="Reactivate employee" className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-all"><UserCheck size={14} /></button>
+                      ) : (
+                        <button onClick={() => handleOffboard(emp)} title="Offboard employee" className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-all"><UserX size={14} /></button>
+                      )}
+                      <button onClick={() => handleDelete(emp)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all"><Trash2 size={14} /></button>
                     </div>
                   )}
                 </div>
@@ -886,6 +940,124 @@ const EmployeeDirectory: React.FC<EmployeeDirectoryProps> = ({ user, selectedEmp
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Dialog — delete / offboard / reactivate */}
+      {confirmAction && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden animate-in zoom-in duration-300">
+            <div className={`p-8 flex justify-between items-center text-white ${
+              confirmAction.type === 'delete' ? 'bg-rose-600' :
+              confirmAction.type === 'offboard' ? 'bg-amber-500' :
+              'bg-emerald-600'
+            }`}>
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-white/10 rounded-2xl">
+                  <AlertTriangle size={24} />
+                </div>
+                <h3 className="text-xl font-semibold uppercase tracking-tight">
+                  {confirmAction.type === 'delete' ? 'Delete Employee' :
+                   confirmAction.type === 'offboard' ? 'Offboard Employee' :
+                   'Reactivate Employee'}
+                </h3>
+              </div>
+              <button onClick={handleCancelAction} className="hover:bg-white/10 p-2 rounded-xl transition-all">
+                <X size={28} />
+              </button>
+            </div>
+
+            <div className="p-8 space-y-6">
+              {confirmAction.type === 'delete' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-700 leading-relaxed">
+                    Are you sure you want to permanently delete <strong className="text-slate-900">{confirmAction.employee.name}</strong>?
+                  </p>
+                  <div className="bg-rose-50 border border-rose-100 rounded-2xl p-5 space-y-3">
+                    <p className="text-xs font-bold text-rose-700 uppercase tracking-widest">⚠ This action will permanently remove:</p>
+                    <ul className="text-xs text-rose-600 space-y-1.5 list-disc pl-4">
+                      <li>The employee's login account and email from the system</li>
+                      <li>All profile data, avatar, and settings</li>
+                      <li>Attendance records tied to this employee</li>
+                      <li>Leave requests and balances</li>
+                      <li>Performance reviews and ratings</li>
+                      <li>Notifications assigned to this user</li>
+                    </ul>
+                    <p className="text-xs font-semibold text-rose-700 pt-2 border-t border-rose-200">
+                      This is irreversible. No data can be recovered after deletion.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {confirmAction.type === 'offboard' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-700 leading-relaxed">
+                    Offboard <strong className="text-slate-900">{confirmAction.employee.name}</strong>? Their login access will be revoked immediately.
+                  </p>
+                  <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 space-y-3">
+                    <p className="text-xs font-bold text-amber-700 uppercase tracking-widest">What offboarding does:</p>
+                    <ul className="text-xs text-amber-600 space-y-1.5 list-disc pl-4">
+                      <li><strong>Revokes login access</strong> — the employee cannot sign in</li>
+                      <li>Sets their account status to Inactive</li>
+                    </ul>
+                    <p className="text-xs font-bold text-amber-700 uppercase tracking-widest mt-3">What is preserved:</p>
+                    <ul className="text-xs text-amber-600 space-y-1.5 list-disc pl-4">
+                      <li>All attendance records remain intact</li>
+                      <li>All leave history is kept</li>
+                      <li>Performance reviews are preserved</li>
+                      <li>You can reactivate their account at any time</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {confirmAction.type === 'reactivate' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-700 leading-relaxed">
+                    Reactivate <strong className="text-slate-900">{confirmAction.employee.name}</strong>'s account? They will be able to log in again.
+                  </p>
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5">
+                    <p className="text-xs text-emerald-700 leading-relaxed">
+                      This restores the employee's login access. Their account status will be set back to <strong>Active</strong>. All historical data (attendance, leaves, reviews) is already preserved and will remain available.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-4 pt-2">
+                <button
+                  type="button"
+                  disabled={isProcessing}
+                  onClick={handleCancelAction}
+                  className="flex-1 py-4 bg-slate-100 text-slate-600 rounded-xl font-semibold uppercase text-[11px] tracking-widest hover:bg-slate-200 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isProcessing}
+                  onClick={handleConfirmAction}
+                  className={`flex-1 py-4 text-white rounded-xl font-semibold uppercase text-[11px] tracking-widest shadow-xl flex items-center justify-center gap-3 transition-all ${
+                    confirmAction.type === 'delete' ? 'bg-rose-600 hover:bg-rose-700' :
+                    confirmAction.type === 'offboard' ? 'bg-amber-500 hover:bg-amber-600' :
+                    'bg-emerald-600 hover:bg-emerald-700'
+                  }`}
+                >
+                  {isProcessing ? (
+                    <RefreshCw className="animate-spin" size={18} />
+                  ) : (
+                    confirmAction.type === 'delete' ? <Trash2 size={18} /> :
+                    confirmAction.type === 'offboard' ? <UserX size={18} /> :
+                    <UserCheck size={18} />
+                  )}
+                  {confirmAction.type === 'delete' ? 'Delete Permanently' :
+                   confirmAction.type === 'offboard' ? 'Confirm Offboard' :
+                   'Confirm Reactivation'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
