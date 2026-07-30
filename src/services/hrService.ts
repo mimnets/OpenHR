@@ -20,7 +20,7 @@ export const hrService = {
   logout: authService.logout,
   finalizePasswordReset: authService.finalizePasswordReset,
   registerOrganization: authService.registerOrganization,
-  requestVerificationEmail: authService.requestVerificationEmail,
+  requestVerificationEmail: verificationService.resendVerificationEmail,
   confirmVerification: verificationService.verifyEmailToken,
 
   // Employee

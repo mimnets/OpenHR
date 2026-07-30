@@ -200,10 +200,13 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, onRegisterClick, onBackTo
   const handleResendVerification = async () => {
     if (!email) return;
     try {
-      await hrService.requestVerificationEmail(email);
-      showToast("A new verification link has been sent to your email.", "success");
+      const result = await hrService.requestVerificationEmail(email);
+      showToast(result.message || "A new verification link has been sent to your email.", result.success ? "success" : "info");
+      if (result.success && result.message.includes('already verified')) {
+        // Account is already confirmed — clear the error so user can retry login
+        setError("");
+      }
       setShowResend(false);
-      setError("");
     } catch (e) {
       showToast("Failed to send verification email.", "error");
     }

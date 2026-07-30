@@ -15,6 +15,16 @@ export interface ChangelogRelease {
 
 export const changelog: ChangelogRelease[] = [
   {
+    date: '2026-07-30',
+    title: 'Email verification flow fix — employees no longer stuck as "not verified"',
+    entries: [
+      { type: 'fix', description: 'Fixed employees getting "Account not verified" after confirming their email. Root cause: profiles.verified was never set to true when Supabase Auth confirmed the email. Created a database trigger (migration 0022) that auto-syncs profiles.verified = true when auth.users.email_confirmed_at transitions from NULL to non-NULL. Also added a backfill to fix existing stuck users. Added client-side belt-and-suspenders: verifyEmailToken now uses the correct OTP type (signup, not email) and updates profiles.verified after successful verification. Improved checkVerified with email_confirmed_at fallback for edge cases during the transition period.' },
+      { type: 'fix', description: 'Fixed "Resend Link" silently failing when the email is already confirmed. resendVerificationEmail now checks auth.users.email_confirmed_at before calling the Supabase resend API — if already confirmed, it fixes the profile flag and tells the user to try signing in again instead of sending a no-op email.' },
+      { type: 'improvement', description: 'Updated the Supabase "Confirm Signup" email template with professional branding: subject line changed to "Welcome to OpenHR — Verify Your Email", gradient purple header, contextual body copy, and clean footer. Template HTML documented in Others/VERIFICATION_FIX_2026-07-30.md.' },
+      { type: 'improvement', description: 'Routed hrService.requestVerificationEmail through verificationService.resendVerificationEmail so both the Login page and post-registration verification page benefit from the improved resend logic (already-confirmed detection, better messages).' },
+    ],
+  },
+  {
     date: '2026-07-23',
     title: 'Automated testing infrastructure with Vitest and Testing Library',
     entries: [
