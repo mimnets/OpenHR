@@ -50,6 +50,11 @@ export const authService = {
       return { user: null, error: 'Account not verified. Please check your email.' };
     }
 
+    if (profile.status === 'INACTIVE') {
+      await supabase.auth.signOut();
+      return { user: null, error: 'Your account has been deactivated. Please contact your administrator.' };
+    }
+
     const appUser = profileToUser({ ...profile, email: authData.user.email });
     apiClient.setOrganizationId(profile.organization_id);
     apiClient.setAuthRole(profile.role);

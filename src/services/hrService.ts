@@ -28,6 +28,8 @@ export const hrService = {
   addEmployee: employeeService.addEmployee,
   updateProfile: employeeService.updateProfile,
   deleteEmployee: employeeService.deleteEmployee,
+  offboardEmployee: employeeService.offboardEmployee,
+  reactivateEmployee: employeeService.reactivateEmployee,
   activateUser: verificationService.adminActivateUser,
 
   // Attendance

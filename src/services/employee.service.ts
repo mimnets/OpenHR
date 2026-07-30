@@ -188,12 +188,69 @@ export const employeeService = {
   },
 
   async deleteEmployee(id: string) {
-    if (!isSupabaseConfigured()) return;
+    if (!isSupabaseConfigured() || !SUPABASE_FUNCTIONS_URL) return;
 
-    // Deleting from profiles cascades to auth.users via FK (on delete cascade).
-    // Service-role is needed to delete auth.users — use Edge Function if RLS blocks.
-    const { error } = await supabase.from('profiles').delete().eq('id', id);
-    if (error) throw error;
+    // Use the Edge Function so the auth.users record is also deleted.
+    // The client-side profiles.delete() only removes the profiles row;
+    // the FK cascade only works auth→profiles, not profiles→auth.
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated');
+
+    const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/delete-employee`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId: id }),
+    });
+
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.message || 'Failed to delete employee');
+
+    employeeService.clearCache();
+    apiClient.notify();
+  },
+
+  async offboardEmployee(id: string) {
+    if (!isSupabaseConfigured() || !SUPABASE_FUNCTIONS_URL) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated');
+
+    const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/admin-offboard-employee`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId: id, action: 'offboard' }),
+    });
+
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.message || 'Failed to offboard employee');
+
+    employeeService.clearCache();
+    apiClient.notify();
+  },
+
+  async reactivateEmployee(id: string) {
+    if (!isSupabaseConfigured() || !SUPABASE_FUNCTIONS_URL) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated');
+
+    const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/admin-offboard-employee`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId: id, action: 'reactivate' }),
+    });
+
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.message || 'Failed to reactivate employee');
 
     employeeService.clearCache();
     apiClient.notify();
