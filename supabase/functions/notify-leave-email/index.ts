@@ -1,4 +1,4 @@
-// OpenHR — Notify Leave Email Edge Function
+// OpenHRApp — Notify Leave Email Edge Function
 // Sends email notifications for leave application lifecycle events:
 //   SUBMITTED → employee confirmation + manager action-required + HR FYI
 //   MANAGER_APPROVED → employee update + HR action-required
@@ -16,8 +16,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const FROM_EMAIL = 'OpenHR <noreply@openhrapp.com>';
-const APP_URL = 'https://app.openhr.app';
+const FROM_EMAIL = 'OpenHRApp <noreply@openhrapp.com>';
+const APP_URL = Deno.env.get('APP_URL') || 'https://openhrapp.com';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -60,7 +60,7 @@ function baseTemplate(title: string, content: string): string {
         <!-- Header -->
         <tr>
           <td style="background-color:#4f46e5;padding:24px 32px;text-align:center;">
-            <h1 style="color:#ffffff;font-size:20px;font-weight:600;margin:0;">OpenHR</h1>
+            <h1 style="color:#ffffff;font-size:20px;font-weight:600;margin:0;">OpenHRApp</h1>
           </td>
         </tr>
         <!-- Body -->
@@ -74,7 +74,7 @@ function baseTemplate(title: string, content: string): string {
         <tr>
           <td style="background-color:#f9fafb;padding:16px 32px;text-align:center;border-top:1px solid #e5e7eb;">
             <p style="color:#6b7280;font-size:12px;margin:0;">
-              This is an automated message from OpenHR.
+              This is an automated message from OpenHRApp.
               <br><a href="${APP_URL}" style="color:#4f46e5;text-decoration:none;">${APP_URL}</a>
             </p>
           </td>
@@ -152,7 +152,7 @@ function buildEmployeeEmail(leave: LeaveRecord, action: LeaveAction): { subject:
           ${details}
           <p style="color:#111827;font-size:14px;font-weight:500;">Status: ${statusBadge(leave.status)}</p>
           ${nextStep}
-          ${ctaButton('View Leave Status', `${APP_URL}/dashboard`)}
+          ${ctaButton('View Leave Status', `${APP_URL}/#/leave/${leave.id}`)}
         `),
       };
     }
@@ -165,7 +165,7 @@ function buildEmployeeEmail(leave: LeaveRecord, action: LeaveAction): { subject:
           ${details}
           <p style="color:#111827;font-size:14px;font-weight:500;">Status: ${statusBadge('PENDING_HR')}</p>
           ${leave.manager_remarks ? `<p style="color:#4b5563;font-size:13px;background-color:#f9fafb;padding:12px;border-radius:6px;border-left:3px solid #4f46e5;"><strong>Manager Remarks:</strong> ${escapeHtml(leave.manager_remarks)}</p>` : ''}
-          ${ctaButton('View Leave Status', `${APP_URL}/dashboard`)}
+          ${ctaButton('View Leave Status', `${APP_URL}/#/leave/${leave.id}`)}
         `),
       };
 
@@ -177,7 +177,7 @@ function buildEmployeeEmail(leave: LeaveRecord, action: LeaveAction): { subject:
           ${details}
           <p style="color:#111827;font-size:14px;font-weight:500;">Status: ${statusBadge('REJECTED')}</p>
           ${leave.manager_remarks ? `<p style="color:#4b5563;font-size:13px;background-color:#fef2f2;padding:12px;border-radius:6px;border-left:3px solid #ef4444;"><strong>Reason:</strong> ${escapeHtml(leave.manager_remarks)}</p>` : ''}
-          ${ctaButton('View Dashboard', `${APP_URL}/dashboard`)}
+          ${ctaButton('View Leave Details', `${APP_URL}/#/leave/${leave.id}`)}
         `),
       };
 
@@ -190,7 +190,7 @@ function buildEmployeeEmail(leave: LeaveRecord, action: LeaveAction): { subject:
           <p style="color:#111827;font-size:14px;font-weight:500;">Status: ${statusBadge('APPROVED')}</p>
           ${leave.approver_remarks ? `<p style="color:#4b5563;font-size:13px;background-color:#f0fdf4;padding:12px;border-radius:6px;border-left:3px solid #10b981;"><strong>HR Remarks:</strong> ${escapeHtml(leave.approver_remarks)}</p>` : ''}
           <p style="color:#4b5563;font-size:14px;margin-top:16px;">Enjoy your time off!</p>
-          ${ctaButton('View Dashboard', `${APP_URL}/dashboard`)}
+          ${ctaButton('View Leave Details', `${APP_URL}/#/leave/${leave.id}`)}
         `),
       };
 
@@ -202,7 +202,7 @@ function buildEmployeeEmail(leave: LeaveRecord, action: LeaveAction): { subject:
           ${details}
           <p style="color:#111827;font-size:14px;font-weight:500;">Status: ${statusBadge('REJECTED')}</p>
           ${leave.approver_remarks ? `<p style="color:#4b5563;font-size:13px;background-color:#fef2f2;padding:12px;border-radius:6px;border-left:3px solid #ef4444;"><strong>Reason:</strong> ${escapeHtml(leave.approver_remarks)}</p>` : ''}
-          ${ctaButton('View Dashboard', `${APP_URL}/dashboard`)}
+          ${ctaButton('View Leave Details', `${APP_URL}/#/leave/${leave.id}`)}
         `),
       };
 
@@ -223,7 +223,7 @@ function buildManagerEmail(leave: LeaveRecord, action: LeaveAction, employeeName
           <p style="color:#4b5563;font-size:14px;"><strong>${escapeHtml(employeeName)}</strong> has submitted a leave request and requires your approval.</p>
           ${details}
           <p style="color:#111827;font-size:14px;font-weight:500;">Status: ${statusBadge('PENDING_MANAGER')}</p>
-          ${ctaButton('Review Leave Request', `${APP_URL}/dashboard`)}
+          ${ctaButton('Review Leave Request', `${APP_URL}/#/leave/${leave.id}`)}
         `),
       };
 
@@ -234,7 +234,7 @@ function buildManagerEmail(leave: LeaveRecord, action: LeaveAction, employeeName
           <p style="color:#4b5563;font-size:14px;">The leave request from <strong>${escapeHtml(employeeName)}</strong> has been <strong style="color:#10b981;">fully approved</strong> by HR.</p>
           ${details}
           <p style="color:#111827;font-size:14px;font-weight:500;">Status: ${statusBadge('APPROVED')}</p>
-          ${ctaButton('View Dashboard', `${APP_URL}/dashboard`)}
+          ${ctaButton('View Leave Details', `${APP_URL}/#/leave/${leave.id}`)}
         `),
       };
 
@@ -245,7 +245,7 @@ function buildManagerEmail(leave: LeaveRecord, action: LeaveAction, employeeName
           <p style="color:#4b5563;font-size:14px;">The leave request from <strong>${escapeHtml(employeeName)}</strong> has been <strong style="color:#ef4444;">rejected</strong> by HR.</p>
           ${details}
           ${leave.approver_remarks ? `<p style="color:#4b5563;font-size:13px;background-color:#fef2f2;padding:12px;border-radius:6px;border-left:3px solid #ef4444;"><strong>Reason:</strong> ${escapeHtml(leave.approver_remarks)}</p>` : ''}
-          ${ctaButton('View Dashboard', `${APP_URL}/dashboard`)}
+          ${ctaButton('View Leave Details', `${APP_URL}/#/leave/${leave.id}`)}
         `),
       };
 
@@ -269,7 +269,7 @@ function buildHrEmail(leave: LeaveRecord, action: LeaveAction, employeeName: str
           ${details}
           <p style="color:#111827;font-size:14px;font-weight:500;">Status: ${statusBadge(leave.status)}</p>
           ${route}
-          ${ctaButton('View All Leaves', `${APP_URL}/dashboard`)}
+          ${ctaButton('View All Leaves', `${APP_URL}/#/leaves`)}
         `),
       };
     }
@@ -282,7 +282,7 @@ function buildHrEmail(leave: LeaveRecord, action: LeaveAction, employeeName: str
           ${details}
           <p style="color:#111827;font-size:14px;font-weight:500;">Status: ${statusBadge('PENDING_HR')}</p>
           ${leave.manager_remarks ? `<p style="color:#4b5563;font-size:13px;background-color:#f9fafb;padding:12px;border-radius:6px;border-left:3px solid #4f46e5;"><strong>Manager Remarks:</strong> ${escapeHtml(leave.manager_remarks)}</p>` : ''}
-          ${ctaButton('Review & Approve', `${APP_URL}/dashboard`)}
+          ${ctaButton('Review & Approve', `${APP_URL}/#/leave/${leave.id}`)}
         `),
       };
 
@@ -294,7 +294,7 @@ function buildHrEmail(leave: LeaveRecord, action: LeaveAction, employeeName: str
           ${details}
           <p style="color:#111827;font-size:14px;font-weight:500;">Status: ${statusBadge('REJECTED')}</p>
           ${leave.manager_remarks ? `<p style="color:#4b5563;font-size:13px;background-color:#fef2f2;padding:12px;border-radius:6px;border-left:3px solid #ef4444;"><strong>Reason:</strong> ${escapeHtml(leave.manager_remarks)}</p>` : ''}
-          ${ctaButton('View All Leaves', `${APP_URL}/dashboard`)}
+          ${ctaButton('View All Leaves', `${APP_URL}/#/leaves`)}
         `),
       };
 
@@ -310,7 +310,7 @@ function buildHrEmail(leave: LeaveRecord, action: LeaveAction, employeeName: str
           ${details}
           <p style="color:#111827;font-size:14px;font-weight:500;">Status: ${statusBadge(leave.status)}</p>
           ${leave.approver_remarks ? `<p style="color:#4b5563;font-size:13px;background-color:${bg};padding:12px;border-radius:6px;border-left:3px solid ${color};"><strong>HR Remarks:</strong> ${escapeHtml(leave.approver_remarks)}</p>` : ''}
-          ${ctaButton('View All Leaves', `${APP_URL}/dashboard`)}
+          ${ctaButton('View All Leaves', `${APP_URL}/#/leaves`)}
         `),
       };
     }

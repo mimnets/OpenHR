@@ -1,7 +1,7 @@
 # ============================================================
-# OpenHR — Docker Compose Stack
+# OpenHRApp — Docker Compose Stack
 #
-# Starts the complete OpenHR platform with a single command:
+# Starts the complete OpenHRApp platform with a single command:
 #   docker compose up -d
 #
 # Prerequisites:
@@ -27,17 +27,17 @@
 # ---- Networks ----
 networks:
   openhr-network:
-    name: openhr-network
+    name: openhrapp-network
     driver: bridge
 
 # ---- Volumes ----
 volumes:
   postgres-data:
-    name: openhr-postgres-data
+    name: openhrapp-postgres-data
   minio-data:
-    name: openhr-minio-data
+    name: openhrapp-minio-data
   openhr-secrets:
-    name: openhr-secrets
+    name: openhrapp-secrets
 
 # ---- Services ----
 services:
@@ -47,14 +47,15 @@ services:
   # ============================================================
   supabase-db:
     image: supabase/postgres:15.14.1.151
-    container_name: openhr-db
+    container_name: openhrapp-db
     restart: unless-stopped
     networks:
-      - openhr-network
+      - openhrapp-network
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./volumes/init-roles.sh:/docker-entrypoint-initdb.d/99-init-roles.sh:ro
     environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-openhr-postgres-dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-openhrapp-postgres-dev}
       POSTGRES_DB: ${DB_NAME:-postgres}
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "postgres", "-h", "localhost"]
@@ -68,10 +69,10 @@ services:
   # ============================================================
   supabase-kong:
     image: kong:3.7
-    container_name: openhr-kong
+    container_name: openhrapp-kong
     restart: unless-stopped
     networks:
-      - openhr-network
+      - openhrapp-network
     ports:
       - "8000:8000"   # Public API endpoint
       - "8001:8001"   # Admin API (internal)
@@ -103,17 +104,17 @@ services:
   # ============================================================
   supabase-auth:
     image: supabase/gotrue:v2.170.0
-    container_name: openhr-auth
+    container_name: openhrapp-auth
     restart: unless-stopped
     networks:
-      - openhr-network
+      - openhrapp-network
     environment:
       GOTRUE_API_HOST: "0.0.0.0"
       GOTRUE_API_PORT: "9999"
       GOTRUE_DB_DRIVER: postgres
-      GOTRUE_DB_DATABASE_URL: "postgres://supabase_auth_admin:${POSTGRES_PASSWORD:-openhr-postgres-dev}@supabase-db:5432/${DB_NAME:-postgres}?sslmode=disable"
+      GOTRUE_DB_DATABASE_URL: "postgres://supabase_auth_admin:${POSTGRES_PASSWORD:-openhrapp-postgres-dev}@supabase-db:5432/${DB_NAME:-postgres}?sslmode=disable"
       GOTRUE_SITE_URL: ${SITE_URL:-http://localhost:3000}
-      GOTRUE_JWT_SECRET: ${JWT_SECRET:-openhr-jwt-secret-change-me-in-production-please}
+      GOTRUE_JWT_SECRET: ${JWT_SECRET:-openhrapp-jwt-secret-change-me-in-production-please}
       GOTRUE_JWT_EXP: "3600"
       GOTRUE_JWT_DEFAULT_GROUP_NAME: "authenticated"
       GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
@@ -123,7 +124,7 @@ services:
       GOTRUE_SMTP_USER: ${SMTP_USER:-}
       GOTRUE_SMTP_PASS: ${SMTP_PASS:-}
       GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL:-noreply@openhrapp.com}
-      GOTRUE_SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-OpenHR}
+      GOTRUE_SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-OpenHRApp}
       GOTRUE_DISABLE_SIGNUP: "false"
       GOTRUE_LOG_LEVEL: info
       GOTRUE_OPERATOR_TOKEN: ${SERVICE_ROLE_KEY:-}
@@ -143,16 +144,16 @@ services:
   # ============================================================
   supabase-rest:
     image: postgrest/postgrest:v12.2.8
-    container_name: openhr-rest
+    container_name: openhrapp-rest
     restart: unless-stopped
     networks:
-      - openhr-network
+      - openhrapp-network
     environment:
-      PGRST_DB_URI: "postgres://supabase_auth_admin:${POSTGRES_PASSWORD:-openhr-postgres-dev}@supabase-db:5432/${DB_NAME:-postgres}?sslmode=disable"
+      PGRST_DB_URI: "postgres://supabase_auth_admin:${POSTGRES_PASSWORD:-openhrapp-postgres-dev}@supabase-db:5432/${DB_NAME:-postgres}?sslmode=disable"
       PGRST_DB_SCHEMAS: "public,storage,graphql_public"
       PGRST_DB_ANON_ROLE: anon
       PGRST_DB_USE_LEGACY_GUCS: "false"
-      PGRST_JWT_SECRET: ${JWT_SECRET:-openhr-jwt-secret-change-me-in-production-please}
+      PGRST_JWT_SECRET: ${JWT_SECRET:-openhrapp-jwt-secret-change-me-in-production-please}
       PGRST_DB_EXTRA_SEARCH_PATH: "public,extensions"
       PGRST_OPENAPI_SERVER_PROXY_URI: ${API_EXTERNAL_URL:-http://localhost:8000}/rest/v1
       PGRST_SERVER_HOST: "0.0.0.0"
@@ -162,7 +163,7 @@ services:
       supabase-db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      test: ["CMD", "/bin/postgrest", "--version"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -173,31 +174,32 @@ services:
   # ============================================================
   supabase-realtime:
     image: supabase/realtime:v2.34.15
-    container_name: openhr-realtime
+    container_name: openhrapp-realtime
     restart: unless-stopped
     networks:
-      - openhr-network
+      - openhrapp-network
     environment:
       DB_HOST: supabase-db
       DB_PORT: "5432"
       DB_USER: supabase_auth_admin
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-openhr-postgres-dev}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-openhrapp-postgres-dev}
       DB_NAME: ${DB_NAME:-postgres}
-      DB_ENC_KEY: ${JWT_SECRET:-openhr-jwt-secret-change-me-in-production-please}
+      DB_ENC_KEY: ${DB_ENC_KEY:-Rl5Mu7K04BWb1QOm}
       DB_AFTER_CONNECT_QUERY: "SET search_path TO _realtime"
-      API_JWT_SECRET: ${JWT_SECRET:-openhr-jwt-secret-change-me-in-production-please}
-      SECRET_KEY_BASE: ${JWT_SECRET:-openhr-jwt-secret-change-me-in-production-please}
+      API_JWT_SECRET: ${JWT_SECRET:-openhrapp-jwt-secret-change-me-in-production-please}
+      SECRET_KEY_BASE: ${JWT_SECRET:-openhrapp-jwt-secret-change-me-in-production-please}
       PORT: "4000"
       ERL_AFLAGS: "-proto_dist inet_tcp"
       DNS_NODES: "''"
       RLIMIT_NOFILE: "10000"
+      APP_NAME: "realtime"
       SEED_SELF_HOST: "true"
       MAX_HEADER_LENGTH: "8192"
     depends_on:
       supabase-db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/api/ping"]
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/127.0.0.1/4000"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -208,7 +210,7 @@ services:
   # ============================================================
   supabase-minio:
     image: minio/minio:latest
-    container_name: openhr-minio
+    container_name: openhrapp-minio
     restart: unless-stopped
     networks:
       - openhr-network
@@ -216,7 +218,7 @@ services:
       - minio-data:/data
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-supabase-storage}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-openhr-minio-dev-password}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-openhrapp-minio-dev-password}
     command: server /data --console-address ":9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
@@ -230,7 +232,7 @@ services:
   # ============================================================
   supabase-storage:
     image: supabase/storage-api:v1.22.3
-    container_name: openhr-storage
+    container_name: openhrapp-storage
     restart: unless-stopped
     networks:
       - openhr-network
@@ -271,7 +273,7 @@ services:
       supabase-imgproxy:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/status"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:5000/status"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -319,7 +321,7 @@ services:
       supabase-db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/127.0.0.1/8080"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -336,6 +338,10 @@ services:
       - openhr-network
     volumes:
       - ./supabase/functions:/home/deno/functions:ro
+    command:
+      - start
+      - --main-service
+      - /home/deno/functions/main
     environment:
       SUPABASE_URL: ${API_EXTERNAL_URL:-http://localhost:8000}
       SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY:-}
@@ -352,7 +358,7 @@ services:
       supabase-rest:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9000/"]
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/127.0.0.1/9000"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -392,7 +398,7 @@ services:
       supabase-kong:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/profile"]
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/$(hostname -i)/3000"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -429,7 +435,7 @@ services:
   #     - Configures cron jobs
   # ============================================================
   openhr-init:
-    image: node:20-alpine
+    image: node:20
     container_name: openhr-init
     restart: "no"
     networks:

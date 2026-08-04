@@ -9,7 +9,7 @@ interface BlogNavbarProps {
   onRegisterClick?: () => void;
 }
 
-const BlogNavbar: React.FC<BlogNavbarProps> = ({ onBack, onRegisterClick }) => {
+const BlogNavbar: React.FC<BlogNavbarProps> = ({ onBack: _onBack, onRegisterClick }) => {
   const { darkMode, setDarkModePreference } = useTheme();
   const { setSearchOpen } = useSearch();
   const [mobileOpen, setMobileOpen] = useState(false);

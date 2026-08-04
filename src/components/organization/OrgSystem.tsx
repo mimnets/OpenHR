@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Globe, Moon, MapPin, Upload, Building2, Tag } from 'lucide-react';
+import { Globe, Moon, MapPin, Building2, Tag } from 'lucide-react';
 import { AppConfig } from '../../types';
 import { COUNTRIES, getFlagEmoji } from '../../data/countries';
 import { TIMEZONE_OPTIONS } from '../../constants';

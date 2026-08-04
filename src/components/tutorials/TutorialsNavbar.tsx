@@ -9,7 +9,7 @@ interface TutorialsNavbarProps {
   onRegisterClick?: () => void;
 }
 
-const TutorialsNavbar: React.FC<TutorialsNavbarProps> = ({ onBack, onRegisterClick }) => {
+const TutorialsNavbar: React.FC<TutorialsNavbarProps> = ({ onBack: _onBack, onRegisterClick }) => {
   const { darkMode, setDarkModePreference } = useTheme();
   const { setSearchOpen } = useSearch();
   const [mobileOpen, setMobileOpen] = useState(false);

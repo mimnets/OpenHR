@@ -20,7 +20,7 @@
     "allowJs": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
-    "ignoreDeprecations": true,
+
     "paths": {
       "@/*": [
         "src/*"

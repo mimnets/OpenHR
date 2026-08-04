@@ -102,7 +102,7 @@ async function notifyOrgAdminsAboutDecision(
 async function sendEmailToSuperAdmins(
   orgName: string,
   typeLabel: string,
-  orgId: string,
+  _orgId: string,
 ): Promise<void> {
   try {
     const subject = `New ${typeLabel} request from ${orgName}`;
