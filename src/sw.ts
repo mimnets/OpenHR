@@ -55,6 +55,16 @@ registerRoute(
   }),
 );
 
+// Supabase Settings — never cache (theme, configs, workflows must be fresh).
+// Placed BEFORE the general REST route because Workbox uses first-match.
+registerRoute(
+  ({ url, request }) =>
+    request.method === 'GET' &&
+    url.host.endsWith('.supabase.co') &&
+    /^\/rest\/v1\/settings/.test(url.pathname),
+  new NetworkOnly(),
+);
+
 // Supabase REST — NetworkFirst with 8s timeout for iOS LTE
 registerRoute(
   ({ url, request }) =>

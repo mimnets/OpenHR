@@ -92,17 +92,27 @@ async function sendWebPush(
     .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 
   const jwt = `${signingInput}.${sig}`;
-  // Note: sending without payload (no encryption). Browser shows generic SW push event with empty data.
-  // Service worker push handler must handle empty data case.
-  void payload;
+
+  // Encode payload as JSON — matches what cron-push-checkin-reminder sends
+  // and what the SW push handler (sw.ts) expects: { title, body, url, icon, tag }.
+  const pushPayload = {
+    title: payload.title,
+    body: payload.body,
+    url: payload.url ?? '/dashboard',
+    icon: payload.icon ?? '/img/icon-192.png',
+    tag: payload.tag ?? 'openhr-broadcast',
+  };
+  const payloadBytes = new TextEncoder().encode(JSON.stringify(pushPayload));
 
   try {
     const response = await fetch(sub.endpoint, {
       method: 'POST',
       headers: {
         'Authorization': `vapid t=${jwt},k=${vapidPublicKey}`,
+        'Content-Type': 'application/json',
         'TTL': '86400',
       },
+      body: payloadBytes,
     });
     const text = await response.text();
     console.log(`[push-send] status=${response.status} endpoint=${sub.endpoint.slice(0, 60)} body=${text.slice(0, 200)}`);
