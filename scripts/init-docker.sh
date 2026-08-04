@@ -38,7 +38,7 @@ MAX_WAIT_SEC="${MAX_WAIT_SEC:-120}"
 
 # ---- Phase 1: Install Dependencies ----
 header "Phase 1: Installing dependencies"
-apk add --no-cache --quiet postgresql-client curl jq 2>/dev/null
+apt-get update -qq && apt-get install -y -qq postgresql-client curl jq 2>/dev/null
 log "Dependencies installed (psql, curl, jq)"
 
 # ---- Phase 2: Wait for All Services ----

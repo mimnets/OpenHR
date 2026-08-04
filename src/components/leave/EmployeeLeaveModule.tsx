@@ -155,7 +155,7 @@ const EmployeeLeaveModule: React.FC<Props> = ({ user, balance, history, onRefres
       let managerName = 'N/A';
       try {
         if (req.lineManagerId) {
-          const employees = await employeeService.getEmployees();
+          const employees = await hrService.getEmployees();
           const mgr = employees.find(e => e.id === req.lineManagerId);
           managerName = mgr?.name || 'N/A';
         }

@@ -15,6 +15,8 @@ const NOTIFICATION_TYPE_LABELS: Record<NotificationType, { label: string; descri
   ATTENDANCE: { label: 'Attendance', description: 'Check-in reminders, late alerts, missed check-outs' },
   REVIEW: { label: 'Performance Reviews', description: 'Review cycle updates and assessment notifications' },
   SYSTEM: { label: 'System', description: 'System alerts, maintenance, and admin notifications' },
+  NEW_REGISTRATION: { label: 'New Registrations', description: 'New organization sign-up alerts' },
+  UPGRADE_REQUEST: { label: 'Upgrade Requests', description: 'Organization upgrade request alerts' },
 };
 
 const DIGEST_OPTIONS: { value: EmailDigestFrequency; label: string }[] = [

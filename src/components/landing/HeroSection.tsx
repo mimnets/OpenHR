@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Clock, CreditCard, Zap, LogIn, Download, RotateCcw, Share, MoreVertical, X, Play } from 'lucide-react';
+import { ArrowRight, Clock, CreditCard, Zap, LogIn, Download, Share, MoreVertical, X, Play } from 'lucide-react';
 import DemoLoginModal from './DemoLoginModal';
 
 interface HeroSectionProps {
@@ -10,9 +10,9 @@ interface HeroSectionProps {
 
 const HeroSection: React.FC<HeroSectionProps> = ({ onLoginClick, onRegisterClick }) => {
   const [showInstallGuide, setShowInstallGuide] = useState(false);
-  const [canPrompt, setCanPrompt] = useState(false);
+  const [_canPrompt, setCanPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const [_isInstalled, setIsInstalled] = useState(false);
   const [showDemoModal, setShowDemoModal] = useState(false);
 
   useEffect(() => {
@@ -28,19 +28,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onLoginClick, onRegisterClick
     return () => window.removeEventListener('pwa-install-available', handler);
   }, []);
 
-  const handleInstallClick = async () => {
-    const promptEvent = (window as any).deferredPWAPrompt;
-    if (promptEvent) {
-      promptEvent.prompt();
-      const { outcome } = await promptEvent.userChoice;
-      if (outcome === 'accepted') {
-        (window as any).deferredPWAPrompt = null;
-        setCanPrompt(false);
-      }
-    } else {
-      setShowInstallGuide(true);
-    }
-  };
+  // (install handler removed — PWA prompt is managed by the browser)
 
   const handleDemoClick = () => {
     setShowDemoModal(true);

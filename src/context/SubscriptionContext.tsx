@@ -48,6 +48,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
           isReadOnly: false,
           isBlocked: false,
           showAds: false,
+          isDemo: false,
         });
       }
     } finally {

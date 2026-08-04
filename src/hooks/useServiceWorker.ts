@@ -6,7 +6,7 @@ const JUST_UPDATED_KEY = 'pwa-just-updated';
 const SUPPRESS_WINDOW_MS = 30 * 1000;
 
 export function useServiceWorker() {
-  const intervalRef = useRef<ReturnType<typeof setInterval>>();
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const justUpdatedAtRef = useRef<number | null>(null);
 
