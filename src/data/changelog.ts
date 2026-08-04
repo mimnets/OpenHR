@@ -15,6 +15,14 @@ export interface ChangelogRelease {
 
 export const changelog: ChangelogRelease[] = [
   {
+    date: '2026-08-04',
+    title: 'Fixed leave email links returning 404 — proper deep linking for all leave notifications',
+    entries: [
+      { type: 'fix', description: 'Fixed leave notification email links returning 404. Root cause: App.tsx is404 detection didn\'t recognize the /dashboard/<orgId>/<leaveId>/<token> path format used in email links, showing NotFoundPage. Added a legacy path handler that extracts the leave ID from /dashboard/ paths and redirects to the hash-based deep link (#/leave/<id>). Also added catch-all redirects for /dashboard and /dashboard/ paths to #/dashboard. This ensures existing emails with legacy URLs still work instead of showing 404.' },
+      { type: 'fix', description: 'Updated notify-leave-email Edge Function to generate proper hash-based deep links. All CTA buttons now link to #/leave/<leaveId> (for employee leave status and manager/HR review actions) or #/leaves (for HR overview views). Previously all links went to the generic /dashboard page with no way to find the specific leave request. Made APP_URL configurable via environment variable (with openh rapp.com fallback) so different deployments can set their own domain. Updated branding from "OpenHR" to "OpenHRApp" throughout the email template.' },
+    ],
+  },
+  {
     date: '2026-07-30',
     title: 'Email verification flow fix — employees no longer stuck as "not verified"',
     entries: [
