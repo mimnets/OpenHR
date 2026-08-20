@@ -59,7 +59,7 @@ const FeaturesPage: React.FC<FeaturesPageProps> = ({ onBack, onRegisterClick }) 
       'Features | OpenHRApp',
       'Explore all OpenHRApp features: selfie-based attendance with GPS, leave management, employee directory, performance reviews, reports, and more. Free and open-source.',
       'https://openhrapp.com/features',
-      'https://openhrapp.com/img/screenshot-wide.webp'
+      'https://openhrapp.com/img/screenshot-wide.png'
     );
     setJsonLd({
       '@context': 'https://schema.org',

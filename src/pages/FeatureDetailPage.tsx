@@ -38,7 +38,7 @@ const FeatureDetailPage: React.FC<FeatureDetailPageProps> = ({ slug, onBack, onR
             operatingSystem: 'Web, Android, iOS',
             description: feature.metaDescription,
             url: `https://openhrapp.com/features/${feature.slug}`,
-            image: 'https://openhrapp.com/img/screenshot-wide.webp',
+            image: 'https://openhrapp.com/img/screenshot-wide.png',
             offers: {
               '@type': 'Offer',
               price: '0',

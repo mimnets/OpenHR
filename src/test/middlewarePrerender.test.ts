@@ -151,6 +151,56 @@ describe('article document', () => {
     expect(html).not.toContain('By null');
   });
 
+  it('falls back to the PNG default when the cover is WebP', async () => {
+    // Facebook, LinkedIn, X, and WhatsApp do not render WebP in og:image, so a
+    // .webp cover would produce a preview card with no image at all.
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify([{
+      ...POST_ROW,
+      cover_image: 'blog-covers/1234.webp',
+    }]), { status: 200 })));
+
+    const res = await middleware(req('https://openhrapp.com/blog/x', GOOGLEBOT));
+    const html = await res!.text();
+    expect(html).not.toContain('.webp');
+    expect(html).toContain('content="https://openhrapp.com/img/screenshot-wide.png"');
+    expect(html).toContain('<meta property="og:image:type" content="image/png">');
+  });
+
+  it('uses the post\'s own cover when it is a JPEG', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify([{
+      ...POST_ROW,
+      cover_image: 'blog-covers/1234.jpg',
+    }]), { status: 200 })));
+
+    const res = await middleware(req('https://openhrapp.com/blog/x', GOOGLEBOT));
+    const html = await res!.text();
+    expect(html).toContain('/storage/v1/object/public/content-images/blog-covers/1234.jpg');
+    expect(html).toContain('<meta property="og:image:type" content="image/jpeg">');
+  });
+
+  it('emits the image metadata Facebook needs to render a large card', async () => {
+    const res = await middleware(req('https://openhrapp.com/blog/how-to-stop-buddy-punching', FACEBOOK));
+    const html = await res!.text();
+
+    expect(html).toContain('<meta property="og:image" content=');
+    expect(html).toContain('<meta property="og:image:secure_url" content=');
+    expect(html).toContain('<meta property="og:image:type" content="image/png">');
+    expect(html).toContain('<meta property="og:image:width" content="1920">');
+    expect(html).toContain('<meta property="og:image:height" content="1080">');
+    expect(html).toMatch(/<meta property="og:image:alt" content="[^"]+"/);
+    expect(html).toContain('<meta name="twitter:card" content="summary_large_image">');
+  });
+
+  it('never emits a WebP social image on any route', async () => {
+    for (const p of ['/', '/blog', '/features', '/features/attendance-tracking', '/how-to-use']) {
+      const res = await middleware(req(`https://openhrapp.com${p}`, GOOGLEBOT));
+      if (!res) continue;
+      const html = await res.text();
+      const images = [...html.matchAll(/(?:og:image|twitter:image)" content="([^"]+)"/g)].map((m) => m[1]);
+      for (const src of images) expect(src, `${p} -> ${src}`).not.toMatch(/\.webp(\?|$)/i);
+    }
+  });
+
   it('uses TechArticle for guides', async () => {
     const res = await middleware(req('https://openhrapp.com/how-to-use/setting-up-organization', GOOGLEBOT));
     const html = await res!.text();

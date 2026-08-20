@@ -38,7 +38,60 @@ export const config = {
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || '';
 const SITE_URL = 'https://openhrapp.com';
-const DEFAULT_IMAGE = `${SITE_URL}/img/screenshot-wide.webp`;
+/**
+ * Social preview image.
+ *
+ * Deliberately PNG, not WebP. Facebook, LinkedIn, X, and WhatsApp do not render
+ * WebP in og:image — they support JPEG/PNG/GIF — so a .webp here silently
+ * produces a preview card with no image at all.
+ */
+interface SocialImage {
+  url: string;
+  type: string;
+  width?: number;
+  height?: number;
+  alt?: string;
+}
+
+const DEFAULT_IMAGE: SocialImage = {
+  url: `${SITE_URL}/img/screenshot-wide.png`,
+  type: 'image/png',
+  width: 1920,
+  height: 1080,
+  alt: 'OpenHRApp — free open-source HR management software',
+};
+
+const MIME_BY_EXT: Record<string, string> = {
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+};
+
+/**
+ * Turns a storage path into a shareable image, falling back to the default when
+ * the stored cover is a format link-preview crawlers cannot render.
+ *
+ * Blog covers are currently uploaded as WebP (src/utils/imageConvert.ts), so
+ * existing posts fall back here. New uploads store a JPEG so the post's own
+ * cover is used.
+ */
+function socialImageFor(coverPath: string | null | undefined, alt?: string): SocialImage {
+  if (!coverPath) return { ...DEFAULT_IMAGE, alt: alt || DEFAULT_IMAGE.alt };
+
+  const ext = (coverPath.split('.').pop() || '').toLowerCase();
+  const mime = MIME_BY_EXT[ext];
+  if (!mime) {
+    // WebP/AVIF/unknown — crawlers would drop it, so serve something renderable.
+    return { ...DEFAULT_IMAGE, alt: alt || DEFAULT_IMAGE.alt };
+  }
+
+  return {
+    url: `${SUPABASE_URL}/storage/v1/object/public/content-images/${coverPath}`,
+    type: mime,
+    alt: alt || DEFAULT_IMAGE.alt,
+  };
+}
 const DEFAULT_DESCRIPTION = 'Free, open-source HR management system with attendance tracking, leave management, employee directory, and compliance tools.';
 const PUBLISHER_NAME = 'OpenHRApp';
 
@@ -96,7 +149,7 @@ const FEATURE_META: Record<string, { title: string; description: string }> = {
 interface PageMeta {
   title: string;
   description: string;
-  image: string;
+  image: SocialImage;
   url: string;
 }
 
@@ -270,7 +323,7 @@ function buildJsonLd(meta: PageMeta, article: ArticleBody): string {
     description: meta.description,
     url: meta.url,
     mainEntityOfPage: { '@type': 'WebPage', '@id': meta.url },
-    image: meta.image,
+    image: meta.image.url,
     inLanguage: 'en',
     publisher: {
       '@type': 'Organization',
@@ -315,8 +368,22 @@ function buildJsonLd(meta: PageMeta, article: ArticleBody): string {
 function buildHtml(meta: PageMeta, article?: ArticleBody): string {
   const t = escapeHtml(meta.title);
   const d = escapeHtml(meta.description);
-  const i = escapeHtml(meta.image);
   const u = escapeHtml(meta.url);
+
+  // Facebook and LinkedIn render the card more reliably on first scrape when the
+  // image carries explicit dimensions and a MIME type, and secure_url is what
+  // several crawlers actually read.
+  const img = meta.image;
+  const imageTags = [
+    `<meta property="og:image" content="${escapeHtml(img.url)}">`,
+    `<meta property="og:image:secure_url" content="${escapeHtml(img.url)}">`,
+    `<meta property="og:image:type" content="${escapeHtml(img.type)}">`,
+    img.width ? `<meta property="og:image:width" content="${img.width}">` : '',
+    img.height ? `<meta property="og:image:height" content="${img.height}">` : '',
+    img.alt ? `<meta property="og:image:alt" content="${escapeHtml(img.alt)}">` : '',
+    `<meta name="twitter:image" content="${escapeHtml(img.url)}">`,
+    img.alt ? `<meta name="twitter:image:alt" content="${escapeHtml(img.alt)}">` : '',
+  ].filter(Boolean).join('\n');
 
   const jsonLd = article ? buildJsonLd(meta, article) : '';
 
@@ -364,13 +431,12 @@ function buildHtml(meta: PageMeta, article?: ArticleBody): string {
 <meta property="og:url" content="${u}">
 <meta property="og:title" content="${t}">
 <meta property="og:description" content="${d}">
-<meta property="og:image" content="${i}">
 <meta property="og:site_name" content="OpenHRApp">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@openhrapp">
 <meta name="twitter:title" content="${t}">
 <meta name="twitter:description" content="${d}">
-<meta name="twitter:image" content="${i}">
+${imageTags}
 ${jsonLd}
 </head>
 <body>
@@ -411,9 +477,7 @@ async function resolveBlogPost(slug: string, pathname: string, wantContent: bool
   if (!rows?.length) return null;
   const p = rows[0];
 
-  const image = p.cover_image
-    ? `${SUPABASE_URL}/storage/v1/object/public/content-images/${p.cover_image}`
-    : DEFAULT_IMAGE;
+  const image = socialImageFor(p.cover_image, p.title);
   const cleaned = wantContent ? sanitizeHtml(p.content || '') : '';
   const description = p.excerpt || (cleaned ? textExcerpt(cleaned) : DEFAULT_DESCRIPTION);
 
@@ -457,9 +521,7 @@ async function resolveTutorial(slug: string, pathname: string, wantContent: bool
   if (!rows?.length) return null;
   const p = rows[0];
 
-  const image = p.cover_image
-    ? `${SUPABASE_URL}/storage/v1/object/public/content-images/${p.cover_image}`
-    : DEFAULT_IMAGE;
+  const image = socialImageFor(p.cover_image, p.title);
   const cleaned = wantContent ? sanitizeHtml(p.content || '') : '';
   const description = p.excerpt || (cleaned ? textExcerpt(cleaned) : DEFAULT_DESCRIPTION);
 

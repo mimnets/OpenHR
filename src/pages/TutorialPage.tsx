@@ -68,7 +68,7 @@ const TutorialPage: React.FC<TutorialPageProps> = ({ slug, onBack }) => {
           '@type': 'Article',
           headline: tutorialData.title,
           description: tutorialData.excerpt || '',
-          image: tutorialData.coverImage || 'https://openhrapp.com/img/screenshot-wide.webp',
+          image: tutorialData.coverImage || 'https://openhrapp.com/img/screenshot-wide.png',
           datePublished: tutorialData.created,
           dateModified: tutorialData.updated || tutorialData.created,
           author: {

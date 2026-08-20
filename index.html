@@ -17,7 +17,15 @@
   <meta property="og:url" content="https://openhrapp.com/">
   <meta property="og:title" content="OpenHRApp — Free Open-Source HR Management Software">
   <meta property="og:description" content="Free, open-source HR management system with attendance tracking, leave management, employee directory, and compliance tools for modern organizations.">
-  <meta property="og:image" content="https://openhrapp.com/img/screenshot-wide.webp">
+  <!-- PNG, not WebP: Facebook, LinkedIn, X, and WhatsApp do not render WebP in
+       link previews, so a .webp here yields a card with no image at all.
+       Explicit dimensions and type make the large card render on first scrape. -->
+  <meta property="og:image" content="https://openhrapp.com/img/screenshot-wide.png">
+  <meta property="og:image:secure_url" content="https://openhrapp.com/img/screenshot-wide.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1920">
+  <meta property="og:image:height" content="1080">
+  <meta property="og:image:alt" content="OpenHRApp — free open-source HR management software">
   <meta property="og:site_name" content="OpenHRApp">
   <meta property="og:locale" content="en_US">
 
@@ -26,7 +34,8 @@
   <meta name="twitter:site" content="@openhrapp">
   <meta name="twitter:title" content="OpenHRApp — Free Open-Source HR Management Software">
   <meta name="twitter:description" content="Free, open-source HR management system with attendance tracking, leave management, employee directory, and compliance tools for modern organizations.">
-  <meta name="twitter:image" content="https://openhrapp.com/img/screenshot-wide.webp">
+  <meta name="twitter:image" content="https://openhrapp.com/img/screenshot-wide.png">
+  <meta name="twitter:image:alt" content="OpenHRApp — free open-source HR management software">
 
   <!-- PWA & iOS Specific Meta Tags -->
   <meta name="theme-color" content="#fcfdfe">

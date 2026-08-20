@@ -3,7 +3,7 @@
  */
 
 const SITE_ORIGIN = 'https://openhrapp.com';
-const DEFAULT_SOCIAL_IMAGE = `${SITE_ORIGIN}/img/screenshot-wide.webp`;
+const DEFAULT_SOCIAL_IMAGE = `${SITE_ORIGIN}/img/screenshot-wide.png`;
 
 /** Navigate to a clean URL path using pushState + popstate dispatch. */
 export function navigateTo(path: string): void {

@@ -34,7 +34,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
       'OpenHRApp — Free Open-Source HR Management Software',
       'OpenHRApp is a free, open-source HR platform with attendance tracking, leave management, and employee directory. Get started today — no credit card required, completely free forever.',
       'https://openhrapp.com/',
-      'https://openhrapp.com/img/screenshot-wide.webp'
+      'https://openhrapp.com/img/screenshot-wide.png'
     );
 
     setJsonLd({
@@ -52,7 +52,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
           },
           description: 'Free, open-source HR management system with attendance tracking, leave management, employee directory, and compliance tools.',
           url: 'https://openhrapp.com',
-          image: 'https://openhrapp.com/img/screenshot-wide.webp',
+          image: 'https://openhrapp.com/img/screenshot-wide.png',
         },
         {
           '@type': 'FAQPage',
