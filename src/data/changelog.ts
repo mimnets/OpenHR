@@ -37,6 +37,16 @@ export const changelog: ChangelogRelease[] = [
     ],
   },
   {
+    date: '2026-08-04',
+    title: 'PWA audit fixes — theme propagation & push notification payload',
+    entries: [
+      { type: 'fix', description: 'Fixed super admin theme changes not propagating to PWA users. Root cause: the service worker cached Supabase REST API responses (/rest/v1/settings) with NetworkFirst strategy and a 5-min TTL, so PWA users saw stale cached theme values for up to 5 minutes after a platform-level theme change. Added a dedicated NetworkOnly route for /rest/v1/settings queries placed before the general REST route, so settings reads always hit the network. Other Supabase REST tables (attendance, leave, profiles) remain cached for offline support.' },
+      { type: 'fix', description: 'Fixed admin-send-push Edge Function sending empty notification payloads. The function built the message payload from the request body but deliberately discarded it (void payload), so push broadcast notifications appeared as generic "OpenHRApp" messages with no title or body text. Now sends the JSON payload body with proper Content-Type header, matching the pattern already used by cron-push-checkin-reminder. Also expanded VITE_VAPID_PUBLIC_KEY documentation in .env.example with step-by-step setup instructions covering VAPID key generation, Supabase Edge Function secrets, and deployment commands.' },
+      { type: 'fix', description: 'Fixed leave notification email links returning 404. Root cause: App.tsx is404 detection didn\'t recognize the /dashboard/<orgId>/<leaveId>/<token> path format used in email links, showing NotFoundPage. Added a legacy path handler that extracts the leave ID from /dashboard/ paths and redirects to the hash-based deep link (#/leave/<id>). Also added catch-all redirects for /dashboard and /dashboard/ paths to #/dashboard. This ensures existing emails with legacy URLs still work instead of showing 404.' },
+      { type: 'fix', description: 'Updated notify-leave-email Edge Function to generate proper hash-based deep links. All CTA buttons now link to #/leave/<leaveId> (for employee leave status and manager/HR review actions) or #/leaves (for HR overview views). Previously all links went to the generic /dashboard page with no way to find the specific leave request. Made APP_URL configurable via environment variable (with openh rapp.com fallback) so different deployments can set their own domain. Updated branding from "OpenHR" to "OpenHRApp" throughout the email template.' },
+    ],
+  },
+  {
     date: '2026-07-30',
     title: 'Email verification flow fix — employees no longer stuck as "not verified"',
     entries: [

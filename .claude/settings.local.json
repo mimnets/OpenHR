@@ -87,7 +87,17 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Monir\\\\Documents\\\\OpenHRApp\" -Depth 1 -Directory)",
       "Bash(Select-Object Name)",
       "Bash(powershell *)",
-      "Skill(browse)"
+      "Skill(browse)",
+      "Skill(investigate)",
+      "Bash(npx vitest *)",
+      "PowerShell(docker exec openhr-db *)",
+      "PowerShell(docker exec *)",
+      "PowerShell(docker compose down *)",
+      "PowerShell(docker compose up *)",
+      "PowerShell(docker run *)",
+      "PowerShell($newJwtSecret = $\\(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(48\\).toString\\('base64'\\)\\)\"\\); Write-Output $newJwtSecret)",
+      "PowerShell(New-Item *)",
+      "PowerShell(docker rm openhr-init 2>&1; docker compose up -d 2>&1)"
     ]
   }
 }

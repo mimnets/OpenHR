@@ -682,7 +682,7 @@ export const organizationService = {
   },
 
   // Legacy alias kept so existing callers don't break during migration
-  testPocketBaseConnection: async (url: string): Promise<{ success: boolean; message: string }> => {
+  testPocketBaseConnection: async (_url: string): Promise<{ success: boolean; message: string }> => {
     return organizationService.testSupabaseConnection();
   },
 };

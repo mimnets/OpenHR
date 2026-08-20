@@ -271,7 +271,7 @@ export const attendanceService = {
                 continue;
               }
               if (signed) {
-                for (const s of signed) urlMap.set(s.path, s.signedUrl);
+                for (const s of signed) urlMap.set(s.path!, s.signedUrl!);
               }
             } catch (e: any) {
               signFailures++;

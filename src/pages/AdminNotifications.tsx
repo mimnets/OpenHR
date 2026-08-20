@@ -24,6 +24,8 @@ const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   ATTENDANCE: 'Attendance',
   REVIEW: 'Performance Reviews',
   SYSTEM: 'System',
+  NEW_REGISTRATION: 'New Registrations',
+  UPGRADE_REQUEST: 'Upgrade Requests',
 };
 
 const TYPE_COLORS: Record<string, string> = {

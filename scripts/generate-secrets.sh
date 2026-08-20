@@ -54,7 +54,7 @@ fi
 echo "Generating secrets..."
 
 POSTGRES_PASSWORD=$(openssl rand -base64 32 | tr -d '/+=' | cut -c1-32)
-JWT_SECRET=$(openssl rand -base64 64 | tr -d '\n')
+JWT_SECRET=$(openssl rand -base64 64 | tr -d '\r\n')
 CRON_SECRET=$(openssl rand -base64 32 | tr -d '/+=' | cut -c1-32)
 DEMO_USER_PASSWORD=$(openssl rand -base64 16 | tr -d '/+=' | cut -c1-12)
 

@@ -41,8 +41,6 @@ export interface BulkCampaignDetailRow {
 }
 
 const BULK_CAMPAIGN_PREFIX = 'BULK_CAMPAIGN_';
-const MAX_BULK_RECIPIENTS = 5000;
-const INSERT_BATCH_SIZE = 50;
 
 // Cached role — populated lazily by async methods; read by isSuperAdmin()
 let _cachedRole: string | null = null;
@@ -111,7 +109,7 @@ export const superAdminService = {
         const members = profilesByOrg.get(r.id) ?? [];
         const admins = members
           .filter(p => p.role === 'ADMIN' || p.role === 'HR')
-          .sort((a, b) => (a.role === 'ADMIN' ? -1 : 1)); // ADMIN before HR
+          .sort((a, _b) => (a.role === 'ADMIN' ? -1 : 1)); // ADMIN before HR
         return mapOrg(r, members.length, '', admins[0] ? true : undefined);
       });
     } catch (e: any) {

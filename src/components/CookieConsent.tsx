@@ -13,7 +13,7 @@ function loadGoogleAnalytics() {
   document.head.appendChild(script);
 
   (window as any).dataLayer = (window as any).dataLayer || [];
-  (window as any).gtag = function(...args: any[]) { (window as any).dataLayer.push(arguments); };
+  (window as any).gtag = function(..._args: any[]) { (window as any).dataLayer.push(arguments); };
   (window as any).gtag('js', new Date());
   (window as any).gtag('config', GA_ID);
 }

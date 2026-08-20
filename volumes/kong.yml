@@ -45,7 +45,7 @@ services:
         strip_path: false
       - name: realtime-route-ws
         protocols:
-          - ws
+          - http
         paths:
           - /realtime/v1
         strip_path: false
