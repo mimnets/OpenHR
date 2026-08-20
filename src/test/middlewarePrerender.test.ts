@@ -115,10 +115,40 @@ describe('article document', () => {
     expect(blocks[0]['@type']).toBe('BlogPosting');
     expect(blocks[0].headline).toBe('How to Stop Buddy Punching');
     expect(blocks[0].author).toEqual({ '@type': 'Person', name: 'Monirul Islam' });
+    expect(blocks[0].publisher.name).toBe('OpenHRApp');
     expect(blocks[0].datePublished).toBe('2026-08-01T09:00:00Z');
 
     expect(blocks[1]['@type']).toBe('BreadcrumbList');
     expect(blocks[1].itemListElement.map((x: any) => x.name)).toEqual(['Home', 'Blog', 'How to Stop Buddy Punching']);
+  });
+
+  it.each([
+    ['OpenHRApp', 'Organization'],
+    ['OpenHR Team', 'Organization'],
+    ['Monirul Islam', 'Person'],
+    ['Jane Doe', 'Person'],
+  ])('types the byline "%s" as a schema.org %s', async (author, expectedType) => {
+    // Claiming an organization is a Person is invalid structured data and Rich
+    // Results Test flags it, so the @type is derived from the name.
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify([{ ...POST_ROW, author_name: author }]), { status: 200 })));
+
+    const res = await middleware(req('https://openhrapp.com/blog/x', GOOGLEBOT));
+    const html = await res!.text();
+    const ld = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)![1]);
+
+    expect(ld.author['@type']).toBe(expectedType);
+    expect(ld.author.name).toBe(author);
+  });
+
+  it('omits the author entirely when a row has no byline', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify([{ ...POST_ROW, author_name: null }]), { status: 200 })));
+
+    const res = await middleware(req('https://openhrapp.com/blog/x', GOOGLEBOT));
+    const html = await res!.text();
+    const ld = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)![1]);
+
+    expect(ld.author).toBeUndefined();
+    expect(html).not.toContain('By null');
   });
 
   it('uses TechArticle for guides', async () => {

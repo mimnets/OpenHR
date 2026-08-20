@@ -42,6 +42,10 @@ const DEFAULT_IMAGE = `${SITE_URL}/img/screenshot-wide.webp`;
 const DEFAULT_DESCRIPTION = 'Free, open-source HR management system with attendance tracking, leave management, employee directory, and compliance tools.';
 const PUBLISHER_NAME = 'OpenHRApp';
 
+// A byline matching the site's own name is the publishing organization, not a
+// person. Anything else is treated as a named author.
+const AUTHOR_IS_ORGANIZATION = /^\s*(OpenHRApp|OpenHR|OpenHR Team|OpenHRApp Team)\s*$/i;
+
 // Link-preview crawlers — metadata only.
 const SOCIAL_BOT_RE = /facebookexternalhit|LinkedInBot|Twitterbot|Slackbot-LinkExpanding|Slackbot|WhatsApp|TelegramBot|Discordbot|Pinterestbot|Embedly|Quora Link Preview|Rogerbot|Showyoubot|Outbrain|W3C_Validator/i;
 
@@ -275,7 +279,14 @@ function buildJsonLd(meta: PageMeta, article: ArticleBody): string {
       logo: { '@type': 'ImageObject', url: `${SITE_URL}/img/logo.png` },
     },
   };
-  if (article.author) main.author = { '@type': 'Person', name: article.author };
+  // An author byline that is the site's own name is the organization publishing,
+  // not a person. Emitting Person for an organization is invalid structured data
+  // and Rich Results Test flags it, so pick the type from the name.
+  if (article.author) {
+    main.author = AUTHOR_IS_ORGANIZATION.test(article.author)
+      ? { '@type': 'Organization', name: article.author, url: SITE_URL }
+      : { '@type': 'Person', name: article.author };
+  }
   if (article.publishedAt) {
     main.datePublished = article.publishedAt;
     main.dateModified = article.publishedAt;

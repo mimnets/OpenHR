@@ -40,6 +40,16 @@ const GUIDES_PATH = path.resolve('Others', 'GUIDES_CONTENT.md');
 const BLOG_PATH = path.resolve('Others', 'blog-openhr-complete-guide.md');
 const BACKUP_DIR = path.resolve('Others', 'import-backups');
 
+/**
+ * Byline written to author_name. Override per-run with IMPORT_AUTHOR_NAME.
+ *
+ * A named person is the stronger authorship signal for Google's E-E-A-T and for
+ * AdSense review. The prerender middleware emits this as a schema.org Person;
+ * if it is ever set to the site's own name it emits an Organization instead —
+ * see AUTHOR_IS_ORGANIZATION in middleware.ts.
+ */
+const DEFAULT_AUTHOR = 'Monirul Islam';
+
 /* ------------------------------------------------------------------ */
 
 const c = {
@@ -132,7 +142,7 @@ async function importTutorials(parsed) {
     category: t.category,
     display_order: t.displayOrder,
     status: 'PUBLISHED',
-    author_name: process.env.IMPORT_AUTHOR_NAME || 'OpenHR Team',
+    author_name: process.env.IMPORT_AUTHOR_NAME || DEFAULT_AUTHOR,
     published_at: new Date().toISOString(),
   });
 
@@ -193,7 +203,7 @@ async function importBlog(post) {
     content: post.html,
     excerpt: post.excerpt,
     status: 'PUBLISHED',
-    author_name: process.env.IMPORT_AUTHOR_NAME || 'OpenHR Team',
+    author_name: process.env.IMPORT_AUTHOR_NAME || DEFAULT_AUTHOR,
     published_at: new Date().toISOString(),
     reading_time: post.readingTime,
   };
