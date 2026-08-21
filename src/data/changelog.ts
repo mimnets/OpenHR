@@ -15,6 +15,15 @@ export interface ChangelogRelease {
 
 export const changelog: ChangelogRelease[] = [
   {
+    date: '2026-08-21',
+    title: 'Sitemap and RSS feed now list all 47 published articles',
+    entries: [
+      { type: 'fix', description: 'public/sitemap.xml advertised 14 static marketing URLs and zero articles, which is what the AdSense and Google crawlers had been seeing. The file had simply never been regenerated since the generator bugs were fixed in the previous release, and any regeneration since then ran against the local Docker database rather than the Supabase Cloud project that serves openhrapp.com. Regenerated against cloud: the sitemap goes from 14 URLs to 61, now covering all 19 published blog posts and 28 published guides, and feed.xml carries 54 items (19 blog, 28 guide, 7 feature). The generators read with the anon key, so a URL only reaches the sitemap if it is genuinely readable under RLS by an anonymous visitor, which is exactly what a crawler is.' },
+      { type: 'feature', description: 'Ran scripts/import-content.mjs against Supabase Cloud for the first time. Most of the guide content turned out to already be present and PUBLISHED, so the insert-only safety model did its job: 4 records inserted (the welcome-to-openhr, install-openhr-pwa, and performance-review-hr-calibration guides, plus the openhr-complete-guide article), 22 existing slugs skipped untouched, nothing updated and nothing deleted.' },
+      { type: 'security', description: 'Added .env.cloud to .gitignore. The file holds the Supabase Cloud project URL and service role key, and the existing ignore rules (.env, .env.production, .env.*.local) did not match it, so a service role key that bypasses RLS on the production database was one git add away from being committed. .env.local was already covered by the *.local rule.' },
+    ],
+  },
+  {
     date: '2026-08-20',
     title: 'Blog and guides are now visible to search engines and AI crawlers',
     entries: [
