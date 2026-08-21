@@ -16,6 +16,17 @@ export interface ChangelogRelease {
 export const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-21',
+    title: 'Daylight is finished — all twelve public pages, including About, Contact and the policies',
+    entries: [
+      { type: 'improvement', description: 'About, Contact, Changelog, Privacy and Terms now use the Daylight surfaces and type, which completes the redesign across all twelve public pages. These five had no dark-mode styling at all previously, so they stayed light no matter what the theme was set to — they now follow it like everything else.' },
+      { type: 'fix', description: 'The Proudly Open Source panel on the About page needed special handling. It is a dark panel in both themes, and the token used for near-black text becomes near-white in dark mode, so a straightforward conversion would have turned it into a white panel with white text. It now names the colour for each theme explicitly, the same way the site footer does, and a test checks it stays that way.' },
+      { type: 'improvement', description: 'The red asterisk marking required fields on the contact form stayed red rather than becoming the brand teal. Daylight is a deliberately two-colour design, but that rule is about which colour means "you can interact with this" — it is not about status. An asterisk recoloured to match the buttons stops reading as a warning and starts reading as decoration.' },
+      { type: 'fix', description: 'Fixed two stragglers on the landing page itself: the loading spinner shown while a section streams in, and the skip-to-content link that appears when you tab into the page before the navigation. The skip link had the same white-on-teal contrast problem found earlier — invisible in dark mode, and it is an accessibility feature, so it is the last place that should be hard to read.' },
+      { type: 'improvement', description: 'Added a check covering the whole public surface at once, so a thirteenth page cannot quietly ship with the old colours, along with one confirming the logged-in app has not picked up any of the new tokens — the redesign was scoped to public pages only and should stay that way. Suite goes from 293 to 304.' },
+    ],
+  },
+  {
+    date: '2026-08-21',
     title: 'Daylight on the feature pages, and a guard against their search listings going stale',
     entries: [
       { type: 'improvement', description: 'The features overview and the individual feature pages now use the Daylight surfaces and type. Both came out with no dark-mode overrides left at all — the tokens carry their own dark values, so there is nothing left that has to be remembered separately for the two themes.' },

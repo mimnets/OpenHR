@@ -42,23 +42,23 @@ const ChangelogPage: React.FC<ChangelogPageProps> = ({ onBack }) => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-dl-surface">
       <BlogNavbar onBack={onBack} />
 
       {/* Hero */}
-      <section className="pt-28 pb-12 bg-gradient-to-b from-slate-50 to-white">
+      <section className="pt-28 pb-12 bg-gradient-to-b from-dl-ground to-dl-surface">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <button
             onClick={onBack}
-            className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-primary mb-6 transition-colors"
+            className="inline-flex items-center gap-1.5 text-sm text-dl-muted hover:text-dl-teal mb-6 transition-colors"
           >
             <ArrowLeft size={16} />
             Back to Home
           </button>
-          <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-3">
+          <h1 className="text-3xl sm:text-4xl font-bold text-dl-ink mb-3">
             Changelog
           </h1>
-          <p className="text-lg text-slate-500 max-w-2xl">
+          <p className="text-lg text-dl-muted max-w-2xl">
             All the updates, new features, and fixes shipped in OpenHRApp. We release improvements regularly to make HR management easier for your team.
           </p>
         </div>
@@ -69,25 +69,25 @@ const ChangelogPage: React.FC<ChangelogPageProps> = ({ onBack }) => {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="relative">
             {/* Vertical line */}
-            <div className="absolute left-4 sm:left-6 top-0 bottom-0 w-px bg-slate-200" />
+            <div className="absolute left-4 sm:left-6 top-0 bottom-0 w-px bg-dl-hair" />
 
             <div className="space-y-10">
               {changelog.map((release, idx) => (
                 <div key={idx} className="relative pl-12 sm:pl-16">
                   {/* Dot on timeline */}
-                  <div className="absolute left-2.5 sm:left-4.5 top-1.5 w-3 h-3 rounded-full bg-primary border-2 border-white ring-2 ring-primary/20" />
+                  <div className="absolute left-2.5 sm:left-4.5 top-1.5 w-3 h-3 rounded-full bg-dl-teal border-2 border-dl-surface ring-2 ring-dl-teal/20" />
 
                   {/* Date & Title header */}
                   <div className="mb-3">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <time className="text-sm font-semibold text-slate-400">{formatDate(release.date)}</time>
+                      <time className="text-sm font-semibold text-dl-muted">{formatDate(release.date)}</time>
                       {release.version && (
-                        <span className="text-xs font-mono font-medium bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+                        <span className="text-xs font-mono font-medium bg-dl-hair-soft text-dl-muted px-2 py-0.5 rounded-full">
                           v{release.version}
                         </span>
                       )}
                     </div>
-                    <h2 className="text-xl font-bold text-slate-900">{release.title}</h2>
+                    <h2 className="text-xl font-bold text-dl-ink">{release.title}</h2>
                   </div>
 
                   {/* Entries */}
@@ -99,7 +99,7 @@ const ChangelogPage: React.FC<ChangelogPageProps> = ({ onBack }) => {
                           <span className={`inline-flex items-center shrink-0 mt-0.5 px-2 py-0.5 rounded text-xs font-semibold ${cfg.bg} ${cfg.text}`}>
                             {cfg.label}
                           </span>
-                          <span className="text-sm text-slate-700 leading-relaxed">{entry.description}</span>
+                          <span className="text-sm text-dl-ink leading-relaxed">{entry.description}</span>
                         </li>
                       );
                     })}

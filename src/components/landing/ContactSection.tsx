@@ -71,21 +71,21 @@ const ContactSection: React.FC = () => {
   };
 
   return (
-    <section id="contact" className="py-20 md:py-28 bg-white">
+    <section id="contact" className="py-20 md:py-28 bg-dl-surface">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-16">
-          <span className="text-xs font-bold text-primary uppercase tracking-wide">Contact</span>
-          <h2 className="text-3xl sm:text-4xl font-semibold text-slate-900 mt-3 mb-4">
+          <span className="text-xs font-bold text-dl-teal uppercase tracking-wide">Contact</span>
+          <h2 className="text-3xl sm:text-4xl font-semibold text-dl-ink mt-3 mb-4">
             Get in Touch
           </h2>
-          <p className="text-slate-500 text-lg">
+          <p className="text-dl-muted text-lg">
             Have a question or feedback? We'd love to hear from you.
           </p>
         </div>
 
         {/* Form */}
-        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-8 md:p-10">
+        <div className="bg-dl-ground border border-dl-hair-soft rounded-dl-lg p-8 md:p-10">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* ── Honeypot — hidden from humans, visible to bots ──────────────── */}
             <div className="absolute opacity-0 pointer-events-none" style={{ height: 0, overflow: 'hidden' }} aria-hidden="true">
@@ -103,8 +103,8 @@ const ContactSection: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wide px-1">
-                  Name <span className="text-red-400">*</span>
+                <label className="text-xs font-bold text-dl-muted uppercase tracking-wide px-1">
+                  Name <span className="text-red-600 dark:text-red-400">*</span>
                 </label>
                 <input
                   type="text"
@@ -113,12 +113,12 @@ const ContactSection: React.FC = () => {
                   onChange={handleChange}
                   maxLength={100}
                   placeholder="Your name"
-                  className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all"
+                  className="w-full px-4 py-3.5 bg-dl-surface border border-dl-hair rounded-dl-md text-sm font-medium outline-none focus:ring-4 focus:ring-dl-teal/15 focus:border-dl-teal transition-all"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wide px-1">
-                  Email <span className="text-red-400">*</span>
+                <label className="text-xs font-bold text-dl-muted uppercase tracking-wide px-1">
+                  Email <span className="text-red-600 dark:text-red-400">*</span>
                 </label>
                 <input
                   type="email"
@@ -127,13 +127,13 @@ const ContactSection: React.FC = () => {
                   onChange={handleChange}
                   maxLength={254}
                   placeholder="you@example.com"
-                  className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all"
+                  className="w-full px-4 py-3.5 bg-dl-surface border border-dl-hair rounded-dl-md text-sm font-medium outline-none focus:ring-4 focus:ring-dl-teal/15 focus:border-dl-teal transition-all"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wide px-1">
+              <label className="text-xs font-bold text-dl-muted uppercase tracking-wide px-1">
                 Subject
               </label>
               <input
@@ -143,13 +143,13 @@ const ContactSection: React.FC = () => {
                 onChange={handleChange}
                 maxLength={200}
                 placeholder="What is this about?"
-                className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all"
+                className="w-full px-4 py-3.5 bg-dl-surface border border-dl-hair rounded-dl-md text-sm font-medium outline-none focus:ring-4 focus:ring-dl-teal/15 focus:border-dl-teal transition-all"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wide px-1">
-                Message <span className="text-red-400">*</span>
+              <label className="text-xs font-bold text-dl-muted uppercase tracking-wide px-1">
+                Message <span className="text-red-600 dark:text-red-400">*</span>
               </label>
               <textarea
                 name="message"
@@ -158,12 +158,12 @@ const ContactSection: React.FC = () => {
                 maxLength={5000}
                 placeholder="Tell us what's on your mind..."
                 rows={5}
-                className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all resize-none"
+                className="w-full px-4 py-3.5 bg-dl-surface border border-dl-hair rounded-dl-md text-sm font-medium outline-none focus:ring-4 focus:ring-dl-teal/15 focus:border-dl-teal transition-all resize-none"
               />
             </div>
 
             {result && (
-              <div className={`flex items-start gap-3 p-4 rounded-xl text-sm font-medium ${
+              <div className={`flex items-start gap-3 p-4 rounded-dl-md text-sm font-medium ${
                 result.type === 'success'
                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
                   : 'bg-red-50 text-red-700 border border-red-100'
@@ -177,7 +177,7 @@ const ContactSection: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-8 py-3.5 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary-hover transition-all shadow-sm flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="px-8 py-3.5 bg-dl-teal text-dl-surface text-sm font-bold rounded-dl-md hover:bg-dl-teal-deep transition-all shadow-dl-1 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
                   <>

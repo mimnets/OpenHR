@@ -96,31 +96,31 @@ const ContactPage: React.FC<ContactPageProps> = ({ onBack, onRegisterClick }) =>
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-dl-ground">
       <BlogNavbar onBack={onBack} onRegisterClick={onRegisterClick} />
 
       <main className="pt-24 md:pt-32">
         <header className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <nav aria-label="Breadcrumb" className="flex items-center justify-center gap-2 text-sm text-slate-500 mb-6">
+          <nav aria-label="Breadcrumb" className="flex items-center justify-center gap-2 text-sm text-dl-muted mb-6">
             <a
               href="/"
               onClick={(e) => { e.preventDefault(); navigateTo('/'); }}
-              className="hover:text-slate-900 transition-colors"
+              className="hover:text-dl-ink transition-colors"
             >
               Home
             </a>
             <span aria-hidden="true">/</span>
-            <span className="text-slate-900" aria-current="page">Contact</span>
+            <span className="text-dl-ink" aria-current="page">Contact</span>
           </nav>
 
-          <div className="inline-flex items-center gap-2 text-sm font-medium text-slate-500">
+          <div className="inline-flex items-center gap-2 text-sm font-medium text-dl-muted">
             <LifeBuoy className="w-4 h-4" aria-hidden="true" />
             Contact
           </div>
-          <h1 className="text-4xl sm:text-5xl font-semibold text-slate-900 tracking-tight mt-3 mb-4">
+          <h1 className="text-4xl sm:text-5xl font-semibold text-dl-ink tracking-tight mt-3 mb-4">
             Get in touch
           </h1>
-          <p className="text-lg text-slate-600 leading-relaxed">
+          <p className="text-lg text-dl-muted leading-relaxed">
             Questions about setting OpenHRApp up, something behaving oddly, or an idea for what it
             should do next — all of it is welcome. Messages go to a real inbox and we read every one.
           </p>
@@ -131,17 +131,17 @@ const ContactPage: React.FC<ContactPageProps> = ({ onBack, onRegisterClick }) =>
             {channels.map(({ icon: Icon, title, body, action }) => {
               const isInternal = action.href.startsWith('/');
               return (
-                <div key={title} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col">
-                  <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center mb-4">
-                    <Icon className="w-5 h-5 text-slate-700" aria-hidden="true" />
+                <div key={title} className="bg-dl-surface rounded-dl-lg border border-dl-hair-soft shadow-dl-1 p-6 flex flex-col">
+                  <div className="w-11 h-11 rounded-dl-md bg-dl-hair-soft flex items-center justify-center mb-4">
+                    <Icon className="w-5 h-5 text-dl-ink" aria-hidden="true" />
                   </div>
-                  <h2 className="text-lg font-semibold text-slate-900 mb-2">{title}</h2>
-                  <p className="text-slate-600 text-sm leading-relaxed flex-1">{body}</p>
+                  <h2 className="text-lg font-semibold text-dl-ink mb-2">{title}</h2>
+                  <p className="text-dl-muted text-sm leading-relaxed flex-1">{body}</p>
                   <a
                     href={action.href}
                     onClick={isInternal ? (e) => { e.preventDefault(); navigateTo(action.href); } : undefined}
                     {...(isInternal ? {} : { target: '_blank', rel: 'noopener noreferrer' })}
-                    className="mt-4 text-sm font-medium text-slate-900 hover:underline break-words"
+                    className="mt-4 text-sm font-medium text-dl-ink hover:underline break-words"
                   >
                     {action.label}
                   </a>

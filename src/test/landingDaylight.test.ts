@@ -226,3 +226,84 @@ describe('DL6 — the features pages', () => {
     expect(overrides ?? []).toEqual([]);
   });
 });
+
+describe('DL7 — trust and policy pages', () => {
+  const PAGES = [
+    'src/pages/AboutPage.tsx',
+    'src/pages/ContactPage.tsx',
+    'src/pages/ChangelogPage.tsx',
+    'src/pages/PrivacyPolicyPage.tsx',
+    'src/pages/TermsOfServicePage.tsx',
+    'src/components/landing/ContactSection.tsx',
+  ];
+
+  it.each(PAGES)('%s carries no legacy slate/primary utilities', (page) => {
+    const legacy = read(page).match(
+      /(?:bg|text|border|shadow|from|to|via|ring|divide)-(?:slate|primary|white)-?[0-9/]*/g
+    );
+    expect(legacy ?? []).toEqual([]);
+  });
+
+  it('keeps the About dark slab dark in both themes', () => {
+    // Same trap as the footer: --dl-ink is near-white in dark, so a bare bg-dl-ink panel
+    // would invert to a white slab with white text on it.
+    const src = read('src/pages/AboutPage.tsx');
+    expect(src).toContain('bg-dl-ink dark:bg-dl-ground');
+    expect(src).toContain('text-dl-surface dark:text-dl-ink');
+  });
+
+  it('keeps the required-field marker red rather than recolouring it to brand', () => {
+    // Daylight's two-tone rule governs interactive colour, not semantic state. A required
+    // marker that reads as brand no longer reads as "required".
+    const src = read('src/components/landing/ContactSection.tsx');
+    expect(src).toContain('text-red-600 dark:text-red-400');
+  });
+});
+
+describe('the whole public surface', () => {
+  // Every page a logged-out visitor can reach. If a thirteenth is added, add it here.
+  const PUBLIC_PAGES = [
+    'src/pages/LandingPage.tsx',
+    'src/pages/BlogPage.tsx',
+    'src/pages/BlogPostPage.tsx',
+    'src/pages/TutorialsPage.tsx',
+    'src/pages/TutorialPage.tsx',
+    'src/pages/FeaturesPage.tsx',
+    'src/pages/FeatureDetailPage.tsx',
+    'src/pages/AboutPage.tsx',
+    'src/pages/ContactPage.tsx',
+    'src/pages/ChangelogPage.tsx',
+    'src/pages/PrivacyPolicyPage.tsx',
+    'src/pages/TermsOfServicePage.tsx',
+  ];
+
+  it('has twelve pages, all on Daylight', () => {
+    expect(PUBLIC_PAGES).toHaveLength(12);
+    for (const page of PUBLIC_PAGES) {
+      const legacy = read(page).match(
+        /(?:bg|text|border|shadow|from|to|via|ring|divide)-(?:slate|primary|white)-?[0-9/]*/g
+      );
+      expect(legacy ?? [], `${page} still has legacy utilities`).toEqual([]);
+    }
+  });
+
+  it('never sets white text on the teal action colour anywhere public', () => {
+    // --dl-teal inverts to a light cyan in dark mode; white on it is roughly 1.7:1.
+    for (const page of PUBLIC_PAGES) {
+      for (const m of read(page).matchAll(/class[nN]ame[^\n]*bg-dl-teal\b[^\n]*/g)) {
+        expect(m[0], `${page}`).not.toMatch(/text-white/);
+      }
+    }
+  });
+
+  it('leaves the logged-in app untouched (AC-DL6)', () => {
+    // Daylight is for the public surface only. The app keeps its own --primary tokens; if
+    // dl- utilities start appearing in the dashboard, the scope has quietly widened.
+    const appPages = ['src/pages/Dashboard.tsx', 'src/pages/Reports.tsx'].filter((p) =>
+      fs.existsSync(path.resolve(p))
+    );
+    for (const page of appPages) {
+      expect(read(page)).not.toMatch(/(?:bg|text|border)-dl-/);
+    }
+  });
+});

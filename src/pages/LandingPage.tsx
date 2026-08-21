@@ -15,7 +15,7 @@ const CTASection = React.lazy(() => import('../components/landing/CTASection'));
 
 const SectionSkeleton = () => (
   <div className="py-20 flex justify-center">
-    <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+    <div className="w-8 h-8 border-2 border-dl-teal/20 border-t-dl-teal rounded-full animate-spin" />
   </div>
 );
 
@@ -103,7 +103,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
     <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-primary focus:text-white focus:font-semibold focus:shadow-lg"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-dl-sm focus:bg-dl-teal focus:text-dl-surface focus:font-semibold focus:shadow-dl-2"
       >
         Skip to content
       </a>
