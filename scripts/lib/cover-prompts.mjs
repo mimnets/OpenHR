@@ -28,6 +28,22 @@ const HOUSE_STYLE =
   `Composition weighted to the left third, leaving the right side open.`;
 
 /**
+ * Extra composition constraints for generators that stamp a watermark.
+ *
+ * Gemini brands every image in the bottom-right corner. The only reliable way to
+ * be rid of it is to crop it off, so the image has to be generated with enough
+ * dead space down there that the crop costs nothing. Reserving the bottom strip
+ * as plain background also lands the aspect ratio correctly: 16:9 is 1.778:1 and
+ * link cards want 1.91:1, so trimming roughly 7% off the bottom is a step you
+ * want to take anyway.
+ */
+const WATERMARK_SAFE =
+  `Generate at the largest resolution available (2048px or wider on the long edge). ` +
+  `Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, ` +
+  `and keep the bottom-right corner completely empty — no subject, no line work, no texture ` +
+  `crossing into it. The subject sits in the upper-left two thirds.`;
+
+/**
  * The right side is left open on purpose: link-preview cards and the blog index
  * crop covers unpredictably, and a subject centred in the frame loses its head.
  */
@@ -99,9 +115,12 @@ export function buildCoverPrompt(row, kind) {
   const motif = motifFor(row.category);
   const slug = row.slug;
 
-  const prompt =
+  const lead =
     `Editorial cover illustration for ${kind === 'guide' ? 'a how-to guide' : 'a blog article'} titled ` +
-    `"${String(row.title || '').trim()}". Subject: ${motif}. ${HOUSE_STYLE} 16:9 landscape.`;
+    `"${String(row.title || '').trim()}". Subject: ${motif}.`;
+
+  const prompt = `${lead} ${HOUSE_STYLE} 16:9 landscape.`;
+  const promptWatermarkSafe = `${lead} ${HOUSE_STYLE} 16:9 landscape. ${WATERMARK_SAFE}`;
 
   return {
     slug,
@@ -114,6 +133,7 @@ export function buildCoverPrompt(row, kind) {
     alt: altTextFor(row.title, row.category, kind),
     subject,
     prompt,
+    promptWatermarkSafe,
     negative: NEGATIVE,
   };
 }
@@ -131,4 +151,34 @@ export const SPEC_NOTE = `**Output spec — the same for every image:**
 
 **Alt text matters.** Each entry below carries a suggested \`alt\` value. Set it when
 uploading rather than leaving it blank: it is read by screen readers and is one of the
-few remaining places to state what a page is about in plain language.`;
+few remaining places to state what a page is about in plain language.
+
+---
+
+**Removing the Gemini watermark**
+
+Gemini stamps its logo into the bottom-right corner. It cannot be prompted away, so the
+plan is to generate the image with dead space there and crop it off. Each entry below
+carries a second **watermark-safe** prompt that instructs the model to keep the bottom 15%
+of the frame as plain background and leave the bottom-right corner completely empty.
+
+The crop is a step you want regardless: 16:9 is 1.778:1 and link-preview cards want
+1.91:1, so trimming about 7% off the bottom fixes the aspect ratio *and* takes the
+watermark with it.
+
+1. Generate with the watermark-safe prompt at the largest size offered (2048px+ long edge).
+2. Crop **10% off the bottom** — comfortably more than the logo needs, and the reserved
+   strip means nothing is lost. On a 2048 x 1152 image that is a 115px strip.
+3. Resize the result to 1200 x 630, cropping a little from the right if needed. The subject
+   is composed in the upper-left two thirds precisely so this is safe.
+
+Any image editor does this. From the command line with ImageMagick:
+
+\`\`\`bash
+# crop 10% off the bottom, then fit to 1200x630
+magick in.png -gravity North -crop 100%x90% +repage \\
+  -resize 1200x630^ -gravity NorthWest -extent 1200x630 out.jpg
+\`\`\`
+
+Verify the corner is clean before uploading — a cropped-but-still-visible logo is worse
+than none, because it reads as a stock image.`;

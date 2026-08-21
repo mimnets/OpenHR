@@ -25,6 +25,36 @@ few remaining places to state what a page is about in plain language.
 
 ---
 
+**Removing the Gemini watermark**
+
+Gemini stamps its logo into the bottom-right corner. It cannot be prompted away, so the
+plan is to generate the image with dead space there and crop it off. Each entry below
+carries a second **watermark-safe** prompt that instructs the model to keep the bottom 15%
+of the frame as plain background and leave the bottom-right corner completely empty.
+
+The crop is a step you want regardless: 16:9 is 1.778:1 and link-preview cards want
+1.91:1, so trimming about 7% off the bottom fixes the aspect ratio *and* takes the
+watermark with it.
+
+1. Generate with the watermark-safe prompt at the largest size offered (2048px+ long edge).
+2. Crop **10% off the bottom** — comfortably more than the logo needs, and the reserved
+   strip means nothing is lost. On a 2048 x 1152 image that is a 115px strip.
+3. Resize the result to 1200 x 630, cropping a little from the right if needed. The subject
+   is composed in the upper-left two thirds precisely so this is safe.
+
+Any image editor does this. From the command line with ImageMagick:
+
+```bash
+# crop 10% off the bottom, then fit to 1200x630
+magick in.png -gravity North -crop 100%x90% +repage \
+  -resize 1200x630^ -gravity NorthWest -extent 1200x630 out.jpg
+```
+
+Verify the corner is clean before uploading — a cropped-but-still-visible logo is worse
+than none, because it reads as a stock image.
+
+---
+
 ## Needs a cover (27)
 
 ### 1. The Complete Guide to OpenHR: Free Open Source HR Software That Actually Works
@@ -33,11 +63,19 @@ few remaining places to state what a page is about in plain language.
 **Save as:** `openhr-cover-openhr-complete-guide.jpg`
 **Alt text:** Cover illustration for the OpenHRApp article "The Complete Guide to OpenHR: Free Open Source HR Software That Actually Works"
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a blog article titled "The Complete Guide to OpenHR: Free Open Source HR Software That Actually Works". Subject: an abstract workplace scene built from simple geometric shapes. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a blog article titled "The Complete Guide to OpenHR: Free Open Source HR Software That Actually Works". Subject: an abstract workplace scene built from simple geometric shapes. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -53,11 +91,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-understanding-attendance-logs.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Understanding Your Attendance Logs", Attendance
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Understanding Your Attendance Logs". Subject: a stylised clock face beside a location pin, or a simple check-in card being tapped. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Understanding Your Attendance Logs". Subject: a stylised clock face beside a location pin, or a simple check-in card being tapped. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -73,11 +119,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-attendance-admin-audit.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Attendance for Admins — Audit and Manual Entries", Attendance
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Attendance for Admins — Audit and Manual Entries". Subject: a stylised clock face beside a location pin, or a simple check-in card being tapped. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Attendance for Admins — Audit and Manual Entries". Subject: a stylised clock face beside a location pin, or a simple check-in card being tapped. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -93,11 +147,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-how-to-apply-for-leave.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "How to Apply for Leave", Leave
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "How to Apply for Leave". Subject: a calendar page with a few days softly highlighted, a paper plane leaving the page. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "How to Apply for Leave". Subject: a calendar page with a few days softly highlighted, a paper plane leaving the page. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -113,11 +175,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-leave-approval-for-managers.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Leave Approval — For Managers", Leave
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Leave Approval — For Managers". Subject: a calendar page with a few days softly highlighted, a paper plane leaving the page. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Leave Approval — For Managers". Subject: a calendar page with a few days softly highlighted, a paper plane leaving the page. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -133,11 +203,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-leave-approval-for-hr.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Leave Approval — For HR and Admins", Leave
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Leave Approval — For HR and Admins". Subject: a calendar page with a few days softly highlighted, a paper plane leaving the page. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Leave Approval — For HR and Admins". Subject: a calendar page with a few days softly highlighted, a paper plane leaving the page. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -153,11 +231,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-understanding-leave-policies.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Understanding Leave Policies", Leave
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Understanding Leave Policies". Subject: a calendar page with a few days softly highlighted, a paper plane leaving the page. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Understanding Leave Policies". Subject: a calendar page with a few days softly highlighted, a paper plane leaving the page. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -173,11 +259,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-managing-employees.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Managing Employees — Adding and Editing Staff", Employees
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Managing Employees — Adding and Editing Staff". Subject: a small grid of abstract profile cards, one gently lifted forward. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Managing Employees — Adding and Editing Staff". Subject: a small grid of abstract profile cards, one gently lifted forward. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -193,11 +287,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-setting-up-organization.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Setting Up Your Organization", Organization
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Setting Up Your Organization". Subject: a clean org chart of connected nodes branching from a single root. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Setting Up Your Organization". Subject: a clean org chart of connected nodes branching from a single root. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -213,11 +315,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-generating-reports.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Generating Reports", Reports
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Generating Reports". Subject: a simple bar and line chart on a document, an export arrow leaving the page. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Generating Reports". Subject: a simple bar and line chart on a document, an export arrow leaving the page. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -233,11 +343,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-managing-profile-settings.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Managing Your Profile and Settings", Settings
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Managing Your Profile and Settings". Subject: interlocking gears beside a row of toggle switches. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Managing Your Profile and Settings". Subject: interlocking gears beside a row of toggle switches. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -253,11 +371,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-roles-and-permissions.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Roles and Permissions in OpenHRApp", Getting Started
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Roles and Permissions in OpenHRApp". Subject: an open doorway or a first footstep on a path, a simple onboarding checklist with the first item ticked. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Roles and Permissions in OpenHRApp". Subject: an open doorway or a first footstep on a path, a simple onboarding checklist with the first item ticked. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -273,11 +399,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-install-openhrapp-pwa.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Install OpenHRApp as an App (PWA) on Android and iOS", Getting Started
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Install OpenHRApp as an App (PWA) on Android and iOS". Subject: an open doorway or a first footstep on a path, a simple onboarding checklist with the first item ticked. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Install OpenHRApp as an App (PWA) on Android and iOS". Subject: an open doorway or a first footstep on a path, a simple onboarding checklist with the first item ticked. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -293,11 +427,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-performance-review-self-assessment.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Performance Reviews — Employee Self-Assessment", Performance
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Performance Reviews — Employee Self-Assessment". Subject: a growth curve rising across the frame beside a simple scorecard. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Performance Reviews — Employee Self-Assessment". Subject: a growth curve rising across the frame beside a simple scorecard. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -313,11 +455,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-performance-review-for-managers.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Performance Reviews — For Managers", Performance
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Performance Reviews — For Managers". Subject: a growth curve rising across the frame beside a simple scorecard. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Performance Reviews — For Managers". Subject: a growth curve rising across the frame beside a simple scorecard. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -333,11 +483,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-performance-reviews-hr-calibration.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Performance Reviews — HR Calibration", Performance
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Performance Reviews — HR Calibration". Subject: a growth curve rising across the frame beside a simple scorecard. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Performance Reviews — HR Calibration". Subject: a growth curve rising across the frame beside a simple scorecard. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -353,11 +511,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-announcements-guide.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Announcements — Viewing and Creating", Announcements
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Announcements — Viewing and Creating". Subject: a megaphone emitting soft concentric rings, a pinned notice card. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Announcements — Viewing and Creating". Subject: a megaphone emitting soft concentric rings, a pinned notice card. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -373,11 +539,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-notifications-guide.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Notifications — Bell Notifications and Admin Management", Settings
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Notifications — Bell Notifications and Admin Management". Subject: interlocking gears beside a row of toggle switches. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Notifications — Bell Notifications and Admin Management". Subject: interlocking gears beside a row of toggle switches. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -393,11 +567,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-theme-customization.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Theme Customization", Settings
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Theme Customization". Subject: interlocking gears beside a row of toggle switches. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Theme Customization". Subject: interlocking gears beside a row of toggle switches. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -413,11 +595,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-custom-leave-types.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Custom Leave Types and Special Leave", Leave
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Custom Leave Types and Special Leave". Subject: a calendar page with a few days softly highlighted, a paper plane leaving the page. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Custom Leave Types and Special Leave". Subject: a calendar page with a few days softly highlighted, a paper plane leaving the page. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -433,11 +623,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-notification-settings.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Configuring Notification Settings", Organization
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Configuring Notification Settings". Subject: a clean org chart of connected nodes branching from a single root. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Configuring Notification Settings". Subject: a clean org chart of connected nodes branching from a single root. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -453,11 +651,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-understanding-dashboard.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Understanding the Dashboard", Getting Started
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Understanding the Dashboard". Subject: an open doorway or a first footstep on a path, a simple onboarding checklist with the first item ticked. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Understanding the Dashboard". Subject: an open doorway or a first footstep on a path, a simple onboarding checklist with the first item ticked. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -473,11 +679,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-subscription-upgrade-options.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Subscription and Upgrade Options", Getting Started
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Subscription and Upgrade Options". Subject: an open doorway or a first footstep on a path, a simple onboarding checklist with the first item ticked. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Subscription and Upgrade Options". Subject: an open doorway or a first footstep on a path, a simple onboarding checklist with the first item ticked. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -493,11 +707,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-exporting-employee-data.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Exporting Employee Data", Reports
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Exporting Employee Data". Subject: a simple bar and line chart on a document, an export arrow leaving the page. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Exporting Employee Data". Subject: a simple bar and line chart on a document, an export arrow leaving the page. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -513,11 +735,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-performance-review-hr-calibration.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Performance Reviews — HR Calibration", Performance Reviews
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Performance Reviews — HR Calibration". Subject: a five-point rating scale and a growth curve rising across the frame. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Performance Reviews — HR Calibration". Subject: a five-point rating scale and a growth curve rising across the frame. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -533,11 +763,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-welcome-to-openhr.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Welcome to OpenHR — Your First Steps", Getting Started
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Welcome to OpenHR — Your First Steps". Subject: an open doorway or a first footstep on a path, a simple onboarding checklist with the first item ticked. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Welcome to OpenHR — Your First Steps". Subject: an open doorway or a first footstep on a path, a simple onboarding checklist with the first item ticked. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 
@@ -553,11 +791,19 @@ no text, no lettering, no watermarks, no logos, no UI screenshots, no faces in c
 **Save as:** `openhr-cover-install-openhr-pwa.jpg`
 **Alt text:** Cover illustration for the OpenHRApp guide "Install OpenHR as an App (PWA) on Android and iOS", Getting Started
 
-**Prompt:**
+**Prompt — watermark-safe (use this one for Gemini):**
+
+```text
+Editorial cover illustration for a how-to guide titled "Install OpenHR as an App (PWA) on Android and iOS". Subject: an open doorway or a first footstep on a path, a simple onboarding checklist with the first item ticked. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape. Generate at the largest resolution available (2048px or wider on the long edge). Reserve the bottom 15% of the frame as plain uninterrupted background with no detail, and keep the bottom-right corner completely empty — no subject, no line work, no texture crossing into it. The subject sits in the upper-left two thirds.
+```
+
+<details><summary>Plain prompt (generator that does not watermark)</summary>
 
 ```text
 Editorial cover illustration for a how-to guide titled "Install OpenHR as an App (PWA) on Android and iOS". Subject: an open doorway or a first footstep on a path, a simple onboarding checklist with the first item ticked. Flat vector editorial illustration, generous negative space, soft geometric shapes. Strict palette: muted slate blue #4a6fa5 as the dominant colour, pale blue #d4e4f7 for fills, deep slate #1e293b for line work, off-white #f1f5f9 background. One clear focal subject, calm and professional, no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. Composition weighted to the left third, leaving the right side open. 16:9 landscape.
 ```
+
+</details>
 
 **Negative prompt:**
 

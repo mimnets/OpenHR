@@ -34,6 +34,7 @@ import fs from 'fs';
 import path from 'path';
 import { htmlToMarkdown } from './lib/html-to-markdown.mjs';
 import { buildCoverPrompt, SPEC_NOTE } from './lib/cover-prompts.mjs';
+import { buildVideoPlan, VIDEO_SPEC_NOTE, CLIP_SECONDS } from './lib/video-prompts.mjs';
 
 const args = process.argv.slice(2);
 const ONLY = (args.find((a) => a.startsWith('--only=')) || '').split('=')[1] || 'all';
@@ -403,11 +404,19 @@ function buildCoverPrompts(guideRows, blogRows) {
       `**Save as:** \`${e.filename}\``,
       `**Alt text:** ${e.alt}`,
       '',
-      '**Prompt:**',
+      '**Prompt — watermark-safe (use this one for Gemini):**',
+      '',
+      '```text',
+      e.promptWatermarkSafe,
+      '```',
+      '',
+      '<details><summary>Plain prompt (generator that does not watermark)</summary>',
       '',
       '```text',
       e.prompt,
       '```',
+      '',
+      '</details>',
       '',
       '**Negative prompt:**',
       '',
@@ -427,6 +436,79 @@ function buildCoverPrompts(guideRows, blogRows) {
   }
 
   return { text: parts.join('\n'), missing: missing.length, total: entries.length };
+}
+
+/* ------------------------------------------------------- video prompt file */
+
+/**
+ * Guides only. Blog posts are argumentative or narrative rather than
+ * procedural, and a shot list derived from their headings would be a slideshow
+ * of abstractions — the format does not carry them.
+ */
+function buildVideoPrompts(guideRows) {
+  const plans = guideRows
+    .map((r) => buildVideoPlan(r, htmlToMarkdown(r.content || '', { minHeadingLevel: 4 })))
+    .filter((p) => p.clips.length > 2);
+
+  const totalClips = plans.reduce((s, p) => s + p.clips.length, 0);
+
+  const parts = [
+    '# OpenHRApp — Guide Video Shot Lists',
+    '',
+    `> Generated from the live guides. ${plans.length} guides, ${totalClips} clips of about ${CLIP_SECONDS}s each.`,
+    '> Clips are derived from each guide\'s own section headings, so the video follows the same',
+    '> steps as the written guide rather than inventing a parallel structure.',
+    '',
+    '---',
+    '',
+    VIDEO_SPEC_NOTE,
+    '',
+    '---',
+    '',
+    `## Guides (${plans.length})`,
+    '',
+  ];
+
+  plans.forEach((p, i) => {
+    const mins = Math.floor(p.runtime / 60);
+    const secs = String(p.runtime % 60).padStart(2, '0');
+
+    parts.push(
+      `### ${i + 1}. ${p.title}`,
+      '',
+      `**Slug:** \`${p.slug}\`  |  **Category:** ${p.category}  |  **Clips:** ${p.clips.length}  |  **Runtime:** ~${mins}:${secs}`,
+      `**Guide URL:** ${SITE}/how-to-use/${p.slug}`,
+      '',
+    );
+
+    if (p.dropped.length) {
+      parts.push(
+        `> Capped at 6 body clips. Not covered on video, so leave these to the written guide: ` +
+          p.dropped.map((d) => `_${d}_`).join(', ') + '.',
+        '',
+      );
+    }
+
+    for (const clip of p.clips) {
+      parts.push(
+        `#### Clip ${clip.index} — ${clip.label}`,
+        '',
+        `- **File:** \`${clip.file}\``,
+        `- **Purpose:** ${clip.purpose}`,
+        `- **On screen (add in editor):** ${clip.onScreen}`,
+        `- **Voiceover:** ${clip.voiceover}`,
+        '',
+        '```text',
+        clip.prompt,
+        '```',
+        '',
+      );
+    }
+
+    parts.push('**Negative prompt (same for every clip in this guide):**', '', '```text', p.clips[0].negative, '```', '', '---', '');
+  });
+
+  return { text: parts.join('\n'), guides: plans.length, clips: totalClips };
 }
 
 async function main() {
@@ -464,6 +546,12 @@ async function main() {
     fs.writeFileSync(promptOut, prompts.text, 'utf8');
     console.log(c.bold(`\nCover prompts -> ${path.relative(process.cwd(), promptOut)}`));
     console.log(`  ${prompts.missing} of ${prompts.total} articles need a cover image`);
+
+    const video = buildVideoPrompts(guideRows);
+    const videoOut = path.resolve(OUT_DIR, `${DATE}-guide-video-prompts.md`);
+    fs.writeFileSync(videoOut, video.text, 'utf8');
+    console.log(c.bold(`\nVideo shot lists -> ${path.relative(process.cwd(), videoOut)}`));
+    console.log(`  ${video.guides} guides, ${video.clips} clips of ~${CLIP_SECONDS}s`);
   } else {
     console.log(c.dim('\n  Cover prompts skipped — only written on a full run (no --only=).'));
   }
