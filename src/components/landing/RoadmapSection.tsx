@@ -5,7 +5,7 @@ const roadmapItems = [
   {
     icon: Banknote,
     title: 'Payroll Engine',
-    description: 'Basic salary calculation with export to common payroll formats. Streamline your payroll processing directly within OpenHR.',
+    description: 'Basic salary calculation with export to common payroll formats. Streamline your payroll processing directly within OpenHRApp.',
     color: 'text-green-600',
     bg: 'bg-green-50',
     darkBg: 'dark:bg-green-900/20',
@@ -47,7 +47,7 @@ const RoadmapSection: React.FC = () => {
             Coming Soon
           </h2>
           <p className="text-slate-500 dark:text-slate-400 text-lg">
-            We're always working on new features to make OpenHR even better. Here's what's on the horizon — vote for the ones you care about most.
+            We're always working on new features to make OpenHRApp even better. Here's what's on the horizon — vote for the ones you care about most.
           </p>
         </div>
 

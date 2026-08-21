@@ -16,6 +16,15 @@ export interface ChangelogRelease {
 export const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-21',
+    title: 'Brand name normalised to OpenHRApp in search results and on the home screen',
+    entries: [
+      { type: 'fix', description: 'The product name appeared four different ways. The codebase used OpenHRApp 213 times, but 26 user-visible strings still said plain OpenHR — including every one of the seven feature page titles, the blog and guide titles, and the RSS feed title in middleware.ts. Those titles are what search engines display, so the brand was reading as OpenHR in listings while the site itself said OpenHRApp. All 26 are now OpenHRApp.' },
+      { type: 'fix', description: 'public/manifest.json carried a fourth spelling, Open HR App with spaces, which is the label shown beneath the icon when the PWA is installed on a phone. It now matches everything else.' },
+      { type: 'improvement', description: 'The organisation-byline check in the prerender middleware was rewritten as a single pattern that still matches the legacy spellings. Rows written before this change carry bylines of OpenHR and OpenHR Team, and treating those as a Person rather than an Organization emits structured data that Google flags as invalid. Historical changelog entries and the test asserting the legacy match are deliberately left alone.' },
+    ],
+  },
+  {
+    date: '2026-08-21',
     title: 'Daylight design tokens for the public surface',
     entries: [
       { type: 'feature', description: 'Added the Daylight token layer to src/index.css: surface, type, action, elevation and shape tokens in both light and dark, registered with Tailwind so utilities like bg-dl-surface, text-dl-ink, rounded-dl-lg and shadow-dl-2 generate on demand. Daylight is the design direction for the 12 public pages — landing, blog, features, guides, about, contact, changelog, privacy and terms. Its metaphor is the working day as an arc of light, dawn at clock-in and dusk at clock-out, and the dawn/noon/dusk gradient is reserved for that arc and the logo mark alone.' },

@@ -1,7 +1,7 @@
 /**
  * Vercel Edge Middleware — Crawler Prerender
  *
- * OpenHR's public site is a client-rendered SPA (src/App.tsx routes off `currentPath`
+ * OpenHRApp's public site is a client-rendered SPA (src/App.tsx routes off `currentPath`
  * state, no router). Crawlers that don't execute JavaScript therefore see an empty
  * shell on every URL. This middleware detects crawlers and returns server-rendered
  * HTML instead.
@@ -99,7 +99,10 @@ const PUBLISHER_NAME = 'OpenHRApp';
 
 // A byline matching the site's own name is the publishing organization, not a
 // person. Anything else is treated as a named author.
-const AUTHOR_IS_ORGANIZATION = /^\s*(OpenHRApp|OpenHR|OpenHR Team|OpenHRApp Team)\s*$/i;
+// Must keep matching the legacy spellings too: rows written before the name was
+// normalised carry bylines of "OpenHR" and "OpenHR Team", and treating those as
+// a Person emits invalid structured data.
+const AUTHOR_IS_ORGANIZATION = /^\s*OpenHR(App)?( Team)?\s*$/i;
 
 // Link-preview crawlers — metadata only.
 const SOCIAL_BOT_RE = /facebookexternalhit|LinkedInBot|Twitterbot|Slackbot-LinkExpanding|Slackbot|WhatsApp|TelegramBot|Discordbot|Pinterestbot|Embedly|Quora Link Preview|Rogerbot|Showyoubot|Outbrain|W3C_Validator/i;
@@ -119,31 +122,31 @@ const SUPABASE_HEADERS = {
 // Inlined here because Edge Runtime cannot import from src/.
 const FEATURE_META: Record<string, { title: string; description: string }> = {
   'attendance-tracking': {
-    title: 'Attendance Tracking Software | OpenHR - Selfie & GPS Check-In',
+    title: 'Attendance Tracking Software | OpenHRApp - Selfie & GPS Check-In',
     description: 'Track employee attendance with selfie-based check-in, GPS verification, and real-time dashboards. Supports office and factory shift modes. Free and open-source.',
   },
   'leave-management': {
-    title: 'Leave Management System | OpenHR - Request, Approve & Track',
+    title: 'Leave Management System | OpenHRApp - Request, Approve & Track',
     description: 'Streamline leave requests, approvals, and balance tracking. Configure custom leave types with automatic calculations. Free HR leave management software.',
   },
   'performance-reviews': {
-    title: 'Performance Review Software | OpenHR - Structured Review Cycles',
+    title: 'Performance Review Software | OpenHRApp - Structured Review Cycles',
     description: 'Run structured performance reviews with self-assessment, manager evaluation, and HR finalization. Customizable competencies and rating scales. Free HRMS.',
   },
   'gps-geofencing': {
-    title: 'GPS Attendance Tracking | OpenHR - Location Verified Check-In',
+    title: 'GPS Attendance Tracking | OpenHRApp - Location Verified Check-In',
     description: 'Verify employee attendance with GPS location tracking. Ensure employees check in from approved locations. Ideal for remote teams and field workers.',
   },
   'biometric-selfie-verification': {
-    title: 'Selfie-Based Attendance | OpenHR - Photo Verified Check-In',
+    title: 'Selfie-Based Attendance | OpenHRApp - Photo Verified Check-In',
     description: 'Prevent buddy punching with selfie-based attendance verification. Photo evidence ensures authentic check-ins. No special hardware needed.',
   },
   'employee-directory': {
-    title: 'Employee Directory & HR Database | OpenHR - Centralized Team Management',
+    title: 'Employee Directory & HR Database | OpenHRApp - Centralized Team Management',
     description: 'Manage employee profiles, departments, and org structure in one place. Role-based access, bulk import, and searchable directory. Free open-source HRMS.',
   },
   'reports-analytics': {
-    title: 'HR Reports & Analytics | OpenHR - Data-Driven HR Decisions',
+    title: 'HR Reports & Analytics | OpenHRApp - Data-Driven HR Decisions',
     description: 'Generate attendance reports, leave utilization analytics, and team performance insights. Interactive charts and CSV export. Free open-source HR reporting.',
   },
 };
@@ -500,7 +503,7 @@ async function resolveBlogPost(slug: string, pathname: string, wantContent: bool
   const description = p.excerpt || (cleaned ? textExcerpt(cleaned) : DEFAULT_DESCRIPTION);
 
   const meta: PageMeta = {
-    title: p.title ? `${p.title} | OpenHR Blog` : 'OpenHR Blog',
+    title: p.title ? `${p.title} | OpenHRApp Blog` : 'OpenHRApp Blog',
     description,
     image,
     url: `${SITE_URL}${pathname}`,
@@ -511,7 +514,7 @@ async function resolveBlogPost(slug: string, pathname: string, wantContent: bool
     meta,
     article: {
       html: cleaned,
-      heading: p.title || 'OpenHR Blog',
+      heading: p.title || 'OpenHRApp Blog',
       author: p.author_name || undefined,
       publishedAt: p.published_at || undefined,
       category: p.category || undefined,
@@ -544,7 +547,7 @@ async function resolveTutorial(slug: string, pathname: string, wantContent: bool
   const description = p.excerpt || (cleaned ? textExcerpt(cleaned) : DEFAULT_DESCRIPTION);
 
   const meta: PageMeta = {
-    title: p.title ? `${p.title} | OpenHR Guides` : 'OpenHR Guides',
+    title: p.title ? `${p.title} | OpenHRApp Guides` : 'OpenHRApp Guides',
     description,
     image,
     url: `${SITE_URL}${pathname}`,
@@ -555,7 +558,7 @@ async function resolveTutorial(slug: string, pathname: string, wantContent: bool
     meta,
     article: {
       html: cleaned,
-      heading: p.title || 'OpenHR Guides',
+      heading: p.title || 'OpenHRApp Guides',
       author: p.author_name || undefined,
       publishedAt: p.published_at || undefined,
       category: p.category || undefined,
@@ -620,11 +623,11 @@ async function resolveContentIndex(kind: 'blog' | 'guide', pathname: string): Pr
     .join('\n');
 
   const heading = kind === 'blog'
-    ? 'OpenHR Blog — HR management insights and product updates'
-    : 'OpenHR Guides — How to use OpenHR';
+    ? 'OpenHRApp Blog — HR management insights and product updates'
+    : 'OpenHRApp Guides — How to use OpenHRApp';
   const description = kind === 'blog'
     ? 'Articles on attendance tracking, leave management, HR compliance, and running people operations with free open-source software.'
-    : 'Step-by-step guides for setting up and running OpenHR: attendance, leave, employees, organization structure, reports, and performance reviews.';
+    : 'Step-by-step guides for setting up and running OpenHRApp: attendance, leave, employees, organization structure, reports, and performance reviews.';
 
   return {
     meta: {
@@ -661,7 +664,7 @@ function resolveFeatureIndex(pathname: string): Resolved {
     },
     article: {
       html: `<ul class="content-index">${items}</ul>`,
-      heading: 'OpenHR Features',
+      heading: 'OpenHRApp Features',
       kind: 'index',
       breadcrumb: [
         { name: 'Home', url: SITE_URL },
@@ -687,7 +690,7 @@ function resolveHome(): Resolved {
     article: {
       html: [
         `<p>${escapeHtml(description)}</p>`,
-        '<h2>What OpenHR does</h2>',
+        '<h2>What OpenHRApp does</h2>',
         `<ul>${links}</ul>`,
         '<h2>Learn more</h2>',
         '<ul><li><a href="/how-to-use">Guides</a></li><li><a href="/blog">Blog</a></li><li><a href="/features">Features</a></li></ul>',
