@@ -32,6 +32,7 @@ export const config = {
     '/how-to-use/:slug+',
     '/features',
     '/features/:slug+',
+    '/sitemap.xml',
   ],
 };
 
@@ -176,6 +177,22 @@ function escapeHtml(str: string): string {
     .replace(/"/g, '&quot;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
+
+/**
+ * XML escaping for sitemap output.
+ *
+ * Distinct from escapeHtml because XML has no named entities beyond the five
+ * predefined ones, and an apostrophe in a slug or title must be numeric or
+ * `&apos;` — `&#39;` is the safe choice in both.
+ */
+function escapeXml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 /** JSON-LD lives inside a <script> block; `<` and `&` must not break out of it. */
@@ -685,15 +702,130 @@ function resolveHome(): Resolved {
  * Entry point
  * ------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------ *
+ * Dynamic sitemap
+ * ------------------------------------------------------------------ */
+
+/**
+ * Static routes, mirroring STATIC_PAGES in scripts/generate-sitemap.mjs.
+ *
+ * Kept in sync deliberately rather than shared: the Edge runtime cannot import
+ * from scripts/, and duplicating fifteen literals is cheaper than the
+ * indirection needed to share them. scripts/__tests__ asserts the two lists
+ * match so they cannot drift silently.
+ */
+const SITEMAP_STATIC_PAGES: ReadonlyArray<{ path: string; changefreq: string; priority: string }> = [
+  { path: '/', changefreq: 'weekly', priority: '1.0' },
+  { path: '/blog', changefreq: 'daily', priority: '0.8' },
+  { path: '/features', changefreq: 'monthly', priority: '0.8' },
+  { path: '/features/attendance-tracking', changefreq: 'monthly', priority: '0.7' },
+  { path: '/features/leave-management', changefreq: 'monthly', priority: '0.7' },
+  { path: '/features/performance-reviews', changefreq: 'monthly', priority: '0.7' },
+  { path: '/features/gps-geofencing', changefreq: 'monthly', priority: '0.7' },
+  { path: '/features/biometric-selfie-verification', changefreq: 'monthly', priority: '0.7' },
+  { path: '/features/employee-directory', changefreq: 'monthly', priority: '0.7' },
+  { path: '/features/reports-analytics', changefreq: 'monthly', priority: '0.7' },
+  { path: '/changelog', changefreq: 'weekly', priority: '0.7' },
+  { path: '/how-to-use', changefreq: 'weekly', priority: '0.7' },
+  { path: '/privacy', changefreq: 'monthly', priority: '0.3' },
+  { path: '/terms', changefreq: 'monthly', priority: '0.3' },
+];
+
+function sitemapEntry(loc: string, lastmod: string | null, changefreq: string, priority: string): string {
+  const lines = ['  <url>', `    <loc>${escapeXml(loc)}</loc>`];
+  if (lastmod) lines.push(`    <lastmod>${lastmod}</lastmod>`);
+  lines.push(`    <changefreq>${changefreq}</changefreq>`, `    <priority>${priority}</priority>`, '  </url>');
+  return lines.join('\n');
+}
+
+/** ISO timestamp -> YYYY-MM-DD, or null if absent or unparseable. */
+function lastmodOf(row: { updated?: string; published_at?: string }): string | null {
+  const raw = row.updated || row.published_at || '';
+  const day = String(raw).split('T')[0];
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : null;
+}
+
+/**
+ * Build sitemap.xml from the database on request.
+ *
+ * The static public/sitemap.xml is written at build time, so publishing a post
+ * through the admin panel left it stale until the next deploy — which is how the
+ * site ran for months advertising 14 URLs and zero articles.
+ *
+ * Returns null on any query failure so the caller can fall through to the static
+ * file. A stale sitemap is far better than a 500 or an empty one: Google treats a
+ * sitemap that suddenly loses its URLs as a signal those pages are gone.
+ */
+async function buildSitemap(): Promise<string | null> {
+  const select = 'slug,updated,published_at';
+  const params = (extra: Record<string, string>) =>
+    new URLSearchParams({ select, status: 'eq.PUBLISHED', order: 'published_at.desc', limit: '1000', ...extra });
+
+  const [posts, tutorials] = await Promise.all([
+    query('blog_posts', params({})),
+    query('tutorials', params({})),
+  ]);
+
+  // Either query failing means an incomplete document. Serve the static file
+  // instead of publishing a sitemap that silently drops half the site.
+  if (posts === null || tutorials === null) return null;
+
+  // A zero result almost always means a broken query rather than an empty site —
+  // the same failure mode the build-time generator now refuses to write.
+  if (posts.length === 0 && tutorials.length === 0) return null;
+
+  const today = new Date().toISOString().split('T')[0];
+  const entries = SITEMAP_STATIC_PAGES.map((p) =>
+    sitemapEntry(`${SITE_URL}${p.path}`, today, p.changefreq, p.priority),
+  );
+
+  for (const post of posts) {
+    if (!post?.slug) continue;
+    entries.push(sitemapEntry(`${SITE_URL}/blog/${post.slug}`, lastmodOf(post), 'weekly', '0.6'));
+  }
+  for (const tut of tutorials) {
+    if (!tut?.slug) continue;
+    entries.push(sitemapEntry(`${SITE_URL}/how-to-use/${tut.slug}`, lastmodOf(tut), 'monthly', '0.6'));
+  }
+
+  return (
+    '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+    entries.join('\n') +
+    '\n</urlset>\n'
+  );
+}
+
 export default async function middleware(request: Request): Promise<Response | undefined> {
+  const { pathname } = new URL(request.url);
+
+  // Handled before the user-agent check: a sitemap is served to everyone who
+  // asks, and Search Console fetches it without a crawler UA.
+  if (pathname === '/sitemap.xml') {
+    const xml = await buildSitemap();
+
+    // Fall through to the static build-time file when the database is
+    // unreachable or answers with nothing.
+    if (!xml) return undefined;
+
+    return new Response(xml, {
+      headers: {
+        'Content-Type': 'application/xml; charset=utf-8',
+        // Cached at the edge for an hour, so a burst of crawler requests costs
+        // one database round trip rather than thousands. A newly published post
+        // appears within the hour without a deploy.
+        'Cache-Control': 'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400',
+        'X-Sitemap': 'dynamic',
+      },
+    });
+  }
+
   const ua = request.headers.get('user-agent') ?? '';
   const isIndexBot = INDEX_BOT_RE.test(ua);
   const isSocialBot = !isIndexBot && SOCIAL_BOT_RE.test(ua);
 
   // Everyone else — real users included — gets the SPA untouched.
   if (!isIndexBot && !isSocialBot) return undefined;
-
-  const { pathname } = new URL(request.url);
 
   const blogPost = pathname.match(/^\/blog\/([^/]+)\/?$/);
   const tutorial = pathname.match(/^\/how-to-use\/([^/]+)\/?$/);
