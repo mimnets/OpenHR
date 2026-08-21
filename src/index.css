@@ -21,6 +21,27 @@
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-primary-light: var(--primary-light);
+
+  /* Daylight — public surface only. See the token block below. */
+  --color-dl-ground: var(--dl-ground);
+  --color-dl-surface: var(--dl-surface);
+  --color-dl-surface-2: var(--dl-surface-2);
+  --color-dl-hair: var(--dl-hair);
+  --color-dl-hair-soft: var(--dl-hair-soft);
+  --color-dl-ink: var(--dl-ink);
+  --color-dl-muted: var(--dl-muted);
+  --color-dl-soft: var(--dl-soft);
+  --color-dl-teal: var(--dl-teal);
+  --color-dl-teal-deep: var(--dl-teal-deep);
+  --color-dl-dawn: var(--dl-dawn);
+  --color-dl-noon: var(--dl-noon);
+  --color-dl-dusk: var(--dl-dusk);
+  --radius-dl-sm: var(--dl-r-sm);
+  --radius-dl-md: var(--dl-r-md);
+  --radius-dl-lg: var(--dl-r-lg);
+  --shadow-dl-1: var(--dl-lift-1);
+  --shadow-dl-2: var(--dl-lift-2);
+
   --animate-slide-up: slideUp 0.3s ease-out;
   --font-sans: 'Inter', sans-serif;
 }
@@ -38,6 +59,86 @@
   /* Primary at ~12% alpha. Used by the .dark .bg-primary-light rules below.
      Previously written from JS as `${primary}20`; now static, like the rest. */
   --primary-light-dark: #4a6fa520;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DAYLIGHT — design tokens for the public surface
+   ═══════════════════════════════════════════════════════════════════════
+
+   Applies to the 12 public pages only: landing, blog, features, guides,
+   about, contact, changelog, privacy, terms. The logged-in app keeps the
+   --primary set above, untouched.
+
+   That is why every token here carries a --dl- prefix. The two systems sit
+   side by side rather than one replacing the other, so the public surface
+   can be rebuilt page by page with no flag day and no risk to the app.
+
+   Metaphor: the working day as an arc of light — dawn at clock-in, dusk at
+   clock-out. The dawn/noon/dusk gradient is reserved for that arc and the
+   logo mark, and appears nowhere else. Spread across buttons and headings
+   it would stop meaning anything.
+
+   Contrast is measured, not estimated, and asserted in
+   src/test/daylightTokens.test.ts.
+   ─────────────────────────────────────────────────────────────────────── */
+:root {
+  /* — surface — */
+  --dl-ground: #EFF2F3;
+  --dl-surface: #FFFFFF;
+  --dl-surface-2: #F7F9F9;
+  --dl-hair: #DDE4E6;
+  --dl-hair-soft: #E9EEEF;
+
+  /* — type — ink 15.0:1, muted 5.3:1 on surface — */
+  --dl-ink: #0E2A33;
+  --dl-muted: #55707A;
+  /* 3.3:1. Hairlines, ticks and dividers ONLY — never text. */
+  --dl-soft: #7B929B;
+
+  /* — action — teal 5.9:1 on surface — */
+  --dl-teal: #1C6E7E;
+  --dl-teal-deep: #155863;
+
+  /* — the day. Only inside the arc and the logo mark. — */
+  --dl-dawn: #B4560F;
+  --dl-noon: #A83E58;
+  --dl-dusk: #5C4E8E;
+
+  /* — elevation. Always two layers: a tight contact shadow and a wide soft
+       one. A single blurred drop shadow is the tell of an interface nobody
+       looked at closely. — */
+  --dl-lift-1: 0 1px 1px rgba(14, 42, 51, .045), 0 4px 10px -4px rgba(14, 42, 51, .08);
+  --dl-lift-2: 0 1px 2px rgba(14, 42, 51, .05), 0 14px 34px -14px rgba(14, 42, 51, .16);
+
+  /* — shape — */
+  --dl-r-sm: 8px;
+  --dl-r-md: 14px;
+  --dl-r-lg: 22px;
+}
+
+/* Dark is a separate palette, not an inversion: the hues are re-picked so
+   each one still clears contrast against a dark ground, and the accent stays
+   recognisable rather than merely lighter. */
+html.dark {
+  --dl-ground: #0A1518;
+  --dl-surface: #102026;
+  --dl-surface-2: #0D1B20;
+  --dl-hair: #1E333A;
+  --dl-hair-soft: #17282E;
+
+  --dl-ink: #E4EDEF;
+  --dl-muted: #93AAB2;
+  --dl-soft: #6C858E;
+
+  --dl-teal: #5FBDCE;
+  --dl-teal-deep: #8AD3E0;
+
+  --dl-dawn: #E2925A;
+  --dl-noon: #DE8199;
+  --dl-dusk: #A99BDA;
+
+  --dl-lift-1: 0 1px 1px rgba(0, 0, 0, .3), 0 4px 10px -4px rgba(0, 0, 0, .45);
+  --dl-lift-2: 0 1px 2px rgba(0, 0, 0, .35), 0 14px 34px -14px rgba(0, 0, 0, .6);
 }
 
 body {

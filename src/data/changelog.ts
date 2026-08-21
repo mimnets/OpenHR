@@ -16,6 +16,15 @@ export interface ChangelogRelease {
 export const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-21',
+    title: 'Daylight design tokens for the public surface',
+    entries: [
+      { type: 'feature', description: 'Added the Daylight token layer to src/index.css: surface, type, action, elevation and shape tokens in both light and dark, registered with Tailwind so utilities like bg-dl-surface, text-dl-ink, rounded-dl-lg and shadow-dl-2 generate on demand. Daylight is the design direction for the 12 public pages — landing, blog, features, guides, about, contact, changelog, privacy and terms. Its metaphor is the working day as an arc of light, dawn at clock-in and dusk at clock-out, and the dawn/noon/dusk gradient is reserved for that arc and the logo mark alone.' },
+      { type: 'improvement', description: 'Every token carries a --dl- prefix so the two design systems coexist rather than one replacing the other. The logged-in app keeps its --primary set completely untouched, which means the public surface can be rebuilt page by page with no flag day and no risk to the product. The dark palette is a separate set of hues rather than an inversion, so each colour still clears contrast against a dark ground and the accent stays recognisable instead of merely lighter.' },
+      { type: 'improvement', description: 'Added 46 tests that recompute contrast ratios from the stylesheet on every run rather than trusting a comment. They assert that ink, muted and teal clear WCAG AA against both the card surface and the page ground in both palettes; that --dl-soft stays below AA and is documented as hairlines-only, so nobody later fixes it into a text colour; that both elevation tokens stack two shadow layers; and that no Daylight token overwrites a --primary one. Suite goes from 153 tests in 9 files to 199 in 10.' },
+    ],
+  },
+  {
+    date: '2026-08-21',
     title: 'One brand colour — selectable accent themes removed',
     entries: [
       { type: 'breaking', description: 'Removed the selectable accent theme: fourteen palettes, the super admin Appearance tab, the per-organization theme setting, and the default_theme row fetched from Supabase. OpenHRApp now has one brand colour, defined once as CSS custom properties on :root in src/index.css. Organizations can no longer choose an accent colour, and administrators can no longer change one.' },
