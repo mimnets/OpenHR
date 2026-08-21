@@ -38,6 +38,18 @@ import { buildVideoPlan, VIDEO_SPEC_NOTE, CLIP_SECONDS } from './lib/video-promp
 
 const args = process.argv.slice(2);
 const ONLY = (args.find((a) => a.startsWith('--only=')) || '').split('=')[1] || 'all';
+
+/**
+ * Archived records are excluded by default.
+ *
+ * They are not published, not in the sitemap, and not visible to anyone — so
+ * counting them makes the corpus look larger than it is, and commissioning a
+ * cover image or a video for one is wasted work. Pass --include-archived to see
+ * them in the content export (they are never given prompts either way).
+ */
+const INCLUDE_ARCHIVED = args.includes('--include-archived');
+
+const isArchived = (row) => String(row.status || '').toUpperCase() === 'ARCHIVED';
 const OUT_DIR = (args.find((a) => a.startsWith('--out=')) || '').split('=')[1] || 'Others';
 
 /**
@@ -523,6 +535,7 @@ async function main() {
 
   if (ONLY === 'all' || ONLY === 'tutorials' || ONLY === 'guides') {
     guideRows = await fetchAll('tutorials', '*');
+    if (!INCLUDE_ARCHIVED) guideRows = guideRows.filter((r) => !isArchived(r));
     const { text, items } = buildGuides(guideRows);
     const out = path.resolve(OUT_DIR, `${DATE}-guides-content-export.md`);
     fs.writeFileSync(out, text, 'utf8');
@@ -531,6 +544,7 @@ async function main() {
 
   if (ONLY === 'all' || ONLY === 'blog') {
     blogRows = await fetchAll('blog_posts', '*');
+    if (!INCLUDE_ARCHIVED) blogRows = blogRows.filter((r) => !isArchived(r));
     const { text, items } = buildBlog(blogRows);
     const out = path.resolve(OUT_DIR, `${DATE}-blog-content-export.md`);
     fs.writeFileSync(out, text, 'utf8');
@@ -541,13 +555,15 @@ async function main() {
   // it to the same filename would silently replace a complete prompt file with
   // one covering just guides or just posts.
   if (ONLY === 'all') {
-    const prompts = buildCoverPrompts(guideRows, blogRows);
+    const liveGuides = guideRows.filter((r) => !isArchived(r));
+    const liveBlog = blogRows.filter((r) => !isArchived(r));
+    const prompts = buildCoverPrompts(liveGuides, liveBlog);
     const promptOut = path.resolve(OUT_DIR, `${DATE}-cover-image-prompts.md`);
     fs.writeFileSync(promptOut, prompts.text, 'utf8');
     console.log(c.bold(`\nCover prompts -> ${path.relative(process.cwd(), promptOut)}`));
     console.log(`  ${prompts.missing} of ${prompts.total} articles need a cover image`);
 
-    const video = buildVideoPrompts(guideRows);
+    const video = buildVideoPrompts(liveGuides);
     const videoOut = path.resolve(OUT_DIR, `${DATE}-guide-video-prompts.md`);
     fs.writeFileSync(videoOut, video.text, 'utf8');
     console.log(c.bold(`\nVideo shot lists -> ${path.relative(process.cwd(), videoOut)}`));
