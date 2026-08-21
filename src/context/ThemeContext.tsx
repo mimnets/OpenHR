@@ -1,81 +1,59 @@
-
-import React, { createContext, useContext, useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
-import { AppTheme } from '../types';
-import { organizationService } from '../services/organization.service';
-
-const THEME_CACHE_KEY = 'openhr-global-theme';
-
-export const THEMES: AppTheme[] = [
-  // Original themes
-  { id: 'arctic-frost', name: 'Arctic Frost', colors: { primary: '#4a6fa5', hover: '#3b5d8c', light: '#d4e4f7' } },
-  { id: 'corporate-blue', name: 'Corporate Blue', colors: { primary: '#2563eb', hover: '#1d4ed8', light: '#dbeafe' } },
-  { id: 'ocean-depths', name: 'Ocean Depths', colors: { primary: '#2d8b8b', hover: '#24706f', light: '#ccecec' } },
-  { id: 'modern-minimal', name: 'Modern Minimal', colors: { primary: '#36454f', hover: '#2a363e', light: '#e8ecef' } },
-  { id: 'forest-canopy', name: 'Forest Canopy', colors: { primary: '#2d4a2b', hover: '#1f3620', light: '#d5e3d4' } },
-  { id: 'midnight-galaxy', name: 'Midnight Galaxy', colors: { primary: '#4a4e8f', hover: '#3b3f73', light: '#e0e1f0' } },
-  { id: 'tech-innovation', name: 'Tech Innovation', colors: { primary: '#0066ff', hover: '#0052cc', light: '#d6e8ff' } },
-  // Warm tones
-  { id: 'sunset-orange', name: 'Sunset Orange', colors: { primary: '#e2582e', hover: '#c44a25', light: '#fde0d5' } },
-  { id: 'rose-garden', name: 'Rose Garden', colors: { primary: '#e11d62', hover: '#be1854', light: '#fce4ef' } },
-  { id: 'golden-amber', name: 'Golden Amber', colors: { primary: '#b8860b', hover: '#9a7009', light: '#faf0d4' } },
-  // Cool tones
-  { id: 'deep-indigo', name: 'Deep Indigo', colors: { primary: '#4f46e5', hover: '#4338ca', light: '#e0e0fc' } },
-  { id: 'royal-purple', name: 'Royal Purple', colors: { primary: '#7c3aed', hover: '#6d28d9', light: '#ede4fd' } },
-  { id: 'teal-wave', name: 'Teal Wave', colors: { primary: '#0d9488', hover: '#0f766e', light: '#ccfbf1' } },
-  // Neutral
-  { id: 'charcoal-slate', name: 'Charcoal Slate', colors: { primary: '#475569', hover: '#334155', light: '#e2e8f0' } },
-];
+import React, { createContext, useContext, useState, useEffect, useLayoutEffect } from 'react';
 
 /**
- * The brand default: arctic-frost, #4a6fa5.
+ * Dark mode.
  *
- * Three places have to agree on this or the page repaints after React mounts:
- * this constant, the `--primary` block in src/index.css, and the fallback in
- * index.html's boot script. src/test/themeBoot.test.ts asserts they do.
+ * This used to also carry a selectable accent theme: fourteen palettes, a
+ * super-admin picker, and a `default_theme` row read from Supabase on an idle
+ * callback, again every 60 seconds, and again on every visibilitychange. That
+ * is gone — OpenHRApp has one brand colour, defined once in src/index.css.
  *
- * Note this is only a fallback. A `default_theme` row in Supabase — set by a
- * super admin under Appearance — always wins once it has been fetched.
+ * Removing it also removed three defects:
+ *
+ *   - A bulk "apply to all organizations" write with no confirmation, which had
+ *     already restyled 119 real customer organizations in a single click.
+ *   - A colour repaint on load, because the theme arrived over the network after
+ *     first paint.
+ *   - The same fourteen-palette table duplicated in three places (this file,
+ *     index.html's boot script, and index.css), free to drift apart.
+ *
+ * Dark mode itself is kept: it is a user accessibility preference, stored
+ * locally, with no network round trip and nothing for an administrator to
+ * override.
  */
-export const DEFAULT_THEME_ID = 'arctic-frost';
 
-function getCachedTheme(): AppTheme {
-  try {
-    const cached = localStorage.getItem(THEME_CACHE_KEY);
-    if (cached) {
-      const found = THEMES.find(t => t.id === cached);
-      if (found) return found;
-    }
-  } catch { /* localStorage unavailable */ }
-  return THEMES.find(t => t.id === DEFAULT_THEME_ID) ?? THEMES[0];
-}
+export type DarkModePreference = 'light' | 'dark' | 'system';
+
+const DARK_MODE_KEY = 'openhr-dark-mode';
+
+/** The <meta name="theme-color"> value per mode, matching the painted surface. */
+const META_THEME_COLOR = { dark: '#0f172a', light: '#fcfdfe' } as const;
 
 /**
- * Read the saved dark-mode preference synchronously, for use as initial state.
+ * Read the saved preference synchronously, for use as initial state.
  *
- * This used to be read in a useEffect, so the first render always assumed
- * 'system'. index.html's boot script sets the .dark class from this same key
- * before paint, so whenever a user's saved preference disagreed with their OS
- * setting, React's first commit removed the class the boot script had just
- * added and re-added it a render later — a visible flash between two themes on
- * every refresh.
+ * This must not be deferred to an effect. index.html's boot script sets the
+ * .dark class from this same key before first paint; if React's first render
+ * assumed a different value it would remove that class and re-add it a render
+ * later, flashing between two themes on every refresh.
  */
 function getStoredDarkPreference(): DarkModePreference {
   try {
-    const saved = localStorage.getItem('openhr-dark-mode');
+    const saved = localStorage.getItem(DARK_MODE_KEY);
     if (saved === 'light' || saved === 'dark' || saved === 'system') return saved;
   } catch { /* localStorage unavailable */ }
   return 'system';
 }
 
-export function cacheThemeId(themeId: string) {
-  try { localStorage.setItem(THEME_CACHE_KEY, themeId); } catch { /* noop */ }
+function getSystemPrefersDark(): boolean {
+  try {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  } catch {
+    return false;
+  }
 }
 
-export type DarkModePreference = 'light' | 'dark' | 'system';
-
 interface ThemeContextType {
-  currentTheme: AppTheme;
-  setTheme: (id: string) => void;
   darkMode: boolean;
   darkModePreference: DarkModePreference;
   setDarkModePreference: (pref: DarkModePreference) => void;
@@ -83,89 +61,13 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-function getSystemPrefersDark(): boolean {
-  return window.matchMedia('(prefers-color-scheme: dark)').matches;
-}
-
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentTheme, setCurrentTheme] = useState<AppTheme>(getCachedTheme);
   const [darkModePreference, setDarkModePrefState] = useState<DarkModePreference>(getStoredDarkPreference);
   const [systemDark, setSystemDark] = useState(getSystemPrefersDark);
 
   const darkMode = darkModePreference === 'system' ? systemDark : darkModePreference === 'dark';
 
-  const applyThemeById = useCallback((themeId: string) => {
-    const found = THEMES.find(t => t.id === themeId);
-    if (!found) return;
-
-    // Always refresh the cache so the next load paints this theme before React
-    // mounts, but only touch state when the theme genuinely changed. The
-    // platform default is re-fetched on an idle callback, again every 60s, and
-    // again on every visibilitychange; without this guard each of those
-    // re-applied an identical theme and re-ran the CSS-variable effect.
-    cacheThemeId(themeId);
-    setCurrentTheme(prev => (prev.id === themeId ? prev : found));
-  }, []);
-
-  const fetchPlatformDefault = useCallback(async () => {
-    try {
-      // Try org-scoped setting first; getSetting now cascades to platform-level
-      // internally when no org-specific value exists.
-      let themeId = await organizationService.getSetting('default_theme', null);
-      // Belt-and-suspenders: if getSetting returned nothing, explicitly try the
-      // platform-level setting (covers edge cases where cascade might be skipped).
-      if (!themeId) {
-        themeId = await organizationService.getPlatformSetting('default_theme', null);
-      }
-      if (themeId && typeof themeId === 'string') {
-        applyThemeById(themeId);
-      }
-    } catch {
-      // Backend unreachable — keep cached or default theme.
-    }
-  }, [applyThemeById]);
-
-  // Load dark-mode preference synchronously; defer the platform-default theme
-  // network fetch off the critical path. The localStorage-cached accent theme
-  // is already applied via initial state, so the UI renders correct colors
-  // immediately even when the backend is slow (iOS LTE first paint).
-  useEffect(() => {
-    const ric =
-      (window as any).requestIdleCallback ||
-      ((cb: () => void) => setTimeout(cb, 200));
-    const handle = ric(() => { fetchPlatformDefault(); });
-    return () => {
-      const cic = (window as any).cancelIdleCallback;
-      if (cic) cic(handle); else clearTimeout(handle as any);
-    };
-  }, [fetchPlatformDefault]);
-
-  // Polling: re-fetch every 60s. (PB realtime sub removed during the Supabase
-  // migration; admin-changes-the-org-theme is rare enough that a 60s lag is
-  // acceptable, and visibilitychange below gives a faster signal on mobile.)
-  useEffect(() => {
-    const interval = setInterval(() => { fetchPlatformDefault(); }, 60_000);
-    return () => clearInterval(interval);
-  }, [fetchPlatformDefault]);
-
-  // Re-fetch theme when tab becomes visible (fallback for realtime)
-  // Throttled to once per 60s to avoid excessive API calls on iOS (notification center, app switcher, etc.)
-  const lastVisibilityFetch = useRef(0);
-  useEffect(() => {
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        const now = Date.now();
-        if (now - lastVisibilityFetch.current > 60_000) {
-          lastVisibilityFetch.current = now;
-          fetchPlatformDefault();
-        }
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [fetchPlatformDefault]);
-
-  // Listen for system preference changes
+  // Track the OS setting so 'system' stays live rather than being sampled once.
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const handler = (e: MediaQueryListEvent) => setSystemDark(e.matches);
@@ -173,47 +75,22 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  // Apply dark class to <html> and update meta theme-color.
-  //
   // useLayoutEffect, not useEffect: this runs before the browser paints, so the
   // class index.html's boot script already set is never briefly removed.
   useLayoutEffect(() => {
-    const root = document.documentElement;
-    if (darkMode) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
+    document.documentElement.classList.toggle('dark', darkMode);
+
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) {
-      meta.setAttribute('content', darkMode ? '#0f172a' : '#fcfdfe');
-    }
+    if (meta) meta.setAttribute('content', darkMode ? META_THEME_COLOR.dark : META_THEME_COLOR.light);
   }, [darkMode]);
-
-  // Apply CSS variables whenever accent theme changes. Before paint, for the
-  // same reason as above — the boot script has already set these inline.
-  useLayoutEffect(() => {
-    const root = document.documentElement;
-    root.style.setProperty('--primary', currentTheme.colors.primary);
-    root.style.setProperty('--primary-hover', currentTheme.colors.hover);
-    root.style.setProperty('--primary-light', currentTheme.colors.light);
-    root.style.setProperty('--primary-light-dark', `${currentTheme.colors.primary}20`);
-  }, [currentTheme]);
-
-  const setTheme = (id: string) => {
-    const found = THEMES.find(t => t.id === id);
-    if (found) {
-      setCurrentTheme(found);
-    }
-  };
 
   const setDarkModePreference = (pref: DarkModePreference) => {
     setDarkModePrefState(pref);
-    localStorage.setItem('openhr-dark-mode', pref);
+    try { localStorage.setItem(DARK_MODE_KEY, pref); } catch { /* noop */ }
   };
 
   return (
-    <ThemeContext.Provider value={{ currentTheme, setTheme, darkMode, darkModePreference, setDarkModePreference }}>
+    <ThemeContext.Provider value={{ darkMode, darkModePreference, setDarkModePreference }}>
       {children}
     </ThemeContext.Provider>
   );
@@ -221,6 +98,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);
-  if (!context) throw new Error("useTheme must be used within ThemeProvider");
+  if (!context) throw new Error('useTheme must be used within ThemeProvider');
   return context;
 };

@@ -16,6 +16,17 @@ export interface ChangelogRelease {
 export const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-21',
+    title: 'One brand colour — selectable accent themes removed',
+    entries: [
+      { type: 'breaking', description: 'Removed the selectable accent theme: fourteen palettes, the super admin Appearance tab, the per-organization theme setting, and the default_theme row fetched from Supabase. OpenHRApp now has one brand colour, defined once as CSS custom properties on :root in src/index.css. Organizations can no longer choose an accent colour, and administrators can no longer change one.' },
+      { type: 'security', description: 'This removes a bulk write that could restyle every customer in one click. The Appearance screen carried a push to all organizations checkbox wired to setSettingForAllOrganizations, and saving fired directly from clicking a colour swatch with no confirmation dialog, no count of what was about to change, and no undo. It had already been used once: all 119 organization-scoped default_theme rows were written in a single bulk operation, five to six seconds apart within the same minute, putting every real customer on a colour none of them chose.' },
+      { type: 'fix', description: 'Removes the accent-colour repaint on load. The theme arrived over the network — on an idle callback, again every 60 seconds, and again on every visibilitychange — so the page painted one colour and corrected it afterwards. With the colour in CSS there is nothing to correct: the stylesheet paints it before any script runs.' },
+      { type: 'improvement', description: 'Removes a duplicated palette table that had no way to stay in sync. The same fourteen themes were written out in ThemeContext, in the boot script in index.html, and partially in index.css, because the boot script must run before any module loads and the stylesheet paints before any script does. Three copies of the same data, and they had already drifted: the stylesheet said arctic-frost, the context fallback said charcoal-slate, and the database said forest-canopy.' },
+      { type: 'improvement', description: 'Dark mode is unchanged and still fully supported. It is a local accessibility preference with no network round trip and nothing for an administrator to override, so none of the reasoning above applies to it. ThemeContext now does only dark mode and is 100 lines rather than 230. --primary-light-dark, previously written from JS, is now a static custom property; leaving it undefined would have silently broken the .dark .bg-primary-light rules.' },
+    ],
+  },
+  {
+    date: '2026-08-21',
     title: 'Arctic Frost #4a6fa5 is now the brand default everywhere',
     entries: [
       { type: 'fix', description: 'Three places disagreed about the default accent colour. src/index.css shipped arctic-frost (#4a6fa5) as the stylesheet --primary, ThemeContext fell back to charcoal-slate (#475569), and the platform default_theme row in Supabase said forest-canopy (#2d4a2b) — so the live site actually rendered dark green while the stylesheet painted blue for a moment first. All three are now arctic-frost. The value is a single exported DEFAULT_THEME_ID constant, and the boot script in index.html and the :root block in index.css are asserted against it by tests, because they must each hold their own copy: the boot script runs before any module loads, and the stylesheet paints before any script does.' },

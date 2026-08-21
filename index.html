@@ -102,42 +102,6 @@
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"></noscript>
 <script>
-  // Theme preload: apply cached theme BEFORE React loads to prevent flash
-  (function() {
-    try {
-      // No cache means a first visit. Fall through to the brand default rather
-      // than returning: bailing here left index.css's --primary painted and let
-      // React repaint a different colour a moment later. This id must match
-      // DEFAULT_THEME_ID in src/context/ThemeContext.tsx and the --primary block
-      // in src/index.css; src/test/themeBoot.test.ts asserts all three agree.
-      var themeId = localStorage.getItem('openhr-global-theme') || 'arctic-frost';
-      var themes = {
-        'arctic-frost':     { p: '#4a6fa5', h: '#3b5d8c', l: '#d4e4f7' },
-        'corporate-blue':   { p: '#2563eb', h: '#1d4ed8', l: '#dbeafe' },
-        'ocean-depths':     { p: '#2d8b8b', h: '#24706f', l: '#ccecec' },
-        'modern-minimal':   { p: '#36454f', h: '#2a363e', l: '#e8ecef' },
-        'forest-canopy':    { p: '#2d4a2b', h: '#1f3620', l: '#d5e3d4' },
-        'midnight-galaxy':  { p: '#4a4e8f', h: '#3b3f73', l: '#e0e1f0' },
-        'tech-innovation':  { p: '#0066ff', h: '#0052cc', l: '#d6e8ff' },
-        'sunset-orange':    { p: '#e2582e', h: '#c44a25', l: '#fde0d5' },
-        'rose-garden':      { p: '#e11d62', h: '#be1854', l: '#fce4ef' },
-        'golden-amber':     { p: '#b8860b', h: '#9a7009', l: '#faf0d4' },
-        'deep-indigo':      { p: '#4f46e5', h: '#4338ca', l: '#e0e0fc' },
-        'royal-purple':     { p: '#7c3aed', h: '#6d28d9', l: '#ede4fd' },
-        'teal-wave':        { p: '#0d9488', h: '#0f766e', l: '#ccfbf1' },
-        'charcoal-slate':   { p: '#475569', h: '#334155', l: '#e2e8f0' }
-      };
-      // An unknown id (stale cache after a theme was renamed or removed) gets
-      // the brand default, so the painted colour always matches what React picks.
-      var t = themes[themeId] || themes['arctic-frost'];
-      var s = document.documentElement.style;
-      s.setProperty('--primary', t.p);
-      s.setProperty('--primary-hover', t.h);
-      s.setProperty('--primary-light', t.l);
-      s.setProperty('--primary-light-dark', t.p + '20');
-    } catch(e) {}
-  })();
-
   // Dark mode preload — prevents white flash on refresh
   (function() {
     try {

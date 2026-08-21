@@ -3,148 +3,111 @@ import fs from 'fs';
 import path from 'path';
 
 /**
- * Guards against theme flashing on load.
+ * Theme boot behaviour.
  *
- * Three separate flashes were reported as "two different themes on refresh":
+ * OpenHRApp has one brand colour, defined once in src/index.css. The selectable
+ * accent theme it used to carry — fourteen palettes, a super-admin picker, and a
+ * `default_theme` row fetched from Supabase — has been removed, along with the
+ * three defects that came with it: a bulk "apply to all organizations" write
+ * with no confirmation that had already restyled 119 real customer orgs; a
+ * colour repaint on load because the theme arrived over the network after first
+ * paint; and the same palette table duplicated in three places, free to drift.
  *
- *  A. index.html's boot script bailed when no theme was cached, so the first
- *     paint used index.css's --primary (#4a6fa5, arctic-frost) while React then
- *     applied getCachedTheme()'s fallback (charcoal-slate, #475569).
- *  B. ThemeContext initialised darkModePreference to 'system' and read the real
- *     preference in a useEffect, so React's first commit removed the .dark class
- *     the boot script had already set, then re-added it a render later.
- *  C. The platform default re-fetched on idle, every 60s, and on every
- *     visibilitychange, re-applying an identical theme each time.
- *
- * The boot script duplicates the theme table because it must run before any
- * module loads. These assertions keep the copy honest.
+ * Dark mode is kept. It is a local accessibility preference with no network
+ * round trip, and these tests guard the part of it that is easy to break: the
+ * ordering that keeps it from flashing between two states on refresh.
  */
 
 const root = path.resolve(__dirname, '../..');
 const indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const indexCss = fs.readFileSync(path.join(root, 'src/index.css'), 'utf8');
 const themeContext = fs.readFileSync(path.join(root, 'src/context/ThemeContext.tsx'), 'utf8');
 
-/** `{ id: 'x', name: '...', colors: { primary: '#hex', hover: '#hex', light: '#hex' } }` */
-function themesFromContext(): Record<string, { p: string; h: string; l: string }> {
-  const out: Record<string, { p: string; h: string; l: string }> = {};
-  const re = /\{\s*id:\s*'([^']+)',\s*name:\s*'[^']*',\s*colors:\s*\{\s*primary:\s*'([^']+)',\s*hover:\s*'([^']+)',\s*light:\s*'([^']+)'\s*\}\s*\}/g;
-  for (const m of themeContext.matchAll(re)) {
-    out[m[1]] = { p: m[2], h: m[3], l: m[4] };
-  }
-  return out;
-}
+const BRAND = { primary: '#4a6fa5', hover: '#3b5d8c', light: '#d4e4f7' };
 
-/** `'x': { p: '#hex', h: '#hex', l: '#hex' }` */
-function themesFromBootScript(): Record<string, { p: string; h: string; l: string }> {
-  const out: Record<string, { p: string; h: string; l: string }> = {};
-  const re = /'([a-z-]+)':\s*\{\s*p:\s*'([^']+)',\s*h:\s*'([^']+)',\s*l:\s*'([^']+)'\s*\}/g;
-  for (const m of indexHtml.matchAll(re)) {
-    out[m[1]] = { p: m[2], h: m[3], l: m[4] };
-  }
-  return out;
-}
-
-describe('boot script theme table matches ThemeContext', () => {
-  it('finds both tables', () => {
-    expect(Object.keys(themesFromContext()).length).toBeGreaterThan(10);
-    expect(Object.keys(themesFromBootScript()).length).toBeGreaterThan(10);
+describe('brand colour is defined once, in CSS', () => {
+  it('sets the brand custom properties on :root', () => {
+    expect(indexCss).toContain(`--primary: ${BRAND.primary};`);
+    expect(indexCss).toContain(`--primary-hover: ${BRAND.hover};`);
+    expect(indexCss).toContain(`--primary-light: ${BRAND.light};`);
   });
 
-  it('defines exactly the same themes', () => {
-    expect(Object.keys(themesFromBootScript()).sort()).toEqual(Object.keys(themesFromContext()).sort());
+  it('defines --primary-light-dark, which the dark rules consume', () => {
+    // Previously written from JS as `${primary}20`. With the provider no longer
+    // setting custom properties, leaving it undefined would silently break
+    // .dark .bg-primary-light.
+    expect(indexCss).toContain('--primary-light-dark:');
+    expect(indexCss).toContain('.dark .bg-primary-light { background-color: var(--primary-light-dark)');
   });
 
-  it('uses identical colours for every theme', () => {
-    // A mismatch here paints one colour before React mounts and a different one
-    // after — the flash this whole file exists to prevent.
-    expect(themesFromBootScript()).toEqual(themesFromContext());
-  });
-});
-
-describe('cold load paints the same theme React will pick', () => {
-  it('the boot script falls back to a default instead of bailing', () => {
-    expect(indexHtml).toMatch(/localStorage\.getItem\('openhr-global-theme'\)\s*\|\|\s*'([a-z-]+)'/);
-    expect(indexHtml).not.toMatch(/var themeId = localStorage\.getItem\('openhr-global-theme'\);\s*\n\s*if \(!themeId\) return;/);
+  it('no longer ships a palette table in the boot script', () => {
+    expect(indexHtml).not.toContain('arctic-frost');
+    expect(indexHtml).not.toContain('charcoal-slate');
+    expect(indexHtml).not.toContain("localStorage.getItem('openhr-global-theme')");
   });
 
-  it('the boot script default is the same theme ThemeContext falls back to', () => {
-    const bootDefault = /localStorage\.getItem\('openhr-global-theme'\)\s*\|\|\s*'([a-z-]+)'/.exec(indexHtml)?.[1];
-    const contextDefault = /DEFAULT_THEME_ID = '([a-z-]+)'/.exec(themeContext)?.[1];
-
-    expect(bootDefault).toBeDefined();
-    expect(contextDefault).toBeDefined();
-    expect(bootDefault).toBe(contextDefault);
+  it('no longer fetches a theme over the network', () => {
+    // The fetch ran on an idle callback, again every 60s, and again on every
+    // visibilitychange — repainting the accent colour after first paint.
+    // Asserted against code rather than prose: the file's own comment explains
+    // the removal and names default_theme.
+    expect(themeContext).not.toMatch(/^import .*organizationService/m);
+    expect(themeContext).not.toContain('setInterval');
+    expect(themeContext).not.toContain('requestIdleCallback');
+    expect(themeContext).not.toMatch(/addEventListener\(['"]visibilitychange/);
   });
 
-  it('an unknown cached id falls back rather than leaving the stylesheet default', () => {
-    expect(indexHtml).toMatch(/themes\[themeId\]\s*\|\|\s*themes\['[a-z-]+'\]/);
+  it('exposes no accent-theme API', () => {
+    expect(themeContext).not.toContain('setTheme');
+    expect(themeContext).not.toContain('currentTheme');
+    expect(themeContext).not.toContain('THEMES');
   });
 });
 
-describe('theme is applied before paint, not after', () => {
-  it('reads the dark preference in the state initialiser, not an effect', () => {
+describe('dark mode does not flash between two states on refresh', () => {
+  it('reads the stored preference in the state initialiser, not an effect', () => {
+    // index.html sets the .dark class from this key before first paint. If the
+    // first render assumed a different value it would remove that class and
+    // re-add it a render later, which is visible.
     expect(themeContext).toContain('useState<DarkModePreference>(getStoredDarkPreference)');
-    // The old effect-based read is what caused React to undo the boot script.
-    expect(themeContext).not.toMatch(/useEffect\(\(\) => \{\s*const savedDark = localStorage/);
+    expect(themeContext).not.toMatch(/useEffect\(\(\) => \{\s*const saved(Dark)? = localStorage/);
   });
 
-  it('applies the dark class and CSS variables in a layout effect', () => {
-    // useEffect runs after paint, so the correction itself would be visible.
-    const darkBlock = themeContext.slice(themeContext.indexOf('// Apply dark class'));
-    expect(darkBlock.slice(0, 400)).toContain('useLayoutEffect');
-
-    const varsBlock = themeContext.slice(themeContext.indexOf('// Apply CSS variables'));
-    expect(varsBlock.slice(0, 400)).toContain('useLayoutEffect');
+  it('applies the dark class before paint', () => {
+    const block = themeContext.slice(themeContext.indexOf('useLayoutEffect'));
+    expect(block).toContain("classList.toggle('dark'");
   });
 
-  it('does not re-apply an unchanged theme after the platform fetch', () => {
-    expect(themeContext).toContain('prev.id === themeId ? prev : found');
+  it('keeps the pre-paint boot script that sets the class', () => {
+    expect(indexHtml).toContain('Dark mode preload');
+    expect(indexHtml).toContain("localStorage.getItem('openhr-dark-mode')");
+  });
+
+  it('reads and writes the same localStorage key as the boot script', () => {
+    // A mismatch here means the boot script and React disagree on every load.
+    const keyInContext = /const DARK_MODE_KEY = '([^']+)'/.exec(themeContext)?.[1];
+    expect(keyInContext).toBe('openhr-dark-mode');
+    expect(indexHtml).toContain(`localStorage.getItem('${keyInContext}')`);
+  });
+
+  it('keeps the system preference live rather than sampling it once', () => {
+    expect(themeContext).toContain("matchMedia('(prefers-color-scheme: dark)')");
+    expect(themeContext).toContain("mq.addEventListener('change', handler)");
   });
 });
 
 describe('dark: variant is bound to the .dark class, not the OS', () => {
-  const indexCss = fs.readFileSync(path.join(root, 'src/index.css'), 'utf8');
-
   it('declares the custom variant', () => {
-    // Tailwind v4 defaults `dark:` to @media (prefers-color-scheme: dark). This
-    // app toggles a .dark class instead, and index.css's override rules are keyed
-    // on that class. Without this line the two disagree and any user whose OS
-    // scheme differs from their chosen theme gets a half-themed page.
-    //
-    // Verified by building both ways: without the declaration the bundle emits a
-    // prefers-color-scheme media query wrapping every dark: utility; with it,
-    // none remain and all 194 rules are scoped to .dark.
+    // Tailwind v4 defaults `dark:` to @media (prefers-color-scheme: dark), but
+    // this app toggles a .dark class and index.css's override rules key on it.
+    // Without this the two disagree and the page renders half-themed for anyone
+    // whose OS scheme differs from their choice. Verified by A/B build: without
+    // it the bundle emits a prefers-color-scheme query wrapping every dark:
+    // utility; with it, none remain.
     expect(indexCss).toMatch(/@custom-variant\s+dark\s+\(&:where\(\.dark,\s*\.dark\s*\*\)\)/);
   });
 
   it('declares it after the tailwind import, where it takes effect', () => {
     expect(indexCss.indexOf('@custom-variant')).toBeGreaterThan(indexCss.indexOf('@import "tailwindcss"'));
-  });
-});
-
-describe('brand default is consistent across all three places', () => {
-  const indexCss = fs.readFileSync(path.join(root, 'src/index.css'), 'utf8');
-
-  const BRAND = { p: '#4a6fa5', h: '#3b5d8c', l: '#d4e4f7' };
-
-  it('ThemeContext, the boot script, and the stylesheet all name the same theme', () => {
-    const contextDefault = /DEFAULT_THEME_ID = '([a-z-]+)'/.exec(themeContext)?.[1];
-    const bootDefault = /localStorage\.getItem\('openhr-global-theme'\)\s*\|\|\s*'([a-z-]+)'/.exec(indexHtml)?.[1];
-
-    expect(contextDefault).toBe('arctic-frost');
-    expect(bootDefault).toBe(contextDefault);
-  });
-
-  it('the stylesheet :root values are the brand colours', () => {
-    // If these drift from the default theme's colours, the stylesheet paints one
-    // colour and both JS paths paint another — the first-visit flash again.
-    expect(indexCss).toContain(`--primary: ${BRAND.p};`);
-    expect(indexCss).toContain(`--primary-hover: ${BRAND.h};`);
-    expect(indexCss).toContain(`--primary-light: ${BRAND.l};`);
-  });
-
-  it('the default theme in both tables carries the brand colours', () => {
-    expect(themesFromContext()['arctic-frost']).toEqual(BRAND);
-    expect(themesFromBootScript()['arctic-frost']).toEqual(BRAND);
   });
 });

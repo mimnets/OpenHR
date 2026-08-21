@@ -35,6 +35,9 @@
   --primary: #4a6fa5;
   --primary-hover: #3b5d8c;
   --primary-light: #d4e4f7;
+  /* Primary at ~12% alpha. Used by the .dark .bg-primary-light rules below.
+     Previously written from JS as `${primary}20`; now static, like the rest. */
+  --primary-light-dark: #4a6fa520;
 }
 
 body {
