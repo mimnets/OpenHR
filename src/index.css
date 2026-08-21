@@ -97,7 +97,10 @@
    ─────────────────────────────────────────────────────────────────────── */
 :root {
   /* — surface — */
-  --dl-ground: #EFF2F3;
+  /* EXPERIMENT 2026-08-21 — flattening every section to white to see how it reads.
+     Was #EFF2F3 (the warm off-white ground Daylight specifies). Revert this one line to
+     restore the alternating rhythm; nothing else needs to change. */
+  --dl-ground: #FFFFFF;
   --dl-surface: #FFFFFF;
   --dl-surface-2: #F7F9F9;
   --dl-hair: #DDE4E6;
@@ -422,4 +425,17 @@ html.dark body { background-color: #0f172a; color: #e2e8f0; }
     from { stroke-dashoffset: 1000; }
     to   { stroke-dashoffset: 0; }
   }
+}
+
+/* ===== DAYLIGHT — BAND DIVIDERS ===== */
+/* The ground is white, so the ground/surface alternation that used to mark where one
+   full-width band ended and the next began is gone. These hairlines restore that rhythm
+   without reintroducing a second background colour.
+
+   Applied via an explicit `dl-bands` wrapper rather than a bare `section + section` rule,
+   because several pages use <section> for content subdivisions — Terms has fourteen clause
+   sections — and ruling between those would be wrong. Only wrappers that stack full-bleed
+   bands carry the class. */
+.dl-bands > * + * {
+  border-top: 1px solid var(--dl-hair);
 }
