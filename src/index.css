@@ -403,3 +403,23 @@ html.dark body { background-color: #0f172a; color: #e2e8f0; }
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ===== DAYLIGHT — THE SHIFT ARC (landing page only) ===== */
+/* The arc draws itself once on load, then stops. It does not loop and does not
+   breathe: motion here marks the passage of a day, and a motif that keeps
+   re-animating stops meaning anything. Under prefers-reduced-motion the arc is
+   simply already drawn (AC-DL5). */
+.dl-arc__stroke {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dl-arc__stroke {
+    animation: dl-arc-draw 1400ms cubic-bezier(.22, .61, .36, 1) both;
+  }
+  @keyframes dl-arc-draw {
+    from { stroke-dashoffset: 1000; }
+    to   { stroke-dashoffset: 0; }
+  }
+}

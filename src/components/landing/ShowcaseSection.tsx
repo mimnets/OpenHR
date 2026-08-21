@@ -23,13 +23,13 @@ const ShowcaseSection: React.FC = () => {
   const useCarousel = orgs.length > CAROUSEL_THRESHOLD;
 
   return (
-    <section className="py-16 md:py-24 bg-white overflow-hidden">
+    <section className="py-16 md:py-24 bg-dl-surface overflow-hidden">
       <div className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-12">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 mb-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-dl-muted mb-3">
             Trusted by organizations worldwide
           </p>
-          <h2 className="text-2xl md:text-3xl font-semibold text-slate-900 tracking-tight">
+          <h2 className="text-2xl md:text-3xl font-semibold text-dl-ink tracking-tight">
             Teams that rely on OpenHRApp
           </h2>
         </div>
@@ -56,8 +56,8 @@ const CarouselView: React.FC<{ orgs: ShowcaseOrganization[] }> = ({ orgs }) => {
   return (
     <div className="relative">
       {/* Fade edges */}
-      <div className="absolute left-0 top-0 bottom-0 w-16 md:w-24 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
-      <div className="absolute right-0 top-0 bottom-0 w-16 md:w-24 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+      <div className="absolute left-0 top-0 bottom-0 w-16 md:w-24 bg-gradient-to-r from-dl-surface to-transparent z-10 pointer-events-none" />
+      <div className="absolute right-0 top-0 bottom-0 w-16 md:w-24 bg-gradient-to-l from-dl-surface to-transparent z-10 pointer-events-none" />
 
       <div className="overflow-hidden">
         <div
@@ -90,16 +90,16 @@ const OrgCard: React.FC<{ org: ShowcaseOrganization }> = ({ org }) => {
     <div className="group flex flex-col items-center gap-3 text-center">
       <LogoDisplay org={org} />
       <div>
-        <p className="text-sm font-bold text-slate-700 group-hover:text-primary transition-colors">
+        <p className="text-sm font-bold text-dl-ink group-hover:text-dl-teal transition-colors">
           {org.name}
         </p>
         {org.country && (
-          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+          <p className="text-xs font-medium text-dl-muted uppercase tracking-wider">
             {org.country}
           </p>
         )}
         {org.tagline && (
-          <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{org.tagline}</p>
+          <p className="text-xs text-dl-muted mt-0.5 line-clamp-1">{org.tagline}</p>
         )}
       </div>
     </div>
@@ -121,14 +121,14 @@ const LogoDisplay: React.FC<{ org: ShowcaseOrganization }> = ({ org }) => {
 
   if (!org.logo || imgError) {
     return (
-      <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-2xl font-semibold text-slate-300 group-hover:border-primary/30 group-hover:text-primary/50 transition-all">
+      <div className="w-20 h-20 md:w-24 md:h-24 rounded-dl-lg bg-dl-hair-soft border border-dl-hair flex items-center justify-center text-2xl font-semibold text-dl-muted group-hover:border-dl-teal/30 group-hover:text-dl-teal/50 transition-all">
         {org.name.charAt(0).toUpperCase()}
       </div>
     );
   }
 
   return (
-    <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-slate-50 border border-slate-100 p-3 flex items-center justify-center group-hover:border-primary/30 group-hover:shadow-md transition-all">
+    <div className="w-20 h-20 md:w-24 md:h-24 rounded-dl-lg bg-dl-ground border border-dl-hair-soft p-3 flex items-center justify-center group-hover:border-dl-teal/30 group-hover:shadow-dl-1 transition-all">
       <img
         src={org.logo}
         alt={org.name}

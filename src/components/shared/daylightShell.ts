@@ -81,7 +81,7 @@ export const dlNav = {
   buttonBare: 'px-5 py-2.5 text-dl-sm font-bold text-dl-muted hover:text-dl-teal transition-colors',
   /** Primary action — Get Started. Teal is the action colour on the public surface. */
   buttonPrimary:
-    'px-5 py-2.5 bg-dl-teal hover:bg-dl-teal-deep text-white text-dl-sm font-bold rounded-dl-md transition-colors shadow-dl-1',
+    'px-5 py-2.5 bg-dl-teal hover:bg-dl-teal-deep text-dl-surface text-dl-sm font-bold rounded-dl-md transition-colors shadow-dl-1',
 
   mobilePanel: 'md:hidden bg-dl-surface border-t border-dl-hair-soft shadow-dl-2',
   mobilePanelInner: 'px-4 py-4 space-y-1',
@@ -93,7 +93,7 @@ export const dlNav = {
   mobileButtonQuiet:
     'block w-full px-4 py-3 text-dl-sm font-bold text-dl-muted hover:bg-dl-surface-2 rounded-dl-md text-center transition-colors',
   mobileButtonPrimary:
-    'block w-full px-4 py-3 bg-dl-teal hover:bg-dl-teal-deep text-white text-dl-sm font-bold rounded-dl-md text-center transition-colors',
+    'block w-full px-4 py-3 bg-dl-teal hover:bg-dl-teal-deep text-dl-surface text-dl-sm font-bold rounded-dl-md text-center transition-colors',
 } as const;
 
 /**
