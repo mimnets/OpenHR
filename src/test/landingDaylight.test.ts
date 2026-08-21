@@ -204,3 +204,25 @@ describe('DL5 — the four content pages', () => {
     }
   });
 });
+
+describe('DL6 — the features pages', () => {
+  const PAGES = ['src/pages/FeaturesPage.tsx', 'src/pages/FeatureDetailPage.tsx'];
+
+  it.each(PAGES)('%s carries no legacy slate/primary utilities', (page) => {
+    const legacy = read(page).match(
+      /(?:bg|text|border|shadow|from|to|via|ring|divide)-(?:slate|primary|white|amber|emerald)-?[0-9/]*/g
+    );
+    expect(legacy ?? []).toEqual([]);
+  });
+
+  it.each(PAGES)('%s hardcodes no hex colour', (page) => {
+    expect(read(page).match(/#[0-9a-fA-F]{6}/g) ?? []).toEqual([]);
+  });
+
+  it.each(PAGES)('%s needs no dark: overrides', (page) => {
+    // Daylight tokens carry their own dark values, so a dark: variant here would mean a
+    // surface that had to be remembered rather than one that flips on its own (D2).
+    const overrides = read(page).match(/dark:(?!prose-invert)[a-z:0-9./-]+/g);
+    expect(overrides ?? []).toEqual([]);
+  });
+});

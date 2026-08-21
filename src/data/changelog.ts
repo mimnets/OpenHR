@@ -16,6 +16,16 @@ export interface ChangelogRelease {
 export const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-21',
+    title: 'Daylight on the feature pages, and a guard against their search listings going stale',
+    entries: [
+      { type: 'improvement', description: 'The features overview and the individual feature pages now use the Daylight surfaces and type. Both came out with no dark-mode overrides left at all — the tokens carry their own dark values, so there is nothing left that has to be remembered separately for the two themes.' },
+      { type: 'fix', description: 'Added a check that the search-engine metadata for feature pages cannot drift from the app. The prerendering layer that serves crawlers runs in a separate environment and cannot read the app’s own feature list, so it keeps its own copy of every feature title and description — and nothing kept the two in step. Add a feature to the app without updating that copy and its page would go out with the generic site-wide title, telling Google it was a duplicate of the homepage. That is the same failure that made every article on the live site invisible, just one page at a time instead of all at once.' },
+      { type: 'improvement', description: 'The check also insists every feature page has a distinct title and description, and that each one appears in the sitemap. Two pages sharing a title is a duplicate-content signal in its own right, and a page nothing links to is a page that never gets found. All fifteen features currently pass; the check exists so they keep passing when the copy is rewritten later.' },
+      { type: 'improvement', description: 'Added 14 tests across the feature pages and the metadata guard. Suite goes from 283 to 293.' },
+    ],
+  },
+  {
+    date: '2026-08-21',
     title: 'Daylight on the blog and the guides — the four pages people actually arrive on',
     entries: [
       { type: 'improvement', description: 'The blog index, blog posts, the guides index and individual guides now use the Daylight surfaces, type and spacing. These are the pages a search visitor lands on first — usually before they have seen the homepage — so they matter more to a first impression than the landing page does.' },
