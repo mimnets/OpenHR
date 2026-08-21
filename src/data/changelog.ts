@@ -16,6 +16,15 @@ export interface ChangelogRelease {
 export const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-21',
+    title: 'Arctic Frost #4a6fa5 is now the brand default everywhere',
+    entries: [
+      { type: 'fix', description: 'Three places disagreed about the default accent colour. src/index.css shipped arctic-frost (#4a6fa5) as the stylesheet --primary, ThemeContext fell back to charcoal-slate (#475569), and the platform default_theme row in Supabase said forest-canopy (#2d4a2b) — so the live site actually rendered dark green while the stylesheet painted blue for a moment first. All three are now arctic-frost. The value is a single exported DEFAULT_THEME_ID constant, and the boot script in index.html and the :root block in index.css are asserted against it by tests, because they must each hold their own copy: the boot script runs before any module loads, and the stylesheet paints before any script does.' },
+      { type: 'fix', description: 'Updated the platform-level default_theme setting in Supabase from forest-canopy to arctic-frost. This is the row anonymous visitors to the marketing site, blog, and guides receive, so it governs what the brand actually looks like to someone arriving from search. All 120 default_theme rows were backed up to Others/import-backups/ first. The 119 organization-scoped rows were left untouched — those belong to individual organizations, not to the site.' },
+      { type: 'improvement', description: 'Note on precedence: the code default is only a fallback for a first visit before the settings fetch returns, or for when the backend is unreachable. A default_theme row set by a super admin under Appearance always wins once fetched, and is cached so the following page load paints it before React mounts.' },
+    ],
+  },
+  {
+    date: '2026-08-21',
     title: 'Fixed theme flashing on refresh and dark mode following the wrong setting',
     entries: [
       { type: 'fix', description: 'The dark: variant was bound to the operating system rather than to the in-app theme toggle. Tailwind v4 defaults dark: to a prefers-color-scheme media query, and no custom variant was declared anywhere in src/, while ThemeContext writes a .dark class on <html> from the preference the user chose and the 75 override rules in index.css are keyed on that class. So the 94 dark: utilities across the components followed the OS while the override rules followed the toggle, and any user whose OS scheme differed from their chosen theme saw a half-themed page — dark backgrounds with light-mode text, or the reverse. It only ever looked correct when the two happened to agree, which is why it went unnoticed. Declaring @custom-variant dark binds both to the same class: building without the declaration emits a prefers-color-scheme media query wrapping every dark: utility, and with it none remain and all 194 rules scope to .dark.' },

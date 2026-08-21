@@ -105,12 +105,12 @@
   // Theme preload: apply cached theme BEFORE React loads to prevent flash
   (function() {
     try {
-      // No cache means a first visit. Fall through to DEFAULT_THEME_ID rather
-      // than returning: index.css ships --primary: #4a6fa5 (arctic-frost) as the
-      // stylesheet default, but ThemeContext's getCachedTheme() falls back to
-      // charcoal-slate. Bailing here painted the blue first and let React repaint
-      // grey a moment later, on every first visit.
-      var themeId = localStorage.getItem('openhr-global-theme') || 'charcoal-slate';
+      // No cache means a first visit. Fall through to the brand default rather
+      // than returning: bailing here left index.css's --primary painted and let
+      // React repaint a different colour a moment later. This id must match
+      // DEFAULT_THEME_ID in src/context/ThemeContext.tsx and the --primary block
+      // in src/index.css; src/test/themeBoot.test.ts asserts all three agree.
+      var themeId = localStorage.getItem('openhr-global-theme') || 'arctic-frost';
       var themes = {
         'arctic-frost':     { p: '#4a6fa5', h: '#3b5d8c', l: '#d4e4f7' },
         'corporate-blue':   { p: '#2563eb', h: '#1d4ed8', l: '#dbeafe' },
@@ -128,8 +128,8 @@
         'charcoal-slate':   { p: '#475569', h: '#334155', l: '#e2e8f0' }
       };
       // An unknown id (stale cache after a theme was renamed or removed) gets
-      // the same default, so the painted colour always matches what React picks.
-      var t = themes[themeId] || themes['charcoal-slate'];
+      // the brand default, so the painted colour always matches what React picks.
+      var t = themes[themeId] || themes['arctic-frost'];
       var s = document.documentElement.style;
       s.setProperty('--primary', t.p);
       s.setProperty('--primary-hover', t.h);

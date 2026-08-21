@@ -26,6 +26,18 @@ export const THEMES: AppTheme[] = [
   { id: 'charcoal-slate', name: 'Charcoal Slate', colors: { primary: '#475569', hover: '#334155', light: '#e2e8f0' } },
 ];
 
+/**
+ * The brand default: arctic-frost, #4a6fa5.
+ *
+ * Three places have to agree on this or the page repaints after React mounts:
+ * this constant, the `--primary` block in src/index.css, and the fallback in
+ * index.html's boot script. src/test/themeBoot.test.ts asserts they do.
+ *
+ * Note this is only a fallback. A `default_theme` row in Supabase — set by a
+ * super admin under Appearance — always wins once it has been fetched.
+ */
+export const DEFAULT_THEME_ID = 'arctic-frost';
+
 function getCachedTheme(): AppTheme {
   try {
     const cached = localStorage.getItem(THEME_CACHE_KEY);
@@ -34,7 +46,7 @@ function getCachedTheme(): AppTheme {
       if (found) return found;
     }
   } catch { /* localStorage unavailable */ }
-  return THEMES.find(t => t.id === 'charcoal-slate') ?? THEMES[0]; // Charcoal Slate
+  return THEMES.find(t => t.id === DEFAULT_THEME_ID) ?? THEMES[0];
 }
 
 /**

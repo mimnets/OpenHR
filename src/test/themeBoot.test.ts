@@ -69,7 +69,7 @@ describe('cold load paints the same theme React will pick', () => {
 
   it('the boot script default is the same theme ThemeContext falls back to', () => {
     const bootDefault = /localStorage\.getItem\('openhr-global-theme'\)\s*\|\|\s*'([a-z-]+)'/.exec(indexHtml)?.[1];
-    const contextDefault = /THEMES\.find\(t => t\.id === '([a-z-]+)'\)/.exec(themeContext)?.[1];
+    const contextDefault = /DEFAULT_THEME_ID = '([a-z-]+)'/.exec(themeContext)?.[1];
 
     expect(bootDefault).toBeDefined();
     expect(contextDefault).toBeDefined();
@@ -119,5 +119,32 @@ describe('dark: variant is bound to the .dark class, not the OS', () => {
 
   it('declares it after the tailwind import, where it takes effect', () => {
     expect(indexCss.indexOf('@custom-variant')).toBeGreaterThan(indexCss.indexOf('@import "tailwindcss"'));
+  });
+});
+
+describe('brand default is consistent across all three places', () => {
+  const indexCss = fs.readFileSync(path.join(root, 'src/index.css'), 'utf8');
+
+  const BRAND = { p: '#4a6fa5', h: '#3b5d8c', l: '#d4e4f7' };
+
+  it('ThemeContext, the boot script, and the stylesheet all name the same theme', () => {
+    const contextDefault = /DEFAULT_THEME_ID = '([a-z-]+)'/.exec(themeContext)?.[1];
+    const bootDefault = /localStorage\.getItem\('openhr-global-theme'\)\s*\|\|\s*'([a-z-]+)'/.exec(indexHtml)?.[1];
+
+    expect(contextDefault).toBe('arctic-frost');
+    expect(bootDefault).toBe(contextDefault);
+  });
+
+  it('the stylesheet :root values are the brand colours', () => {
+    // If these drift from the default theme's colours, the stylesheet paints one
+    // colour and both JS paths paint another — the first-visit flash again.
+    expect(indexCss).toContain(`--primary: ${BRAND.p};`);
+    expect(indexCss).toContain(`--primary-hover: ${BRAND.h};`);
+    expect(indexCss).toContain(`--primary-light: ${BRAND.l};`);
+  });
+
+  it('the default theme in both tables carries the brand colours', () => {
+    expect(themesFromContext()['arctic-frost']).toEqual(BRAND);
+    expect(themesFromBootScript()['arctic-frost']).toEqual(BRAND);
   });
 });
