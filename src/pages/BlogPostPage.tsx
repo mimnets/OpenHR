@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, Clock, User } from 'lucide-react';
+import { ArrowLeft, Calendar, ChevronRight, Clock, User } from 'lucide-react';
 import { blogService } from '../services/blog.service';
 import { BlogPost } from '../types';
 import { PublicAdBanner } from '../components/ads';
@@ -9,6 +9,7 @@ import BlogFooter from '../components/blog/BlogFooter';
 import { sanitizeHtml } from '../utils/sanitize';
 import { getReadingTime } from '../utils/readingTime';
 import { navigateTo, updatePageMeta, setJsonLd } from '../utils/seo';
+import { spaLinkProps } from '../utils/spaLink';
 
 const BlogPostSkeleton = () => (
   <div className="animate-pulse">
@@ -166,6 +167,23 @@ const BlogPostPage: React.FC<BlogPostPageProps> = ({ slug, onBack }) => {
               <div className="flex flex-col lg:flex-row gap-8">
                 {/* Main Article */}
                 <article className="flex-1 min-w-0 overflow-x-hidden">
+                  {/* Mirrors the BreadcrumbList JSON-LD emitted above exactly.
+                      Structured data must describe what the page actually shows,
+                      and the category is deliberately omitted from both: blog
+                      category filtering is component state with no stable URL,
+                      so a category crumb would have nothing to link to. */}
+                  <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-slate-500 flex-wrap mb-4">
+                    <a {...spaLinkProps('/')} className="hover:text-primary transition-colors font-medium">
+                      Home
+                    </a>
+                    <ChevronRight size={14} aria-hidden="true" />
+                    <a {...spaLinkProps('/blog')} className="hover:text-primary transition-colors font-medium">
+                      Blog
+                    </a>
+                    <ChevronRight size={14} aria-hidden="true" />
+                    <span className="text-slate-900 line-clamp-1" aria-current="page">{post.title}</span>
+                  </nav>
+
                   <h1 className="text-3xl md:text-4xl font-semibold text-slate-900 tracking-tight mb-4">
                     {post.title}
                   </h1>

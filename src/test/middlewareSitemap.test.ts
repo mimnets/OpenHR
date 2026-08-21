@@ -171,3 +171,31 @@ describe('static page list stays in sync with the build-time generator', () => {
     expect(fromMiddleware).toEqual(fromGenerator);
   });
 });
+
+describe('contact page', () => {
+  beforeEach(() => {
+    mockSupabase();
+  });
+
+  it('appears in the dynamic sitemap', async () => {
+    const xml = await (await middleware(req('https://openhrapp.com/sitemap.xml')))!.text();
+    expect(xml).toContain('<loc>https://openhrapp.com/contact</loc>');
+  });
+
+  it('prerenders for indexing crawlers instead of the empty SPA shell', async () => {
+    // AdSense reviewers and search crawlers specifically look for a reachable
+    // contact page; without a resolver it would serve the generic shell.
+    const res = await middleware(req('https://openhrapp.com/contact', GOOGLEBOT));
+    expect(res).toBeDefined();
+    expect(res!.headers.get('X-Prerender')).toBe('index-bot');
+
+    const html = await res!.text();
+    expect(html).toContain('Get in touch');
+    expect(html).toContain('mailto:support@openhrapp.com');
+    expect(html).toContain('https://openhrapp.com/contact');
+  });
+
+  it('leaves real browsers to the SPA', async () => {
+    expect(await middleware(req('https://openhrapp.com/contact', CHROME))).toBeUndefined();
+  });
+});

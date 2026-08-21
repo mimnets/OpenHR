@@ -6,7 +6,8 @@ import { PublicAdBanner } from '../components/ads';
 import BlogNavbar from '../components/blog/BlogNavbar';
 import BlogSidebar from '../components/blog/BlogSidebar';
 import BlogFooter from '../components/blog/BlogFooter';
-import { navigateTo, updatePageMeta, setJsonLd } from '../utils/seo';
+import { updatePageMeta, setJsonLd } from '../utils/seo';
+import { spaLinkProps, STRETCHED_LINK } from '../utils/spaLink';
 import { getReadingTime } from '../utils/readingTime';
 
 const BlogCardSkeleton = () => (
@@ -148,10 +149,6 @@ const BlogPage: React.FC<BlogPageProps> = ({ onBack, onRegisterClick }) => {
     setSelectedCategory(category || null);
   };
 
-  const navigateToPost = (slug: string) => {
-    navigateTo(`/blog/${slug}`);
-  };
-
   const displayPosts = filteredPosts;
 
   return (
@@ -234,8 +231,7 @@ const BlogPage: React.FC<BlogPageProps> = ({ onBack, onRegisterClick }) => {
                     {displayPosts.map(post => (
                       <article
                         key={post.id}
-                        onClick={() => navigateToPost(post.slug)}
-                        className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden cursor-pointer hover:shadow-md hover:-translate-y-1 transition-all duration-200"
+                        className="relative bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden cursor-pointer hover:shadow-md hover:-translate-y-1 transition-all duration-200 focus-within:shadow-md"
                       >
                         {post.coverImage ? (
                           <img
@@ -249,7 +245,11 @@ const BlogPage: React.FC<BlogPageProps> = ({ onBack, onRegisterClick }) => {
                           </div>
                         )}
                         <div className="p-6">
-                          <h2 className="text-lg font-bold text-slate-900 mb-2 line-clamp-2">{post.title}</h2>
+                          <h2 className="text-lg font-bold text-slate-900 mb-2 line-clamp-2">
+                            <a {...spaLinkProps(`/blog/${post.slug}`)} className={STRETCHED_LINK}>
+                              {post.title}
+                            </a>
+                          </h2>
                           {post.excerpt && (
                             <p className="text-slate-500 text-sm mb-4 line-clamp-3">{post.excerpt}</p>
                           )}

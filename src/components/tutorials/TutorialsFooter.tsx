@@ -56,7 +56,7 @@ const TutorialsFooter: React.FC = () => {
       title: 'Company',
       links: [
         { label: 'About', action: () => { navigateTo('/about'); } },
-        { label: 'Contact', action: goHome },
+        { label: 'Contact', action: () => { navigateTo('/contact'); } },
         { label: 'Privacy Policy', action: () => { navigateTo('/privacy'); } },
         { label: 'Terms of Service', action: () => { navigateTo('/terms'); } },
       ],

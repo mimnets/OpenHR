@@ -34,7 +34,7 @@ const Navbar: React.FC<NavbarProps> = ({ onLoginClick, onRegisterClick }) => {
     { label: 'Features', href: '/features', type: 'page' as const },
     { label: 'How It Works', href: '#how-it-works', type: 'hash' as const },
     { label: 'FAQ', href: '#faq', type: 'hash' as const },
-    { label: 'Contact', href: '#contact', type: 'hash' as const },
+    { label: 'Contact', href: '/contact', type: 'page' as const },
     { label: 'Blog', href: '/blog', type: 'page' as const },
     { label: 'Guides', href: '/how-to-use', type: 'page' as const },
   ];

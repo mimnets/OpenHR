@@ -32,6 +32,7 @@ export const config = {
     '/how-to-use/:slug+',
     '/features',
     '/features/:slug+',
+    '/contact',
     '/sitemap.xml',
   ],
 };
@@ -698,6 +699,43 @@ function resolveHome(): Resolved {
   };
 }
 
+/**
+ * Contact is a static page — no database row backs it — so it resolves from
+ * literals here rather than a query. It is prerendered anyway because AdSense
+ * reviewers and search crawlers specifically look for a reachable contact page,
+ * and without this it would be the usual empty SPA shell.
+ */
+function resolveContact(): Resolved {
+  const description =
+    'Get in touch with the OpenHRApp team. Email support, report a bug on GitHub, or send a message directly.';
+
+  return {
+    meta: {
+      title: 'Contact OpenHRApp — Support, Questions, and Feedback',
+      description,
+      image: DEFAULT_IMAGE,
+      url: `${SITE_URL}/contact`,
+    },
+    article: {
+      html: [
+        `<p>${escapeHtml(description)}</p>`,
+        '<h2>Ways to reach us</h2>',
+        '<ul>',
+        '<li><a href="mailto:support@openhrapp.com">support@openhrapp.com</a> — account questions, billing, anything needing a reply from a person.</li>',
+        '<li><a href="https://github.com/mimnets/openhrapp/issues" rel="nofollow">GitHub Issues</a> — bug reports and feature requests.</li>',
+        '<li><a href="/how-to-use">Guides</a> — step-by-step instructions for everyday tasks.</li>',
+        '</ul>',
+      ].join('\n'),
+      heading: 'Get in touch',
+      kind: 'index',
+      breadcrumb: [
+        { name: 'Home', url: SITE_URL },
+        { name: 'Contact', url: `${SITE_URL}/contact` },
+      ],
+    },
+  };
+}
+
 /* ------------------------------------------------------------------ *
  * Entry point
  * ------------------------------------------------------------------ */
@@ -727,6 +765,7 @@ const SITEMAP_STATIC_PAGES: ReadonlyArray<{ path: string; changefreq: string; pr
   { path: '/features/reports-analytics', changefreq: 'monthly', priority: '0.7' },
   { path: '/changelog', changefreq: 'weekly', priority: '0.7' },
   { path: '/how-to-use', changefreq: 'weekly', priority: '0.7' },
+  { path: '/contact', changefreq: 'monthly', priority: '0.5' },
   { path: '/privacy', changefreq: 'monthly', priority: '0.3' },
   { path: '/terms', changefreq: 'monthly', priority: '0.3' },
 ];
@@ -848,6 +887,8 @@ export default async function middleware(request: Request): Promise<Response | u
       resolved = await resolveContentIndex('guide', pathname);
     } else if (/^\/features\/?$/.test(pathname)) {
       resolved = resolveFeatureIndex(pathname);
+    } else if (/^\/contact\/?$/.test(pathname)) {
+      resolved = resolveContact();
     } else if (pathname === '/') {
       resolved = resolveHome();
     }

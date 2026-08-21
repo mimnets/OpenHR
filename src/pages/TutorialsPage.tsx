@@ -4,7 +4,8 @@ import { tutorialService } from '../services/tutorial.service';
 import { Tutorial } from '../types';
 import TutorialsNavbar from '../components/tutorials/TutorialsNavbar';
 import TutorialsFooter from '../components/tutorials/TutorialsFooter';
-import { navigateTo, updatePageMeta, setJsonLd } from '../utils/seo';
+import { updatePageMeta, setJsonLd } from '../utils/seo';
+import { spaLinkProps, STRETCHED_LINK } from '../utils/spaLink';
 
 // Preferred category display order — categories not listed here appear at the end
 const CATEGORY_ORDER = [
@@ -71,10 +72,6 @@ const TutorialsPage: React.FC<TutorialsPageProps> = ({ onBack, onRegisterClick }
     const data = await tutorialService.getPublishedTutorials(1, 100);
     setTutorials(data.tutorials);
     setIsLoading(false);
-  };
-
-  const navigateToTutorial = (slug: string) => {
-    navigateTo(`/how-to-use/${slug}`);
   };
 
   // Group tutorials: separate parents and children
@@ -148,10 +145,7 @@ const TutorialsPage: React.FC<TutorialsPageProps> = ({ onBack, onRegisterClick }
                         return (
                           <div key={tutorial.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                             {/* Parent card */}
-                            <div
-                              onClick={() => navigateToTutorial(tutorial.slug)}
-                              className="flex items-center gap-4 p-5 cursor-pointer hover:bg-slate-50 transition-colors"
-                            >
+                            <div className="relative flex items-center gap-4 p-5 cursor-pointer hover:bg-slate-50 transition-colors focus-within:bg-slate-50">
                               {tutorial.coverImage ? (
                                 <img src={tutorial.coverImage} alt={tutorial.title} className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
                               ) : (
@@ -160,7 +154,11 @@ const TutorialsPage: React.FC<TutorialsPageProps> = ({ onBack, onRegisterClick }
                                 </div>
                               )}
                               <div className="flex-1 min-w-0">
-                                <h3 className="font-bold text-slate-900 text-lg">{tutorial.title}</h3>
+                                <h3 className="font-bold text-slate-900 text-lg">
+                                  <a {...spaLinkProps(`/how-to-use/${tutorial.slug}`)} className={STRETCHED_LINK}>
+                                    {tutorial.title}
+                                  </a>
+                                </h3>
                                 {tutorial.excerpt && (
                                   <p className="text-sm text-slate-500 mt-1 line-clamp-2">{tutorial.excerpt}</p>
                                 )}
@@ -172,15 +170,15 @@ const TutorialsPage: React.FC<TutorialsPageProps> = ({ onBack, onRegisterClick }
                             {tutorialChildren.length > 0 && (
                               <div className="border-t border-slate-100 bg-slate-50/50">
                                 {tutorialChildren.map(child => (
-                                  <button
+                                  <a
                                     key={child.id}
-                                    onClick={() => navigateToTutorial(child.slug)}
+                                    {...spaLinkProps(`/how-to-use/${child.slug}`)}
                                     className="flex items-center gap-3 w-full text-left px-5 py-3 pl-14 hover:bg-slate-100 transition-colors border-b border-slate-100 last:border-b-0"
                                   >
                                     <span className="w-1.5 h-1.5 rounded-full bg-slate-300 flex-shrink-0" />
                                     <span className="text-sm font-medium text-slate-700">{child.title}</span>
                                     <ChevronRight size={14} className="text-slate-400 ml-auto flex-shrink-0" />
-                                  </button>
+                                  </a>
                                 ))}
                               </div>
                             )}

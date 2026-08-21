@@ -32,6 +32,7 @@ const STATIC_PAGES = [
   { path: '/features/reports-analytics', changefreq: 'monthly', priority: '0.7' },
   { path: '/changelog', changefreq: 'weekly', priority: '0.7' },
   { path: '/how-to-use', changefreq: 'weekly', priority: '0.7' },
+  { path: '/contact', changefreq: 'monthly', priority: '0.5' },
   { path: '/privacy', changefreq: 'monthly', priority: '0.3' },
   { path: '/terms', changefreq: 'monthly', priority: '0.3' },
 ];
