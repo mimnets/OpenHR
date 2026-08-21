@@ -5,6 +5,7 @@ import {
 import { socialLinksService } from '../../services/sociallinks.service';
 import { SocialLink } from '../../types';
 import { navigateTo } from '../../utils/seo';
+import { dlBrand, dlFooter } from '../shared/daylightShell';
 
 const PLATFORM_ICONS: Record<string, React.FC<{ size?: number; className?: string }>> = {
   youtube: Youtube,
@@ -64,22 +65,22 @@ const TutorialsFooter: React.FC = () => {
   ];
 
   return (
-    <footer className="bg-slate-900 text-white pt-16 pb-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+    <footer className={dlFooter.root}>
+      <div className={dlFooter.inner}>
+        <div className={dlFooter.grid}>
           {/* Brand Column */}
-          <div className="col-span-2 md:col-span-1">
+          <div className={dlFooter.brandCol}>
             <div className="flex items-center gap-2 mb-4 cursor-pointer" onClick={goHome}>
-              <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center p-1.5 shadow-sm overflow-hidden">
+              <div className={dlBrand.frameSmall}>
                 <img src="/img/logo.webp" className="w-full h-full object-contain" alt="OpenHRApp" />
               </div>
-              <span className="text-base font-semibold tracking-tight">
-                <span className="text-primary">Open</span>
-                <span className="text-[#f59e0b]">HR</span>
-                <span className="text-[#10b981]">App</span>
+              <span className={dlBrand.word}>
+                <span className={dlBrand.wordInk}>Open</span>
+                <span className={dlBrand.wordAccent}>HR</span>
+                <span className={dlBrand.wordInk}>App</span>
               </span>
             </div>
-            <p className="text-sm text-slate-400 leading-relaxed">
+            <p className={dlFooter.blurb}>
               Modern HR management for growing teams. Open-source and free to get started.
             </p>
           </div>
@@ -87,13 +88,13 @@ const TutorialsFooter: React.FC = () => {
           {/* Link Columns */}
           {columns.map((col) => (
             <div key={col.title}>
-              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wide mb-4">{col.title}</h4>
-              <ul className="space-y-3">
+              <h4 className={dlFooter.columnHead}>{col.title}</h4>
+              <ul className={dlFooter.list}>
                 {col.links.map((link) => (
                   <li key={link.label}>
                     <button
                       onClick={link.action}
-                      className="text-sm text-slate-400 hover:text-white transition-colors"
+                      className={dlFooter.link}
                     >
                       {link.label}
                     </button>
@@ -105,8 +106,8 @@ const TutorialsFooter: React.FC = () => {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-slate-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-slate-500">
+        <div className={dlFooter.bottomBar}>
+          <p className={dlFooter.fine}>
             &copy; {new Date().getFullYear()} OpenHRApp. All rights reserved.
           </p>
 
@@ -121,7 +122,7 @@ const TutorialsFooter: React.FC = () => {
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
+                    className={dlFooter.social}
                     title={link.platform}
                   >
                     <Icon size={18} />
@@ -133,7 +134,7 @@ const TutorialsFooter: React.FC = () => {
 
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="text-xs text-slate-500 hover:text-white transition-colors"
+            className={dlFooter.fineAction}
           >
             Back to top
           </button>

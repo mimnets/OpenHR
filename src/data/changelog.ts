@@ -16,6 +16,16 @@ export interface ChangelogRelease {
 export const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-21',
+    title: 'Daylight arrives on every public navbar and footer',
+    entries: [
+      { type: 'improvement', description: 'The six components that wrap all twelve public pages — the landing navbar and footer, and the navbar and footer pairs for the blog and the guides — now draw their colour, type, spacing and elevation from the Daylight token layer. Surfaces sit on a warm off-white ground instead of flat white, teal replaces the old blue as the interactive colour, the wordmark drops to two tones from four, and every shadow is two layers rather than one blurred drop. Because these six are what every public page inherits from, this is the change that makes the rest of the redesign possible.' },
+      { type: 'fix', description: 'The sticky navbar no longer renders light in dark mode. Its background was bg-white/95, an opacity variant that the dark-mode override sheet has no way to match, so it stayed white while the rest of the page darkened. Daylight tokens carry their own dark values, so the navbar now flips on its own and cannot be missed by an override list again — the same is true of every other surface in these six components.' },
+      { type: 'improvement', description: 'The shared class strings live in one module that all six components import. These six are near-duplicates of one another and have already drifted once — Contact pointed at the homepage in two of the three footers and not the third — so restyling six copies by hand would have rebuilt the same trap. They remain six separate components for now; merging them into a single pair is a later change, and this keeps them looking identical until then.' },
+      { type: 'improvement', description: 'Added 25 tests asserting that no shell keeps a legacy slate or primary utility, that none hardcodes a hex colour, that both content navbars and all three footers use exactly the same styling vocabulary, that no text is ever set in the 3.3:1 hairline colour, and that the dawn/noon/dusk gradient stays reserved for the arc and the logo mark. Suite goes from 230 to 255.' },
+    ],
+  },
+  {
+    date: '2026-08-21',
     title: 'Ad placement brought in line with AdSense policy, and a plain-text surface for AI answer engines',
     entries: [
       { type: 'fix', description: 'Ads no longer render inside the logged-in app. robots.txt disallows /dashboard, /reports, /settings and the rest of the authenticated routes, so Google cannot crawl the pages the dashboard, reports, sidebar and footer ad slots sat on — and serving ads on pages the crawler is blocked from is a publisher policy problem in its own right, quite apart from any question about content. Those four slots are now dark. The gate lives in one place and is reversed by setting VITE_ENABLE_AUTHENTICATED_ADS=true once approval lands, rather than by unpicking the decision across the component tree. Ads on the public blog and guide pages are unaffected.' },

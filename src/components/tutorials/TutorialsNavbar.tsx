@@ -3,6 +3,7 @@ import { Menu, X, Home, BookOpen, FileText, Sun, Moon, Search } from 'lucide-rea
 import { useTheme } from '../../context/ThemeContext';
 import { useSearch } from '../../context/SearchContext';
 import { navigateTo } from '../../utils/seo';
+import { dlShell, dlBrand, dlNav } from '../shared/daylightShell';
 
 interface TutorialsNavbarProps {
   onBack: () => void;
@@ -44,18 +45,18 @@ const TutorialsNavbar: React.FC<TutorialsNavbarProps> = ({ onBack: _onBack, onRe
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-sm transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 md:h-20">
+      <nav className={dlShell.nav}>
+        <div className={dlShell.inner}>
+          <div className={dlShell.row}>
             {/* Logo */}
-            <div className="flex items-center gap-2 cursor-pointer" onClick={goHome}>
-              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1.5 border border-primary/20 shadow-sm overflow-hidden">
+            <div className={dlBrand.trigger} onClick={goHome}>
+              <div className={dlBrand.frame}>
                 <img src="/img/logo.webp" className="w-full h-full object-contain" alt="OpenHRApp" />
               </div>
-              <span className="text-lg font-semibold tracking-tight">
-                <span className="text-primary">Open</span>
-                <span className="text-[#f59e0b]">HR</span>
-                <span className="text-[#10b981]">App</span>
+              <span className={dlBrand.word}>
+                <span className={dlBrand.wordInk}>Open</span>
+                <span className={dlBrand.wordAccent}>HR</span>
+                <span className={dlBrand.wordInk}>App</span>
               </span>
             </div>
 
@@ -63,19 +64,19 @@ const TutorialsNavbar: React.FC<TutorialsNavbarProps> = ({ onBack: _onBack, onRe
             <div className="hidden md:flex items-center gap-8">
               <button
                 onClick={goHome}
-                className="text-sm font-semibold text-slate-600 hover:text-primary transition-colors"
+                className={dlNav.link}
               >
                 Home
               </button>
               <button
                 onClick={goToBlog}
-                className="text-sm font-semibold text-slate-600 hover:text-primary transition-colors"
+                className={dlNav.link}
               >
                 Blog
               </button>
               <button
                 onClick={goToTutorials}
-                className="text-sm font-semibold text-primary transition-colors"
+                className={dlNav.linkActive}
               >
                 Guides
               </button>
@@ -85,27 +86,27 @@ const TutorialsNavbar: React.FC<TutorialsNavbarProps> = ({ onBack: _onBack, onRe
             <div className="hidden md:flex items-center gap-3">
               <button
                 onClick={() => setSearchOpen(true)}
-                className="p-2.5 rounded-xl text-slate-500 hover:text-primary hover:bg-slate-100 transition-all"
+                className={dlNav.iconButton}
                 title="Search (Ctrl+K)"
               >
                 <Search size={20} />
               </button>
               <button
                 onClick={toggleDarkMode}
-                className="p-2.5 rounded-xl text-slate-500 hover:text-primary hover:bg-slate-100 transition-all"
+                className={dlNav.iconButton}
                 title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
               >
                 {darkMode ? <Sun size={20} /> : <Moon size={20} />}
               </button>
               <button
                 onClick={goHome}
-                className="px-5 py-2.5 text-sm font-bold text-slate-700 hover:text-primary transition-colors"
+                className={dlNav.buttonBare}
               >
                 Login
               </button>
               <button
                 onClick={handleGetStarted}
-                className="px-5 py-2.5 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary-hover transition-colors shadow-sm"
+                className={dlNav.buttonPrimary}
               >
                 Get Started Free
               </button>
@@ -115,21 +116,21 @@ const TutorialsNavbar: React.FC<TutorialsNavbarProps> = ({ onBack: _onBack, onRe
             <div className="md:hidden flex items-center gap-1">
               <button
                 onClick={() => setSearchOpen(true)}
-                className="p-2 text-slate-500 hover:text-primary transition-colors"
+                className={dlNav.iconButtonCompact}
                 title="Search"
               >
                 <Search size={20} />
               </button>
               <button
                 onClick={toggleDarkMode}
-                className="p-2 text-slate-500 hover:text-primary transition-colors"
+                className={dlNav.iconButtonCompact}
                 title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
               >
                 {darkMode ? <Sun size={20} /> : <Moon size={20} />}
               </button>
               <button
                 onClick={() => setMobileOpen(!mobileOpen)}
-                className="p-2 text-slate-600 hover:text-primary transition-colors"
+                className={dlNav.iconButtonCompact}
               >
                 {mobileOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
@@ -139,36 +140,36 @@ const TutorialsNavbar: React.FC<TutorialsNavbarProps> = ({ onBack: _onBack, onRe
 
         {/* Mobile Menu */}
         {mobileOpen && (
-          <div className="md:hidden bg-white border-t border-slate-100 shadow-lg">
-            <div className="px-4 py-4 space-y-1">
+          <div className={dlNav.mobilePanel}>
+            <div className={dlNav.mobilePanelInner}>
               <button
                 onClick={goHome}
-                className="flex items-center gap-2 w-full text-left px-4 py-3 text-sm font-semibold text-slate-600 hover:text-primary hover:bg-slate-50 rounded-xl transition-colors"
+                className={dlNav.mobileLink}
               >
                 <Home size={16} /> Home
               </button>
               <button
                 onClick={goToBlog}
-                className="flex items-center gap-2 w-full text-left px-4 py-3 text-sm font-semibold text-slate-600 hover:text-primary hover:bg-slate-50 rounded-xl transition-colors"
+                className={dlNav.mobileLink}
               >
                 <FileText size={16} /> Blog
               </button>
               <button
                 onClick={goToTutorials}
-                className="flex items-center gap-2 w-full text-left px-4 py-3 text-sm font-semibold text-primary bg-primary/5 rounded-xl transition-colors"
+                className={dlNav.mobileLinkActive}
               >
                 <BookOpen size={16} /> Guides
               </button>
-              <div className="pt-3 mt-3 border-t border-slate-100 space-y-2">
+              <div className={dlNav.mobileDivider}>
                 <button
                   onClick={goHome}
-                  className="block w-full px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 rounded-xl text-center"
+                  className={dlNav.mobileButtonQuiet}
                 >
                   Login
                 </button>
                 <button
                   onClick={handleGetStarted}
-                  className="block w-full px-4 py-3 bg-primary text-white text-sm font-bold rounded-xl text-center hover:bg-primary-hover transition-colors"
+                  className={dlNav.mobileButtonPrimary}
                 >
                   Get Started Free
                 </button>
@@ -178,7 +179,7 @@ const TutorialsNavbar: React.FC<TutorialsNavbarProps> = ({ onBack: _onBack, onRe
         )}
       </nav>
       {/* Spacer to push content below the fixed navbar */}
-      <div className="h-16 md:h-20" />
+      <div className={dlShell.spacer} />
     </>
   );
 };

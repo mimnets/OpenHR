@@ -3,6 +3,7 @@ import { Menu, X, Sun, Moon, Search } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useSearch } from '../../context/SearchContext';
 import { navigateTo } from '../../utils/seo';
+import { dlShell, dlBrand, dlNav } from '../shared/daylightShell';
 
 interface NavbarProps {
   onLoginClick: () => void;
@@ -40,18 +41,18 @@ const Navbar: React.FC<NavbarProps> = ({ onLoginClick, onRegisterClick }) => {
   ];
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-transparent'}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 md:h-20">
+    <nav className={`${dlShell.navFloating} ${isScrolled ? dlShell.navFloatingScrolled : dlShell.navFloatingAtTop}`}>
+      <div className={dlShell.inner}>
+        <div className={dlShell.row}>
           {/* Logo */}
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1.5 border border-primary/20 shadow-sm overflow-hidden">
+          <div className={dlBrand.trigger} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <div className={dlBrand.frame}>
               <img src="/img/logo.webp" className="w-full h-full object-contain" alt="OpenHRApp" width="48" height="48" />
             </div>
-            <span className="text-lg font-semibold tracking-tight">
-              <span className="text-primary">Open</span>
-              <span className="text-[#f59e0b]">HR</span>
-              <span className="text-[#10b981]">App</span>
+            <span className={dlBrand.word}>
+              <span className={dlBrand.wordInk}>Open</span>
+              <span className={dlBrand.wordAccent}>HR</span>
+              <span className={dlBrand.wordInk}>App</span>
             </span>
           </div>
 
@@ -70,19 +71,19 @@ const Navbar: React.FC<NavbarProps> = ({ onLoginClick, onRegisterClick }) => {
                     scrollTo(link.href.slice(1));
                   }
                 }}
-                className="text-sm font-semibold text-slate-600 hover:text-primary transition-colors"
+                className={dlNav.link}
               >
                 {link.label}
               </a>
             ))}
             <button
               onClick={() => setSearchOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-400 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors border border-slate-200"
+              className={dlNav.searchTrigger}
               aria-label="Search (Ctrl+K)"
             >
               <Search size={14} />
               <span>Search…</span>
-              <kbd className="text-[10px] font-medium text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200">Ctrl+K</kbd>
+              <kbd className={dlNav.searchKbd}>Ctrl+K</kbd>
             </button>
           </div>
 
@@ -90,20 +91,20 @@ const Navbar: React.FC<NavbarProps> = ({ onLoginClick, onRegisterClick }) => {
           <div className="hidden md:flex items-center gap-3">
             <button
               onClick={toggleDarkMode}
-              className="p-2.5 rounded-xl text-slate-500 hover:text-primary hover:bg-slate-100 transition-all"
+              className={dlNav.iconButton}
               aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {darkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
             <button
               onClick={onLoginClick}
-              className="px-5 py-2.5 text-sm font-bold text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors border border-slate-200"
+              className={dlNav.buttonQuiet}
             >
               Login
             </button>
             <button
               onClick={onRegisterClick}
-              className="px-5 py-2.5 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary-hover transition-colors shadow-sm"
+              className={dlNav.buttonPrimary}
             >
               Get Started Free
             </button>
@@ -113,21 +114,21 @@ const Navbar: React.FC<NavbarProps> = ({ onLoginClick, onRegisterClick }) => {
           <div className="md:hidden flex items-center gap-1">
             <button
               onClick={() => setSearchOpen(true)}
-              className="p-2 text-slate-500 hover:text-primary transition-colors"
+              className={dlNav.iconButtonCompact}
               aria-label="Search"
             >
               <Search size={20} />
             </button>
             <button
               onClick={toggleDarkMode}
-              className="p-2 text-slate-500 hover:text-primary transition-colors"
+              className={dlNav.iconButtonCompact}
               aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {darkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="p-2 text-slate-600 hover:text-primary transition-colors"
+              className={dlNav.iconButtonCompact}
               aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
             >
               {mobileOpen ? <X size={24} /> : <Menu size={24} />}
@@ -138,8 +139,8 @@ const Navbar: React.FC<NavbarProps> = ({ onLoginClick, onRegisterClick }) => {
 
       {/* Mobile Menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-white border-t border-slate-100 shadow-lg animate-in slide-in-from-top-2 duration-200">
-          <div className="px-4 py-4 space-y-1">
+        <div className={`${dlNav.mobilePanel} animate-in slide-in-from-top-2 duration-200`}>
+          <div className={dlNav.mobilePanelInner}>
             {navLinks.map(link => (
               <a
                 key={link.label}
@@ -153,7 +154,7 @@ const Navbar: React.FC<NavbarProps> = ({ onLoginClick, onRegisterClick }) => {
                     scrollTo(link.href.slice(1));
                   }
                 }}
-                className="block w-full text-left px-4 py-3 text-sm font-semibold text-slate-600 hover:text-primary hover:bg-slate-50 rounded-xl transition-colors"
+                className={dlNav.mobileLink}
               >
                 {link.label}
               </a>
