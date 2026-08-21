@@ -18,4 +18,57 @@ Disallow: /super-admin
 Disallow: /upgrade
 Disallow: /_/
 
+# AI answer engines and training crawlers (plan item 18).
+# These are opt-in by design: the public content is documentation we want quoted and cited
+# in AI answers, and the plain-text corpus at /llms.txt exists specifically for them.
+# The authenticated app routes above stay Disallowed for every agent.
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /
+
+# Plain-text content index for answer engines — see scripts/generate-llms.mjs
+# LLM-Content: https://openhrapp.com/llms.txt
+# LLM-Full-Content: https://openhrapp.com/llms-full.txt
+
 Sitemap: https://openhrapp.com/sitemap.xml

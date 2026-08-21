@@ -16,6 +16,16 @@ export interface ChangelogRelease {
 export const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-21',
+    title: 'Ad placement brought in line with AdSense policy, and a plain-text surface for AI answer engines',
+    entries: [
+      { type: 'fix', description: 'Ads no longer render inside the logged-in app. robots.txt disallows /dashboard, /reports, /settings and the rest of the authenticated routes, so Google cannot crawl the pages the dashboard, reports, sidebar and footer ad slots sat on — and serving ads on pages the crawler is blocked from is a publisher policy problem in its own right, quite apart from any question about content. Those four slots are now dark. The gate lives in one place and is reversed by setting VITE_ENABLE_AUTHENTICATED_ADS=true once approval lands, rather than by unpicking the decision across the component tree. Ads on the public blog and guide pages are unaffected.' },
+      { type: 'fix', description: 'Public ad slots on article pages now check that there is an article to put them next to. A page with little or no original content that nonetheless carries advertising is the exact profile that draws a low-value-content rejection, so a slot on a post or guide requires 1,200 characters of visible text before it will even request a configuration. The check runs before the network call rather than after, because fetching a slot and then hiding it still counts as an impression. Listing pages are exempt by design — a blog index is legitimately not an article.' },
+      { type: 'feature', description: 'Added /llms.txt and /llms-full.txt, generated from the database on every build alongside the sitemap and feed. The first is an index of all 44 published guides and posts with a one-line description each; the second carries their full plain text. Answer engines can read the corpus directly instead of executing a client-rendered single-page app or relying on user-agent sniffing to get real content. robots.txt now names the AI crawlers explicitly — GPTBot, ClaudeBot, PerplexityBot, Google-Extended, CCBot and the rest — and points them at both files. The authenticated app stays disallowed for every agent, named or not.' },
+      { type: 'improvement', description: 'The new generator copies the sitemap generator deliberately: same uppercase PUBLISHED status filter, same created/updated column names, and the same refusal to write anything at all when both content tables come back empty. Those three details are what silently emptied the sitemap for months, so the guard travels with the pattern. 23 tests were added covering both ad gates and the generator, taking the suite from 207 to 230.' },
+    ],
+  },
+  {
+    date: '2026-08-21',
     title: 'Daylight typography — three faces, and three unused Inter weights removed',
     entries: [
       { type: 'feature', description: 'Added the Daylight type layer: Schibsted Grotesk for display and section heads, Public Sans for body text, and IBM Plex Mono for every figure and micro-label so columns of times and days line up. Each declares a real fallback stack, because a face that silently falls back to a default sans is how a type system evaporates in production. A 1.25 major-third scale and three tracking values are registered with Tailwind, so font-dl-display, text-dl-3xl and tracking-dl-display generate on demand.' },
