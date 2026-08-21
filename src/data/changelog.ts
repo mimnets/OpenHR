@@ -16,6 +16,17 @@ export interface ChangelogRelease {
 export const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-21',
+    title: 'Daylight on the blog and the guides — the four pages people actually arrive on',
+    entries: [
+      { type: 'improvement', description: 'The blog index, blog posts, the guides index and individual guides now use the Daylight surfaces, type and spacing. These are the pages a search visitor lands on first — usually before they have seen the homepage — so they matter more to a first impression than the landing page does.' },
+      { type: 'fix', description: 'Fixed several more surfaces that stayed light in dark mode. The guides index used semi-transparent backgrounds like bg-slate-50/50, which the dark-mode override sheet has no way to target because it can only remap class names it has been told about in advance. Those are now Daylight tokens, which carry their own dark values and so cannot be overlooked.' },
+      { type: 'improvement', description: 'Article bodies were deliberately left on their existing typography settings. That styling is what renders the actual published content, and the dark-mode rules for article text are tuned to match it — so only the headings within an article took the new display face. Restyling a page shell should not risk the writing inside it.' },
+      { type: 'improvement', description: 'Blog posts now tell the ad component how long the article is, instead of letting it measure the rendered page. The measurement could run before the article had finished rendering, which would read as a short page and suppress an ad on a perfectly substantial post. The post already knows its own length, so it passes it along.' },
+      { type: 'improvement', description: 'Added 10 tests covering the four pages: no legacy colour utilities, no hardcoded hex values, the article body typography left intact, and the article length actually being passed to the ad guard. Suite goes from 273 to 283.' },
+    ],
+  },
+  {
+    date: '2026-08-21',
     title: 'The landing page, rebuilt — invented testimonials removed, and a working day as its motif',
     entries: [
       { type: 'fix', description: 'Removed three testimonials attributed to named people at named companies. None of them were customers and none of the quotes were ever said; the section also carried five-star ratings and figures — 50+ organizations, 1,000+ employees managed, 99.9% uptime — that nothing substantiates. Invented endorsements attributed to real-sounding individuals are deceptive content under Google policy and unlawful advertising in most places, and fabricated review markup is a separate violation on top. All of it is gone, and a test now fails the build if any of those names reappear.' },

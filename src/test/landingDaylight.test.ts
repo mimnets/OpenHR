@@ -165,3 +165,42 @@ describe('contrast — text on the teal action colour', () => {
     }
   });
 });
+
+describe('DL5 — the four content pages', () => {
+  const PAGES = [
+    'src/pages/BlogPage.tsx',
+    'src/pages/BlogPostPage.tsx',
+    'src/pages/TutorialsPage.tsx',
+    'src/pages/TutorialPage.tsx',
+  ];
+
+  it.each(PAGES)('%s carries no legacy slate/primary utilities', (page) => {
+    const legacy = read(page).match(
+      /(?:bg|text|border|shadow|from|to|via|ring|divide)-(?:slate|primary|white)-?[0-9/]*/g
+    );
+    expect(legacy ?? []).toEqual([]);
+  });
+
+  it.each(PAGES)('%s hardcodes no hex colour', (page) => {
+    expect(read(page).match(/#[0-9a-fA-F]{6}/g) ?? []).toEqual([]);
+  });
+
+  it('keeps the article body on prose-slate + dark:prose-invert', () => {
+    // This pairing renders the crawlable article content and the .dark .prose overrides in
+    // index.css are tuned to it. Restyling the shell must not disturb the body.
+    for (const page of ['src/pages/BlogPostPage.tsx', 'src/pages/TutorialPage.tsx']) {
+      const src = read(page);
+      expect(src).toContain('prose prose-slate');
+      expect(src).toContain('dark:prose-invert');
+    }
+  });
+
+  it('passes real article length to the thin-content ad guard', () => {
+    // Item 28's guard falls back to measuring the DOM, which can run before the article has
+    // rendered. The post knows its own length, so it says so.
+    const src = read('src/pages/BlogPostPage.tsx');
+    for (const m of src.matchAll(/<PublicAdBanner slot="blog-post-[a-z]+"[^/]*\/>/g)) {
+      expect(m[0]).toContain('contentLength=');
+    }
+  });
+});
