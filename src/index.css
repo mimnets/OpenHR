@@ -41,6 +41,20 @@
   --radius-dl-lg: var(--dl-r-lg);
   --shadow-dl-1: var(--dl-lift-1);
   --shadow-dl-2: var(--dl-lift-2);
+  --font-dl-display: var(--dl-font-display);
+  --font-dl-body: var(--dl-font-body);
+  --font-dl-mono: var(--dl-font-mono);
+  --text-dl-xs: var(--dl-text-xs);
+  --text-dl-sm: var(--dl-text-sm);
+  --text-dl-base: var(--dl-text-base);
+  --text-dl-lg: var(--dl-text-lg);
+  --text-dl-xl: var(--dl-text-xl);
+  --text-dl-2xl: var(--dl-text-2xl);
+  --text-dl-3xl: var(--dl-text-3xl);
+  --text-dl-4xl: var(--dl-text-4xl);
+  --tracking-dl-display: var(--dl-track-display);
+  --tracking-dl-head: var(--dl-track-head);
+  --tracking-dl-label: var(--dl-track-label);
 
   --animate-slide-up: slideUp 0.3s ease-out;
   --font-sans: 'Inter', sans-serif;
@@ -109,6 +123,31 @@
        looked at closely. — */
   --dl-lift-1: 0 1px 1px rgba(14, 42, 51, .045), 0 4px 10px -4px rgba(14, 42, 51, .08);
   --dl-lift-2: 0 1px 2px rgba(14, 42, 51, .05), 0 14px 34px -14px rgba(14, 42, 51, .16);
+
+  /* — type —
+       Schibsted Grotesk carries display and section heads; Public Sans carries
+       every sentence; IBM Plex Mono carries every figure and micro-label so
+       columns of times and days line up. Real fallback stacks: a silent
+       fallback to a default sans is the most common way a type system
+       evaporates in production. */
+  --dl-font-display: "Schibsted Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --dl-font-body: "Public Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --dl-font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Display sizes need negative tracking or Schibsted Grotesk reads loose;
+       body text needs none. The scale is 1.25 (major third) from 0.875rem. */
+  --dl-track-display: -0.03em;
+  --dl-track-head: -0.015em;
+  --dl-track-label: 0.12em;
+
+  --dl-text-xs: 0.75rem;
+  --dl-text-sm: 0.875rem;
+  --dl-text-base: 1rem;
+  --dl-text-lg: 1.125rem;
+  --dl-text-xl: 1.406rem;
+  --dl-text-2xl: 1.758rem;
+  --dl-text-3xl: 2.197rem;
+  --dl-text-4xl: 2.746rem;
 
   /* — shape — */
   --dl-r-sm: 8px;

@@ -142,3 +142,53 @@ describe('the app keeps its own tokens', () => {
     expect(css).not.toMatch(/--primary:\s*var\(--dl-/);
   });
 });
+
+describe('Daylight typography', () => {
+  const html = fs.readFileSync(path.resolve(__dirname, '../../index.html'), 'utf8');
+
+  it.each(['dl-font-display', 'dl-font-body', 'dl-font-mono'])('%s declares a real fallback stack', (name) => {
+    // A face that fails to load and falls back to an unstyled default is how a
+    // type system quietly evaporates in production.
+    const stack = token(name, 'light');
+    expect(stack.split(',').length).toBeGreaterThanOrEqual(3);
+    expect(stack).toMatch(/sans-serif|monospace$/);
+  });
+
+  it('every declared family is actually requested from Google Fonts', () => {
+    const requested = [...html.matchAll(/family=([A-Za-z+]+):wght@/g)].map((m) => m[1].replace(/\+/g, ' '));
+    for (const name of ['dl-font-display', 'dl-font-body', 'dl-font-mono']) {
+      const primary = token(name, 'light').split(',')[0].replace(/"/g, '').trim();
+      expect(requested, `${primary} is declared but never loaded`).toContain(primary);
+    }
+  });
+
+  it('loads fonts in a single non-blocking request', () => {
+    // Each extra stylesheet request is a round trip on the pages search engines
+    // actually land on.
+    const links = [...html.matchAll(/fonts\.googleapis\.com\/css2[^"]*/g)];
+    const unique = new Set(links.map((m) => m[0]));
+    expect(unique.size).toBe(1);
+    expect(html).toContain('display=swap');
+  });
+
+  it('does not ship Inter weights the app never uses', () => {
+    // Audited: only font-medium (500), font-semibold (600) and font-bold (700)
+    // appear in src/, plus 400 as the body default.
+    const inter = /family=Inter:wght@([0-9;]+)/.exec(html)?.[1].split(';') ?? [];
+    expect(inter).toEqual(['400', '500', '600', '700']);
+  });
+
+  it('the scale is ordered and starts at the small end', () => {
+    const rem = (n: string) => parseFloat(token(n, 'light'));
+    const scale = ['dl-text-xs', 'dl-text-sm', 'dl-text-base', 'dl-text-lg',
+                   'dl-text-xl', 'dl-text-2xl', 'dl-text-3xl', 'dl-text-4xl'].map(rem);
+    expect(scale).toEqual([...scale].sort((a, b) => a - b));
+    expect(scale[0]).toBeLessThan(1);
+  });
+
+  it('display sizes carry negative tracking, labels carry positive', () => {
+    expect(parseFloat(token('dl-track-display', 'light'))).toBeLessThan(0);
+    expect(parseFloat(token('dl-track-head', 'light'))).toBeLessThan(0);
+    expect(parseFloat(token('dl-track-label', 'light'))).toBeGreaterThan(0);
+  });
+});

@@ -16,6 +16,15 @@ export interface ChangelogRelease {
 export const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-21',
+    title: 'Daylight typography — three faces, and three unused Inter weights removed',
+    entries: [
+      { type: 'feature', description: 'Added the Daylight type layer: Schibsted Grotesk for display and section heads, Public Sans for body text, and IBM Plex Mono for every figure and micro-label so columns of times and days line up. Each declares a real fallback stack, because a face that silently falls back to a default sans is how a type system evaporates in production. A 1.25 major-third scale and three tracking values are registered with Tailwind, so font-dl-display, text-dl-3xl and tracking-dl-display generate on demand.' },
+      { type: 'improvement', description: 'Inter no longer ships weights the app never uses. It was loading 300, 400, 500, 600, 700, 800 and 900, but an audit of every font-weight utility in src/ found only font-medium, font-semibold and font-bold in use, plus 400 as the body default — so 300, 800 and 900 were being fetched on every visit for nothing. Dropping them pays for most of the three new families. All four families now load in a single non-blocking request with display=swap rather than adding round trips to the pages search engines land on.' },
+      { type: 'improvement', description: 'Extended the token contract tests to typography: every declared family must actually be requested from Google Fonts (a family declared but never loaded is invisible until someone looks closely), fonts must arrive in exactly one request, Inter must carry only the four audited weights, the size scale must be ordered, and display tracking must be negative while label tracking is positive. Suite goes from 199 tests to 207.' },
+    ],
+  },
+  {
+    date: '2026-08-21',
     title: 'Brand name normalised to OpenHRApp in search results and on the home screen',
     entries: [
       { type: 'fix', description: 'The product name appeared four different ways. The codebase used OpenHRApp 213 times, but 26 user-visible strings still said plain OpenHR — including every one of the seven feature page titles, the blog and guide titles, and the RSS feed title in middleware.ts. Those titles are what search engines display, so the brand was reading as OpenHR in listings while the site itself said OpenHRApp. All 26 are now OpenHRApp.' },
