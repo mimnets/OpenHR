@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+/*
+ * Bind the `dark:` variant to the .dark class rather than the OS setting.
+ *
+ * Tailwind v4 defaults `dark:` to @media (prefers-color-scheme: dark). This app
+ * does not use the OS setting directly — ThemeContext writes a .dark class on
+ * <html> from the user's own preference, and the override rules further down
+ * this file are keyed on that class.
+ *
+ * Without this declaration the two disagree: the ~94 `dark:` utilities in the
+ * components follow the operating system while the override rules follow the
+ * in-app toggle, so any user whose OS scheme differs from their chosen theme
+ * sees a half-themed page. It only looks correct when the two happen to match,
+ * which is why it survived so long.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ===== Custom Theme ===== */
 @theme {
   --color-primary: var(--primary);

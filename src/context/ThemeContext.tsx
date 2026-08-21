@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { AppTheme } from '../types';
 import { organizationService } from '../services/organization.service';
 
@@ -37,6 +37,24 @@ function getCachedTheme(): AppTheme {
   return THEMES.find(t => t.id === 'charcoal-slate') ?? THEMES[0]; // Charcoal Slate
 }
 
+/**
+ * Read the saved dark-mode preference synchronously, for use as initial state.
+ *
+ * This used to be read in a useEffect, so the first render always assumed
+ * 'system'. index.html's boot script sets the .dark class from this same key
+ * before paint, so whenever a user's saved preference disagreed with their OS
+ * setting, React's first commit removed the class the boot script had just
+ * added and re-added it a render later — a visible flash between two themes on
+ * every refresh.
+ */
+function getStoredDarkPreference(): DarkModePreference {
+  try {
+    const saved = localStorage.getItem('openhr-dark-mode');
+    if (saved === 'light' || saved === 'dark' || saved === 'system') return saved;
+  } catch { /* localStorage unavailable */ }
+  return 'system';
+}
+
 export function cacheThemeId(themeId: string) {
   try { localStorage.setItem(THEME_CACHE_KEY, themeId); } catch { /* noop */ }
 }
@@ -59,17 +77,22 @@ function getSystemPrefersDark(): boolean {
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentTheme, setCurrentTheme] = useState<AppTheme>(getCachedTheme);
-  const [darkModePreference, setDarkModePrefState] = useState<DarkModePreference>('system');
+  const [darkModePreference, setDarkModePrefState] = useState<DarkModePreference>(getStoredDarkPreference);
   const [systemDark, setSystemDark] = useState(getSystemPrefersDark);
 
   const darkMode = darkModePreference === 'system' ? systemDark : darkModePreference === 'dark';
 
   const applyThemeById = useCallback((themeId: string) => {
     const found = THEMES.find(t => t.id === themeId);
-    if (found) {
-      setCurrentTheme(found);
-      cacheThemeId(themeId);
-    }
+    if (!found) return;
+
+    // Always refresh the cache so the next load paints this theme before React
+    // mounts, but only touch state when the theme genuinely changed. The
+    // platform default is re-fetched on an idle callback, again every 60s, and
+    // again on every visibilitychange; without this guard each of those
+    // re-applied an identical theme and re-ran the CSS-variable effect.
+    cacheThemeId(themeId);
+    setCurrentTheme(prev => (prev.id === themeId ? prev : found));
   }, []);
 
   const fetchPlatformDefault = useCallback(async () => {
@@ -95,11 +118,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // is already applied via initial state, so the UI renders correct colors
   // immediately even when the backend is slow (iOS LTE first paint).
   useEffect(() => {
-    const savedDark = localStorage.getItem('openhr-dark-mode') as DarkModePreference | null;
-    if (savedDark && ['light', 'dark', 'system'].includes(savedDark)) {
-      setDarkModePrefState(savedDark);
-    }
-
     const ric =
       (window as any).requestIdleCallback ||
       ((cb: () => void) => setTimeout(cb, 200));
@@ -143,8 +161,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  // Apply dark class to <html> and update meta theme-color
-  useEffect(() => {
+  // Apply dark class to <html> and update meta theme-color.
+  //
+  // useLayoutEffect, not useEffect: this runs before the browser paints, so the
+  // class index.html's boot script already set is never briefly removed.
+  useLayoutEffect(() => {
     const root = document.documentElement;
     if (darkMode) {
       root.classList.add('dark');
@@ -157,8 +178,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [darkMode]);
 
-  // Apply CSS variables whenever accent theme changes
-  useEffect(() => {
+  // Apply CSS variables whenever accent theme changes. Before paint, for the
+  // same reason as above — the boot script has already set these inline.
+  useLayoutEffect(() => {
     const root = document.documentElement;
     root.style.setProperty('--primary', currentTheme.colors.primary);
     root.style.setProperty('--primary-hover', currentTheme.colors.hover);
