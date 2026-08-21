@@ -1,6 +1,6 @@
 /**
- * Content Exporter — public.tutorials  -> Others/GUIDES_CONTENT_EXPORT.md
- *                    public.blog_posts -> Others/BLOG_CONTENT_EXPORT.md
+ * Content Exporter — public.tutorials  -> Others/<date>-guides-content-export.md
+ *                    public.blog_posts -> Others/<date>-blog-content-export.md
  *
  * The inverse of scripts/import-content.mjs. It pulls what is actually live in
  * the database back out as clean markdown, in the same shape as the hand-written
@@ -20,6 +20,10 @@
  *   node --env-file=.env.cloud scripts/export-content.mjs
  *   node --env-file=.env.cloud scripts/export-content.mjs --only=blog
  *   node --env-file=.env.cloud scripts/export-content.mjs --out=Others
+ *   node --env-file=.env.cloud scripts/export-content.mjs --date=2026-08-21
+ *
+ * A third file, <date>-cover-image-prompts.md, is written alongside them with an
+ * image generation prompt for every record that has no cover_image.
  *
  * Requires VITE_SUPABASE_URL. Uses SUPABASE_SERVICE_ROLE_KEY when present so
  * that drafts are included; otherwise falls back to VITE_SUPABASE_ANON_KEY and
@@ -29,10 +33,29 @@
 import fs from 'fs';
 import path from 'path';
 import { htmlToMarkdown } from './lib/html-to-markdown.mjs';
+import { buildCoverPrompt, SPEC_NOTE } from './lib/cover-prompts.mjs';
 
 const args = process.argv.slice(2);
 const ONLY = (args.find((a) => a.startsWith('--only=')) || '').split('=')[1] || 'all';
 const OUT_DIR = (args.find((a) => a.startsWith('--out=')) || '').split('=')[1] || 'Others';
+
+/**
+ * Every export is stamped with the date it was taken and written to a new file,
+ * so successive exports sit side by side in date order rather than overwriting
+ * each other. That makes it possible to see what the content looked like before
+ * an editing pass. Override with --date=YYYY-MM-DD to redo an earlier stamp.
+ */
+const DATE = (() => {
+  const flag = (args.find((a) => a.startsWith('--date=')) || '').split('=')[1];
+  if (flag) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(flag)) {
+      console.error(`Invalid --date=${flag} — expected YYYY-MM-DD.`);
+      process.exit(1);
+    }
+    return flag;
+  }
+  return new Date().toISOString().slice(0, 10);
+})();
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || '';
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -340,6 +363,72 @@ function report(label, items) {
   );
 }
 
+
+/* ------------------------------------------------- cover image prompt file */
+
+function buildCoverPrompts(guideRows, blogRows) {
+  const entries = [
+    ...blogRows.map((r) => buildCoverPrompt(r, 'post')),
+    ...guideRows.map((r) => buildCoverPrompt(r, 'guide')),
+  ];
+  const missing = entries.filter((e) => !e.hasCover);
+  const have = entries.filter((e) => e.hasCover);
+
+  const parts = [
+    '# OpenHRApp — Cover Image Prompts',
+    '',
+    `> Generated from the live database. ${missing.length} of ${entries.length} articles have no cover image.`,
+    '> Every shared link to those falls back to the site default, which is why they look generic.',
+    '>',
+    '> Prompts are built from each article title, category, and excerpt against one shared house',
+    '> style, so the finished covers read as a single set rather than 47 unrelated pictures.',
+    '',
+    '---',
+    '',
+    SPEC_NOTE,
+    '',
+    '---',
+    '',
+    `## Needs a cover (${missing.length})`,
+    '',
+  ];
+
+  let n = 0;
+  for (const e of missing) {
+    n += 1;
+    parts.push(
+      `### ${n}. ${e.title}`,
+      '',
+      `**Slug:** \`${e.slug}\`  |  **Type:** ${e.kind}  |  **Category:** ${e.category}`,
+      `**Save as:** \`${e.filename}\``,
+      `**Alt text:** ${e.alt}`,
+      '',
+      '**Prompt:**',
+      '',
+      '```text',
+      e.prompt,
+      '```',
+      '',
+      '**Negative prompt:**',
+      '',
+      '```text',
+      e.negative,
+      '```',
+      '',
+      '---',
+      '',
+    );
+  }
+
+  if (have.length) {
+    parts.push('', `## Already has a cover (${have.length})`, '', '| Slug | Type | Current cover |', '|---|---|---|');
+    for (const e of have) parts.push(`| \`${e.slug}\` | ${e.kind} | ${e.existingCover} |`);
+    parts.push('');
+  }
+
+  return { text: parts.join('\n'), missing: missing.length, total: entries.length };
+}
+
 async function main() {
   console.log(c.bold('OpenHR content exporter'));
   console.log(c.dim(`  source: ${SUPABASE_URL}  (${SERVICE_KEY ? 'service role — includes drafts' : 'anon key — published only'})`));
@@ -347,20 +436,36 @@ async function main() {
 
   fs.mkdirSync(path.resolve(OUT_DIR), { recursive: true });
 
+  let guideRows = [];
+  let blogRows = [];
+
   if (ONLY === 'all' || ONLY === 'tutorials' || ONLY === 'guides') {
-    const rows = await fetchAll('tutorials', '*');
-    const { text, items } = buildGuides(rows);
-    const out = path.resolve(OUT_DIR, 'GUIDES_CONTENT_EXPORT.md');
+    guideRows = await fetchAll('tutorials', '*');
+    const { text, items } = buildGuides(guideRows);
+    const out = path.resolve(OUT_DIR, `${DATE}-guides-content-export.md`);
     fs.writeFileSync(out, text, 'utf8');
     report(`Guides -> ${path.relative(process.cwd(), out)}`, items);
   }
 
   if (ONLY === 'all' || ONLY === 'blog') {
-    const rows = await fetchAll('blog_posts', '*');
-    const { text, items } = buildBlog(rows);
-    const out = path.resolve(OUT_DIR, 'BLOG_CONTENT_EXPORT.md');
+    blogRows = await fetchAll('blog_posts', '*');
+    const { text, items } = buildBlog(blogRows);
+    const out = path.resolve(OUT_DIR, `${DATE}-blog-content-export.md`);
     fs.writeFileSync(out, text, 'utf8');
     report(`Blog -> ${path.relative(process.cwd(), out)}`, items);
+  }
+
+  // Only on a full run. A partial run knows about half the corpus, and writing
+  // it to the same filename would silently replace a complete prompt file with
+  // one covering just guides or just posts.
+  if (ONLY === 'all') {
+    const prompts = buildCoverPrompts(guideRows, blogRows);
+    const promptOut = path.resolve(OUT_DIR, `${DATE}-cover-image-prompts.md`);
+    fs.writeFileSync(promptOut, prompts.text, 'utf8');
+    console.log(c.bold(`\nCover prompts -> ${path.relative(process.cwd(), promptOut)}`));
+    console.log(`  ${prompts.missing} of ${prompts.total} articles need a cover image`);
+  } else {
+    console.log(c.dim('\n  Cover prompts skipped — only written on a full run (no --only=).'));
   }
 
   console.log(c.green('\n  Export complete.\n'));
