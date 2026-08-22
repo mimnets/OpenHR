@@ -16,6 +16,14 @@ export interface ChangelogRelease {
 export const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-22',
+    title: 'Internal links across every article now point straight at the page instead of bouncing through a redirect',
+    entries: [
+      { type: 'improvement', description: 'Converted 410 internal links across all 44 published guides and articles from full web addresses to site-relative ones. Every one of them previously pointed at the www address, which now forwards to the main one — so each link a reader or a search engine followed took an extra hop. They now go straight to the page. The link text, the destinations and the article content are all completely unchanged; only the addresses in the links were shortened.' },
+      { type: 'improvement', description: 'Because the links no longer name a host at all, they cannot break again if the site address ever changes. Every one of the 53 distinct destinations was checked to confirm it loads before anything was rewritten, and a full backup of the original content was taken first.' },
+    ],
+  },
+  {
+    date: '2026-08-22',
     title: 'Day 15 no longer switches your account off, and you can now choose to be featured on our homepage',
     entries: [
       { type: 'breaking', description: 'The end of the 14-day period no longer puts an organization into read-only mode. It used to disable attendance punching, leave requests, announcements, organization settings and performance reviews until someone got in touch — which contradicted everything we say publicly, including our own FAQ ("permanently free, no time limits, no feature gates"). What actually happens now is what was always meant to: the account moves to ad-supported. Every feature keeps working and ads start appearing. A donation still removes them.' },
