@@ -10,20 +10,32 @@
  * as a maintained publication; 47 individually-styled images read as clip art.
  */
 
-/** Brand tokens, from src/index.css (--primary / --primary-hover / --primary-light). */
+/**
+ * Brand tokens — the DAYLIGHT palette, from src/index.css.
+ *
+ * These were the app's --primary set (#4a6fa5 indigo on #f1f5f9 slate) until the
+ * public surface moved to Daylight. Covers are shown on /blog and /how-to-use
+ * cards and in link previews, all of which are now teal-and-white — indigo
+ * covers inside Daylight cards are the same palette clash that had to be
+ * removed from BlogSidebar, arriving by a different route.
+ *
+ * --primary still exists and is still correct for the logged-in app. It is just
+ * not what a cover image sits on.
+ */
 export const BRAND = {
-  primary: '#4a6fa5',
-  primaryHover: '#3b5d8c',
-  primaryLight: '#d4e4f7',
-  ink: '#1e293b',
-  paper: '#f1f5f9',
+  primary: '#1C6E7E',      // --dl-teal, the public action colour
+  primaryHover: '#155863', // --dl-teal-deep
+  primaryLight: '#DDE4E6', // --dl-hair, the palest usable tint
+  ink: '#0E2A33',          // --dl-ink
+  paper: '#FFFFFF',        // --dl-ground
 };
 
 const HOUSE_STYLE =
   `Flat vector editorial illustration, generous negative space, soft geometric shapes. ` +
-  `Strict palette: muted slate blue ${BRAND.primary} as the dominant colour, ` +
-  `pale blue ${BRAND.primaryLight} for fills, deep slate ${BRAND.ink} for line work, ` +
-  `off-white ${BRAND.paper} background. One clear focal subject, calm and professional, ` +
+  `Strict two-colour palette: deep teal ${BRAND.primary} as the dominant colour, ` +
+  `pale grey-green ${BRAND.primaryLight} for fills, near-black teal ${BRAND.ink} for line work, ` +
+  `pure white ${BRAND.paper} background. Use no third accent colour — no orange, no amber, ` +
+  `no emerald, no indigo. One clear focal subject, calm and professional, ` +
   `no photorealism, no gradients heavier than a subtle two-stop, no drop shadows. ` +
   `Composition weighted to the left third, leaving the right side open.`;
 

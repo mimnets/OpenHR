@@ -16,6 +16,15 @@ export interface ChangelogRelease {
 export const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-22',
+    title: 'Cover images for the 23 articles that still have none — corrected to the new palette first',
+    entries: [
+      { type: 'fix', description: 'The cover image prompts were still written around the old app colours — indigo on pale slate. Since the public pages moved to the new design, a cover generated from those prompts would have been the wrong colour on every card carrying it. Regenerated in the current teal-and-white palette, with an explicit instruction not to introduce a third colour.' },
+      { type: 'improvement', description: 'Regenerated the prompt sheet against the current articles, so it reflects the rewritten guide titles and excludes the theme guide that is being retired. 23 articles need a cover: 22 guides and one blog post.' },
+      { type: 'feature', description: 'Added a bulk uploader. Save the finished images into one folder named after each article, run one command, and every cover is resized, converted and attached in one pass. It matches files to articles by name and refuses anything it cannot match rather than guessing, does a dry run by default, and applies exactly the same conversion the app does when you upload a cover by hand — including rejecting WebP, which is the format that produces blank preview cards when a link is shared.' },
+    ],
+  },
+  {
+    date: '2026-08-22',
     title: 'Rewrote every how-to guide, and found several that described features we no longer have',
     entries: [
       { type: 'improvement', description: 'Rewrote all 24 how-to guides. Between them they went from 9,536 words to 19,922 — the shortest guide was 226 words and is now 681, and none is under 600 any more. The additions are the parts that were missing rather than padding: what each screen actually shows, what to do when something does not work, and how each feature interacts with shifts, holidays and permissions.' },
