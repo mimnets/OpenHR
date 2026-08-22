@@ -151,6 +151,52 @@ describe('the end of the ad-free period does not take anything away', () => {
   });
 });
 
+/**
+ * The job was never scheduled, so a backlog accumulated: 127 of 145 TRIAL organizations were
+ * already past trial_end_date when staging was added. An unbounded first run would move all
+ * 127 and send 127 emails in one night. These tests guard the cap, not the copy.
+ */
+describe('the backlog drains in batches rather than all at once', () => {
+  it('the transition query is capped and the cap is configurable', () => {
+    expect(cron).toMatch(/TRIAL_TRANSITION_BATCH/);
+    expect(cron).toMatch(/\.limit\(batchSize\)/);
+  });
+
+  it('a bad or missing batch value falls back to a safe default rather than to unlimited', () => {
+    expect(cron).toMatch(/Number\.isFinite\(parsedBatch\) && parsedBatch > 0 \? Math\.floor\(parsedBatch\) : 10/);
+  });
+
+  it('oldest first, so a failed run resumes instead of reshuffling', () => {
+    expect(cron).toMatch(/\.order\('trial_end_date', \{ ascending: true \}\)/);
+  });
+
+  it('there is a kill switch that needs no redeploy', () => {
+    expect(cron).toMatch(/TRIAL_TRANSITION_PAUSED/);
+    expect(cron).toMatch(/const \{ data: expiredOrgs \} = paused/);
+  });
+
+  it('pausing transitions still leaves the reminder pass running', () => {
+    // `paused` must not gate anything between the start of the reminder pass and the summary.
+    const reminders = cron.slice(cron.indexOf('// ── 2.'), cron.indexOf('// Never truncate silently'));
+    expect(reminders.length, 'reminder section not found').toBeGreaterThan(0);
+    expect(reminders).not.toMatch(/paused/);
+  });
+
+  /**
+   * A capped run that does not report what it skipped is indistinguishable in the logs from a
+   * run that had nothing left to do.
+   */
+  it('what was skipped is counted and logged, never silently dropped', () => {
+    expect(cron).toMatch(/remaining = Math\.max\(0, \(overdueCount \?\? 0\) - expired\)/);
+    expect(cron).toMatch(/still\s*\` \+\s*\`overdue/);
+    expect(cron).toMatch(/remaining,/);
+  });
+
+  it('the count of overdue organizations is a head query, not a full fetch', () => {
+    expect(cron).toMatch(/\{ count: 'exact', head: true \}/);
+  });
+});
+
 describe('the super admin surface matches the subscription model', () => {
   it('AD_SUPPORTED is selectable — it is the state the cron now assigns', () => {
     expect(superAdmin).toMatch(/<option value="AD_SUPPORTED">/);
