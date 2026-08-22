@@ -53,14 +53,18 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onLoginClick, onRegisterClick
             </button>
             <button
               onClick={handleDemoClick}
-              className="w-full py-3.5 border border-dl-teal/40 text-dl-teal rounded-dl-md font-bold text-dl-sm hover:border-dl-teal hover:bg-dl-teal/5 transition-all flex items-center justify-center gap-2"
+              className="dl-cta-ring w-full py-3.5 text-dl-teal rounded-dl-md font-bold text-dl-sm transition-all flex items-center justify-center gap-2"
             >
+              <span className="dl-cta-dots" aria-hidden="true">
+                <i className="dl-cta-dot dl-cta-dot--red" />
+                <i className="dl-cta-dot dl-cta-dot--green" />
+              </span>
               <Play size={18} />
               Try Live Demo →
             </button>
             <button
               onClick={onRegisterClick}
-              className="w-full py-3.5 bg-dl-teal text-dl-surface rounded-dl-md font-bold text-dl-sm hover:bg-dl-teal-deep transition-all shadow-dl-1 flex items-center justify-center gap-2"
+              className="dl-cta-pulse w-full py-3.5 bg-dl-teal text-dl-surface rounded-dl-md font-bold text-dl-sm hover:bg-dl-teal-deep transition-all shadow-dl-1 flex items-center justify-center gap-2"
             >
               Get Started Free <ArrowRight size={18} />
             </button>
@@ -98,14 +102,18 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onLoginClick, onRegisterClick
             </button>
             <button
               onClick={handleDemoClick}
-              className="px-8 py-4 border border-dl-teal/40 text-dl-teal font-bold text-dl-sm rounded-dl-md hover:border-dl-teal hover:bg-dl-teal/5 transition-all flex items-center justify-center gap-2"
+              className="dl-cta-ring px-8 py-4 text-dl-teal font-bold text-dl-sm rounded-dl-md transition-all flex items-center justify-center gap-2"
             >
+              <span className="dl-cta-dots" aria-hidden="true">
+                <i className="dl-cta-dot dl-cta-dot--red" />
+                <i className="dl-cta-dot dl-cta-dot--green" />
+              </span>
               <Play size={18} />
               Try Live Demo →
             </button>
             <button
               onClick={onRegisterClick}
-              className="px-8 py-4 bg-dl-teal text-dl-surface font-bold text-dl-sm rounded-dl-md hover:bg-dl-teal-deep transition-all shadow-dl-1 flex items-center justify-center gap-2"
+              className="dl-cta-pulse px-8 py-4 bg-dl-teal text-dl-surface font-bold text-dl-sm rounded-dl-md hover:bg-dl-teal-deep transition-all shadow-dl-1 flex items-center justify-center gap-2"
             >
               Get Started Free <ArrowRight size={18} />
             </button>

@@ -88,7 +88,10 @@ const PricingSection: React.FC<PricingSectionProps> = ({ onRegisterClick }) => {
               href="https://buymeacoffee.com/openhrapp"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#FFDD00] text-dl-ink rounded-dl-md font-bold text-sm hover:opacity-90 transition-all"
+              /* #FFDD00 is Buy Me a Coffee's own yellow and does not invert, so the
+                 label cannot use --dl-ink, which does: in dark mode that was
+                 near-white on yellow, 1.1:1. --dl-ink-fixed stays dark in both. */
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#FFDD00] text-dl-ink-fixed rounded-dl-md font-bold text-sm hover:opacity-90 transition-all"
             >
               <Coffee size={14} /> Buy Me a Coffee
             </a>

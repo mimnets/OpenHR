@@ -68,9 +68,9 @@ const Footer: React.FC = () => {
                 <img src="/img/logo.webp" className="w-full h-full object-contain" alt="OpenHRApp" width="44" height="44" />
               </div>
               <span className={dlBrand.word}>
-                <span className={dlBrand.wordInk}>Open</span>
-                <span className={dlBrand.wordAccent}>HR</span>
-                <span className={dlBrand.wordInk}>App</span>
+                <span className={dlBrand.wordOnSlab}>Open</span>
+                <span className={dlBrand.wordAccentOnSlab}>HR</span>
+                <span className={dlBrand.wordOnSlab}>App</span>
               </span>
             </div>
             <p className={dlFooter.blurb}>

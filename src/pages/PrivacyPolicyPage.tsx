@@ -202,7 +202,7 @@ const PrivacyPolicyPage: React.FC<PrivacyPolicyPageProps> = ({ onBack }) => {
           <div className="mt-8 text-center">
             <button
               onClick={handleBack}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-dl-teal hover:underline"
+              className="inline-flex items-center gap-2 min-h-6 max-sm:min-h-11 text-sm font-semibold text-dl-teal hover:underline"
             >
               <ArrowLeft size={16} /> Back to Home
             </button>

@@ -58,6 +58,16 @@ export const dlBrand = {
   word: 'font-dl-display text-dl-lg font-semibold tracking-dl-head',
   wordInk: 'text-dl-ink',
   wordAccent: 'text-dl-teal',
+  /**
+   * The same wordmark for the footer slab, which is dark in BOTH themes
+   * (--dl-ink in light, --dl-ground in dark). The pair above cannot be used
+   * there: text-dl-ink on the light-mode slab is ink on ink — 1.0:1, so "Open"
+   * and "App" simply vanished and the footer read as a floating "HR". The
+   * accent needs the fixed slab tone for the same reason; --dl-teal is 2.6:1
+   * against the light-mode slab. Locked by daylightTokens.test.ts.
+   */
+  wordOnSlab: 'text-dl-surface dark:text-dl-ink',
+  wordAccentOnSlab: 'text-dl-teal-slab',
 } as const;
 
 /** Navigation links and controls. */
@@ -79,9 +89,14 @@ export const dlNav = {
     'px-5 py-2.5 text-dl-sm font-bold text-dl-ink bg-dl-surface-2 hover:bg-dl-hair-soft rounded-dl-md transition-colors border border-dl-hair',
   /** Secondary action rendered without a chip, used by the content navbars. */
   buttonBare: 'px-5 py-2.5 text-dl-sm font-bold text-dl-muted hover:text-dl-teal transition-colors',
-  /** Primary action — Get Started. Teal is the action colour on the public surface. */
+  /**
+   * Primary action — Get Started. Teal is the action colour on the public surface.
+   * Carries the same dl-cta-pulse halo and sheen as the hero button, so the one
+   * conversion action looks the same wherever a visitor meets it. Defined in
+   * src/index.css; stops under prefers-reduced-motion.
+   */
   buttonPrimary:
-    'px-5 py-2.5 bg-dl-teal hover:bg-dl-teal-deep text-dl-surface text-dl-sm font-bold rounded-dl-md transition-colors shadow-dl-1',
+    'dl-cta-pulse px-5 py-2.5 bg-dl-teal hover:bg-dl-teal-deep text-dl-surface text-dl-sm font-bold rounded-dl-md transition-colors shadow-dl-1',
 
   mobilePanel: 'md:hidden bg-dl-surface border-t border-dl-hair-soft shadow-dl-2',
   mobilePanelInner: 'px-4 py-4 space-y-1',
@@ -93,7 +108,7 @@ export const dlNav = {
   mobileButtonQuiet:
     'block w-full px-4 py-3 text-dl-sm font-bold text-dl-muted hover:bg-dl-surface-2 rounded-dl-md text-center transition-colors',
   mobileButtonPrimary:
-    'block w-full px-4 py-3 bg-dl-teal hover:bg-dl-teal-deep text-dl-surface text-dl-sm font-bold rounded-dl-md text-center transition-colors',
+    'dl-cta-pulse block w-full px-4 py-3 bg-dl-teal hover:bg-dl-teal-deep text-dl-surface text-dl-sm font-bold rounded-dl-md text-center transition-colors',
 } as const;
 
 /**
@@ -115,12 +130,19 @@ export const dlFooter = {
   blurb: 'text-dl-sm text-dl-surface/70 dark:text-dl-muted leading-relaxed',
   columnHead:
     'text-dl-xs font-bold uppercase tracking-dl-label text-dl-surface/80 dark:text-dl-muted mb-4',
-  list: 'space-y-3',
-  link: 'text-dl-sm text-dl-surface/70 dark:text-dl-muted hover:text-dl-surface dark:hover:text-dl-ink transition-colors',
+  list: 'space-y-3 max-sm:space-y-0',
+  /**
+   * `min-h-11` below `sm` only. These render 21px tall at 375, under the 24px
+   * WCAG 2.2 2.5.8 minimum and well under a comfortable thumb target; the
+   * desktop footer is unchanged, and `max-sm:space-y-0` absorbs most of the
+   * added height so the mobile footer does not grow by 11 rows × 23px.
+   */
+  link: 'inline-flex items-center max-sm:min-h-11 text-dl-sm text-dl-surface/70 dark:text-dl-muted hover:text-dl-surface dark:hover:text-dl-ink transition-colors',
   bottomBar:
     'border-t border-dl-surface/15 dark:border-dl-hair pt-8 flex flex-col sm:flex-row items-center justify-between gap-4',
   fine: 'text-dl-xs text-dl-surface/60 dark:text-dl-muted',
-  fineAction: 'text-dl-xs text-dl-surface/60 dark:text-dl-muted hover:text-dl-surface dark:hover:text-dl-ink transition-colors',
+  /** "Back to top" measured 18px tall — the smallest target on any public page. */
+  fineAction: 'inline-flex items-center min-h-6 max-sm:min-h-11 text-dl-xs text-dl-surface/60 dark:text-dl-muted hover:text-dl-surface dark:hover:text-dl-ink transition-colors',
   social:
     'p-2 rounded-dl-sm text-dl-surface/70 dark:text-dl-muted hover:text-dl-surface dark:hover:text-dl-ink hover:bg-dl-surface/10 dark:hover:bg-dl-hair transition-all',
 } as const;

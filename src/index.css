@@ -33,6 +33,8 @@
   --color-dl-soft: var(--dl-soft);
   --color-dl-teal: var(--dl-teal);
   --color-dl-teal-deep: var(--dl-teal-deep);
+  --color-dl-teal-slab: var(--dl-teal-slab);
+  --color-dl-ink-fixed: var(--dl-ink-fixed);
   --color-dl-dawn: var(--dl-dawn);
   --color-dl-noon: var(--dl-noon);
   --color-dl-dusk: var(--dl-dusk);
@@ -116,7 +118,25 @@
   --dl-teal: #1C6E7E;
   --dl-teal-deep: #155863;
 
-  /* — the day. Only inside the arc and the logo mark. — */
+  /* — the two fixed colours —
+     Everything above inverts with the theme. These two deliberately do not, and
+     html.dark must never redefine them. They exist for the places where only one
+     side of a pair flips, which is where the invisible-text bugs come from:
+
+     --dl-teal-slab  the footer slab is dark in BOTH themes (--dl-ink in light,
+                     --dl-ground in dark), so a wordmark on it cannot use
+                     --dl-teal — that is 2.6:1 on the light-mode slab. This tone
+                     clears AA on both slab colours.
+     --dl-ink-fixed  for text on a fixed brand fill that never inverts (the
+                     #FFDD00 Buy Me a Coffee button). Pairing a flipping token
+                     with a fixed background gave 1.1:1 in dark mode. */
+  --dl-teal-slab: #5FBDCE;
+  --dl-ink-fixed: #0E2A33;
+
+  /* — the day. Only inside the arc, the logo mark, and the ring that spins
+       around the hero's "Try Live Demo" button (dl-cta-ring). They stay off
+       text: that button's label is a fixed --dl-teal. Still not a general
+       accent — nothing else may reach for these. — */
   --dl-dawn: #B4560F;
   --dl-noon: #A83E58;
   --dl-dusk: #5C4E8E;
@@ -335,6 +355,10 @@ html.dark body { background-color: #0f172a; color: #e2e8f0; }
 
 /* Override any inline style colors from WYSIWYG editor */
 .dark .prose [style*="color:"] { color: inherit !important; }
+/* Imported content also carries legacy <font color="#0969da"> presentation
+   attributes, which are not inline styles and so slipped past the rule above —
+   that blue measured 3.6:1 on the dark article ground. */
+.dark .prose font[color] { color: inherit !important; }
 .dark .prose [style*="background-color:"] { background-color: inherit !important; }
 .dark .prose [style*="background:"] { background: inherit !important; }
 
@@ -438,4 +462,149 @@ html.dark body { background-color: #0f172a; color: #e2e8f0; }
    bands carry the class. */
 .dl-bands > * + * {
   border-top: 1px solid var(--dl-hair);
+}
+
+/* ===== DAYLIGHT — HERO CTA ATTENTION ===== */
+/* The two conversion buttons in the hero, asked for as "flashing" and
+   "noticeable". They deliberately do not flash: WCAG 2.3.1 allows at most three
+   flashes per second, and a control that blinks is measurably harder to read
+   and to hit. Both use one slow continuous cycle instead, which draws the eye
+   without ever making the label unreadable.
+
+   Contrast holds at every frame because neither animation touches a label
+   colour. .dl-cta-ring spins a four-hue gradient around the button's border
+   while the label stays a fixed --dl-teal; borders carry no text, so the hues
+   are free to move there. .dl-cta-pulse animates only the halo behind its
+   button and a sheen above it.
+
+   Both stop dead under prefers-reduced-motion via the global rule above, and
+   the un-animated resting state is the plain Daylight button. */
+
+/* The angle has to be a registered property — a plain custom property is a
+   string to the animation engine and would jump from 0deg to 360deg in one
+   step instead of sweeping. */
+@property --dl-ring-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes dl-cta-ring-spin {
+  to { --dl-ring-angle: 360deg; }
+}
+
+/* Two backgrounds in one box: the page ground clipped to the padding box, and
+   the rotating gradient clipped to the border box. What shows through the
+   transparent border is the gradient, which is what makes the ring. */
+.dl-cta-ring {
+  border: 2px solid transparent;
+  background:
+    linear-gradient(var(--dl-ground), var(--dl-ground)) padding-box,
+    conic-gradient(
+      from var(--dl-ring-angle),
+      var(--dl-teal),
+      var(--dl-dawn),
+      var(--dl-noon),
+      var(--dl-dusk),
+      var(--dl-teal)
+    ) border-box;
+  animation: dl-cta-ring-spin 4s linear infinite;
+}
+
+/* The background shorthand above wins over Tailwind's hover:bg-dl-teal/5, so
+   the hover tint is restated here as the padding-box layer. */
+.dl-cta-ring:hover {
+  background:
+    linear-gradient(
+      color-mix(in srgb, var(--dl-teal) 6%, var(--dl-ground)),
+      color-mix(in srgb, var(--dl-teal) 6%, var(--dl-ground))
+    ) padding-box,
+    conic-gradient(
+      from var(--dl-ring-angle),
+      var(--dl-teal),
+      var(--dl-dawn),
+      var(--dl-noon),
+      var(--dl-dusk),
+      var(--dl-teal)
+    ) border-box;
+}
+
+/* The status dots on the demo button. Purely decorative — aria-hidden in the
+   markup, so they add nothing to the button's accessible name, and they carry
+   no text, which is why they may be red and green at all: Daylight's two-colour
+   rule governs the palette that meaning is encoded in, and nothing here is
+   encoded in these. They alternate rather than blink together, which is what
+   makes the pair read as a running indicator instead of a warning. */
+.dl-cta-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.dl-cta-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  display: block;
+  animation: dl-dot-blink 1.8s ease-in-out infinite;
+}
+
+.dl-cta-dot--red   { background: #E5484D; }
+.dl-cta-dot--green { background: #30A46C; animation-delay: 0.9s; }
+
+@keyframes dl-dot-blink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.22; }
+}
+
+/* The halo. A ring that breathes out from the button edge and fades, so the
+   button reads as "live" without the fill itself changing. */
+@keyframes dl-cta-halo {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--dl-teal) 55%, transparent); }
+  70%  { box-shadow: 0 0 0 12px color-mix(in srgb, var(--dl-teal) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--dl-teal) 0%, transparent); }
+}
+
+.dl-cta-pulse {
+  position: relative;
+  overflow: hidden;
+  animation: dl-cta-halo 2.6s ease-out infinite;
+}
+
+/* The sheen. A narrow highlight that crosses the fill every few seconds.
+   aria-hidden by construction — it is a pseudo-element, so it never reaches the
+   accessibility tree or the button's accessible name. */
+.dl-cta-pulse::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -60%;
+  width: 40%;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(255, 255, 255, .38) 50%,
+    transparent 100%
+  );
+  transform: skewX(-18deg);
+  animation: dl-cta-sheen 3.4s ease-in-out infinite;
+}
+
+@keyframes dl-cta-sheen {
+  0%, 55% { left: -60%; }
+  90%, 100% { left: 120%; }
+}
+
+/* The sheen is a white highlight, which only reads on the teal fill. In dark
+   mode --dl-teal is a light cyan, so white over it washes the label out; drop
+   the highlight to an ink tint there instead. */
+html.dark .dl-cta-pulse::after {
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(14, 42, 51, .30) 50%,
+    transparent 100%
+  );
 }

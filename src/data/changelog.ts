@@ -15,6 +15,22 @@ export interface ChangelogRelease {
 
 export const changelog: ChangelogRelease[] = [
   {
+    date: '2026-08-22',
+    title: 'Every public page rendered and checked at three widths in both themes — and what that found',
+    entries: [
+      { type: 'fix', description: 'The site footer showed a floating "HR" instead of the OpenHRApp wordmark on every page in light mode. The footer is a dark slab, but the wordmark was using the near-black text colour, so "Open" and "App" were near-black on near-black — invisible. Dark mode was unaffected, which is why it survived this long: the colour flips there and the problem disappears. Every page had it.' },
+      { type: 'fix', description: 'The Buy Me a Coffee button was unreadable in dark mode. Its yellow is Buy Me a Coffee\'s own brand colour and never changes, but the label used a colour that flips to near-white in the dark theme — near-white on yellow, which is very close to invisible. This is the same trap as the white-on-teal problem found earlier, just inverted, so there are now two colours that deliberately never flip and a test that fails if either starts to.' },
+      { type: 'fix', description: 'The changelog page scrolled sideways on a phone. Entries quote file paths, and a long path with no spaces in it cannot be broken across lines, so it pushed the page wider than the screen. It now wraps.' },
+      { type: 'fix', description: 'Every page was throwing a script error on load. A stray trailing comma made a block of configuration invalid, so the browser rejected the whole thing on all twelve pages.' },
+      { type: 'improvement', description: 'The blog sidebar — recent posts, archive and categories — had been missed by the redesign and was still on the app\'s old colours, which put indigo chips and hard-to-read dates next to the new article cards. It is now on the same palette as the rest of the page.' },
+      { type: 'improvement', description: 'Footer links were 21 pixels tall on a phone, below the 24-pixel minimum accessibility guidelines set for tap targets, as were several "back" links and the "Back to top" control. All now clear the minimum, and comfortably exceed it on small screens.' },
+      { type: 'fix', description: 'The hero appeared to render twice on the landing page. An instant-loading placeholder is built into the page so visitors and search engines see real content immediately, but it still mirrored the pre-redesign hero — so it painted the old design, then the real hero replaced it with the new one. It now mirrors the current hero, and the handover is invisible: the headline is the same size and colour before and after.' },
+      { type: 'feature', description: 'The two main calls to action now draw the eye. "Try Live Demo" has a colour ring that turns slowly around its edge and a pair of status dots, and "Get Started Free" — in the hero and in the navigation on every page — has a soft halo and a highlight that sweeps across it. Neither flashes: a blinking control is harder to read and to hit, and rapid flashing is an accessibility hazard. Both stop entirely if you have asked your system to reduce motion.' },
+      { type: 'fix', description: 'The Create Organization screen said "Start your 14-day free trial", which contradicted our own FAQ — there is no trial and the app is permanently free. It now reads "Free forever — your first 14 days are ad-free", which is what the 14 days actually are.' },
+      { type: 'improvement', description: 'Imported articles carry old-style colour tags that the dark theme was not catching, leaving some links a dim blue on the dark background. They now follow the surrounding text.' },
+    ],
+  },
+  {
     date: '2026-08-21',
     title: 'Daylight is finished — all twelve public pages, including About, Contact and the policies',
     entries: [

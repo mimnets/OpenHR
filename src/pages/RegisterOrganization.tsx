@@ -98,7 +98,13 @@ const RegisterOrganization: React.FC<Props> = ({ onBack }) => {
           <button onClick={onBack} className="absolute left-8 top-8 p-2 bg-white/10 rounded-xl hover:bg-white/20 transition-all"><ArrowLeft size={20}/></button>
           <div className="mt-8">
             <h2 className="text-2xl font-semibold uppercase tracking-tight">Create Organization</h2>
-            <p className="text-slate-400 font-medium mt-1">Start your 14-day free trial</p>
+            {/* Not a trial. The TRIAL subscription status is an ad-free window,
+                after which an organization continues free on AD_SUPPORTED, or
+                stays ad-free by donating (ACTIVE). "Start your 14-day free
+                trial" implied the product started costing money on day 15 and
+                contradicted the site's own FAQ, which states there is no trial
+                period because OpenHRApp is permanently free. */}
+            <p className="text-slate-400 font-medium mt-1">Free forever — your first 14 days are ad-free</p>
           </div>
         </div>
 

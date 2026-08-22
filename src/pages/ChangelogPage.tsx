@@ -50,7 +50,7 @@ const ChangelogPage: React.FC<ChangelogPageProps> = ({ onBack }) => {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <button
             onClick={onBack}
-            className="inline-flex items-center gap-1.5 text-sm text-dl-muted hover:text-dl-teal mb-6 transition-colors"
+            className="inline-flex items-center gap-1.5 min-h-6 max-sm:min-h-11 text-sm text-dl-muted hover:text-dl-teal mb-6 transition-colors"
           >
             <ArrowLeft size={16} />
             Back to Home
@@ -99,7 +99,11 @@ const ChangelogPage: React.FC<ChangelogPageProps> = ({ onBack }) => {
                           <span className={`inline-flex items-center shrink-0 mt-0.5 px-2 py-0.5 rounded text-xs font-semibold ${cfg.bg} ${cfg.text}`}>
                             {cfg.label}
                           </span>
-                          <span className="text-sm text-dl-ink leading-relaxed">{entry.description}</span>
+                          {/* min-w-0 + break-words: entries quote paths like
+                              supabase/migrations/0027_… whose min-content width is
+                              wider than a 375px viewport. Without both, the flex
+                              item refuses to shrink and the page scrolls sideways. */}
+                          <span className="min-w-0 break-words text-sm text-dl-ink leading-relaxed">{entry.description}</span>
                         </li>
                       );
                     })}

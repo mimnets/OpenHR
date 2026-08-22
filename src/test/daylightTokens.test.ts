@@ -66,6 +66,75 @@ describe('Daylight tokens exist in both palettes', () => {
   });
 });
 
+/**
+ * The two fixed colours. Every other token flips with the theme, and the bugs
+ * these were introduced to fix both came from pairing something that flips with
+ * something that does not:
+ *
+ *   - the footer slab is dark in BOTH themes, so the wordmark on it was
+ *     text-dl-ink on --dl-ink in light mode — 1.0:1, invisible;
+ *   - the Buy Me a Coffee button's #FFDD00 never inverts, so text-dl-ink on it
+ *     was near-white on yellow in dark mode — 1.1:1.
+ *
+ * If html.dark ever redefines either, both bugs come straight back, so these
+ * tests assert the absence as firmly as the values.
+ */
+describe('the fixed colours stay fixed', () => {
+  const darkBlock = css.slice(css.indexOf('html.dark {'), css.indexOf('\n}', css.indexOf('html.dark {')));
+
+  it.each(['dl-teal-slab', 'dl-ink-fixed'])('--%s is defined in light', (name) => {
+    expect(token(name, 'light')).toMatch(/^#[0-9A-Fa-f]{6}$/);
+  });
+
+  it.each(['dl-teal-slab', 'dl-ink-fixed'])('--%s is never redefined in dark', (name) => {
+    expect(darkBlock).not.toContain(`--${name}:`);
+  });
+
+  it('--dl-teal-slab clears AA large on both slab colours', () => {
+    const slab = token('dl-teal-slab', 'light');
+    // light-mode footer slab is --dl-ink; dark-mode footer slab is --dl-ground
+    expect(contrast(slab, token('dl-ink', 'light'))).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(slab, token('dl-ground', 'dark'))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('the wordmark colour it replaced would have failed — this is why it exists', () => {
+    expect(contrast(token('dl-teal', 'light'), token('dl-ink', 'light'))).toBeLessThan(3);
+  });
+
+  it('--dl-ink-fixed clears AA on the Buy Me a Coffee yellow in both themes', () => {
+    expect(contrast(token('dl-ink-fixed', 'light'), '#FFDD00')).toBeGreaterThanOrEqual(AA_NORMAL);
+  });
+
+  it('the footer wordmark uses the slab pair, not the surface pair', () => {
+    const shell = fs.readFileSync(path.resolve(__dirname, '../components/shared/daylightShell.ts'), 'utf8');
+    expect(shell).toContain('wordOnSlab');
+    expect(shell).toContain('wordAccentOnSlab');
+    for (const footer of ['landing/Footer', 'blog/BlogFooter', 'tutorials/TutorialsFooter']) {
+      const src = fs.readFileSync(path.resolve(__dirname, `../components/${footer}.tsx`), 'utf8');
+      expect(src, `${footer} must not put ink on the ink slab`).not.toMatch(/dlBrand\.wordInk|dlBrand\.wordAccent\b/);
+    }
+  });
+
+  it('the Buy Me a Coffee button does not pair a flipping token with the fixed yellow', () => {
+    const src = fs.readFileSync(path.resolve(__dirname, '../components/landing/PricingSection.tsx'), 'utf8');
+    expect(src).toMatch(/bg-\[#FFDD00\][^"]*text-dl-ink-fixed/);
+  });
+});
+
+/**
+ * BlogSidebar renders on /blog and /blog/:slug. It was missed by the DL5 pass
+ * and stayed on the app's --primary palette, which put indigo chips and 3.1:1
+ * dates next to Daylight cards.
+ */
+describe('the public blog surface carries no app palette', () => {
+  it('BlogSidebar uses Daylight tokens only', () => {
+    const src = fs.readFileSync(path.resolve(__dirname, '../components/blog/BlogSidebar.tsx'), 'utf8');
+    expect(src).not.toMatch(/\b(?:bg|text|border)-slate-\d/);
+    expect(src).not.toMatch(/\b(?:bg|text)-primary\b/);
+    expect(src).not.toMatch(/\btext-white\b/);
+  });
+});
+
 describe('text tokens clear WCAG AA on their own surface', () => {
   it.each([
     ['ink', 'dl-ink'],
@@ -108,10 +177,38 @@ describe('--dl-soft is decorative and must stay that way', () => {
 
 describe('the day gradient stays out of the general palette', () => {
   it('dawn, noon and dusk are defined but carry a reservation comment', () => {
-    expect(css).toMatch(/Only inside the arc and the logo mark/);
+    expect(css).toMatch(/Only inside the arc, the logo mark, and the ring that spins/);
     for (const name of ['dl-dawn', 'dl-noon', 'dl-dusk']) {
       expect(token(name, 'light')).toMatch(/^#[0-9A-Fa-f]{6}$/);
     }
+  });
+
+  /**
+   * The reservation is only worth the comment if something checks it. In the
+   * stylesheet the three hues may appear in exactly two roles — their own
+   * definitions, and the .dl-cta-ring gradient that spins around the demo
+   * button — plus the arc component, which owns the gradient outright.
+   */
+  it('nothing outside the arc and the CTA ring reaches for the day hues', () => {
+    const uses = css
+      .split('\n')
+      .map((line, i) => ({ line: line.trim(), n: i + 1 }))
+      // `--color-dl-dawn: var(--dl-dawn)` in @theme is the Tailwind registration,
+      // not a use of the hue — the test above covers what that may expose.
+      .filter((l) => /var\(--dl-(dawn|noon|dusk)\)/.test(l.line) && !l.line.startsWith('--color-dl-'));
+
+    expect(uses.length, 'the ring gradient should still reference all three hues').toBeGreaterThan(0);
+
+    // every remaining use must sit inside the .dl-cta-ring rules
+    const ringBlock = css.slice(css.indexOf('.dl-cta-ring {'), css.indexOf('/* The halo.'));
+    for (const u of uses) {
+      expect(ringBlock, `src/index.css:${u.n} uses a day hue outside .dl-cta-ring: ${u.line}`).toContain(u.line);
+    }
+  });
+
+  it('the demo button ring never animates a text colour', () => {
+    const ring = css.slice(css.indexOf('@keyframes dl-cta-ring-spin'), css.indexOf('/* The halo.'));
+    expect(ring).not.toMatch(/^\s*color:/m);
   });
 
   it('is not registered as a Tailwind background utility by accident', () => {

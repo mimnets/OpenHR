@@ -97,7 +97,7 @@ export const ProofSection: React.FC = () => {
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-dl-sm font-semibold text-dl-teal hover:text-dl-teal-deep transition-colors"
+                className="inline-flex items-center gap-1.5 min-h-6 max-sm:min-h-11 text-dl-sm font-semibold text-dl-teal hover:text-dl-teal-deep transition-colors"
               >
                 {linkLabel}
                 <ArrowUpRight size={15} aria-hidden="true" />
@@ -121,7 +121,7 @@ export const ProofSection: React.FC = () => {
           )}
           <button
             onClick={() => navigateTo('/changelog')}
-            className="inline-flex items-center gap-1.5 text-dl-sm text-dl-muted hover:text-dl-teal transition-colors"
+            className="inline-flex items-center gap-1.5 min-h-6 max-sm:min-h-11 text-dl-sm text-dl-muted hover:text-dl-teal transition-colors"
           >
             Every release, written down
             <ArrowUpRight size={15} aria-hidden="true" />
