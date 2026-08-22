@@ -1,0 +1,94 @@
+<p>Reports turn day-to-day attendance and leave records into figures you can act on — a monthly summary for payroll, a lateness pattern worth a conversation, an absence list for a department. This guide covers what is available, how to configure a report, and how to read the output without drawing the wrong conclusion.</p>
+
+<p>Reports are available to <strong>Admin and HR</strong>. For exporting the people list rather than their attendance, see <a href="/how-to-use/exporting-employee-data">exporting employee data</a>.</p>
+
+<h2>What you can report on</h2>
+
+<ul>
+  <li><strong>Attendance</strong> — the full record for a period.</li>
+  <li><strong>Late</strong> — filtered to days marked Late.</li>
+  <li><strong>Absent</strong> — filtered to days marked Absent.</li>
+  <li><strong>Leave</strong> — leave taken across the period.</li>
+  <li><strong>Summary</strong> — one row per employee, aggregated.</li>
+</ul>
+
+<p>The first four are detail: one row per record. Summary is the one to reach for at month end, because it compresses the whole period into a line per person.</p>
+
+<h2>Generating one</h2>
+
+<ol>
+  <li>Open <strong>Reports</strong>.</li>
+  <li>Choose the report type.</li>
+  <li>Set the <strong>date range</strong>.</li>
+  <li>Narrow by <strong>department</strong> or a specific <strong>employee</strong> if you want to.</li>
+  <li>Generate.</li>
+</ol>
+
+<p>Filters combine, so a department filter and an employee filter together will return only that employee, and only if they are in that department. If a report comes back emptier than expected, clear the filters before concluding anything.</p>
+
+<h3>Choosing which columns appear</h3>
+
+<p>Detail reports let you select the columns you want, including employee ID, name, date, status, clock in and out, GPS address, latitude and longitude, and remarks.</p>
+
+<p>Turn off what you do not need. A report going to a department head does not need coordinates, and a spreadsheet with ten columns is harder to read than one with five. Leave the coordinates on when you are actually investigating a location question, and off the rest of the time.</p>
+
+<h2>What the summary report contains</h2>
+
+<p>One row per employee: employee ID, name, department, designation, working days, present, absent, late, leave, half days, and an attendance percentage.</p>
+
+<p>The percentage is present days over working days for the period. Two things it does not know:</p>
+
+<ul>
+  <li><strong>A missing check-out does not reduce it.</strong> Someone who checked in every day but never checked out still counts as present — their hours are wrong, but their percentage is fine.</li>
+  <li><strong>It cannot tell absence from a missing punch.</strong> A person who worked and forgot to clock in is indistinguishable from one who did not come.</li>
+</ul>
+
+<p>Treat a low figure as a question rather than a finding. Check <a href="/how-to-use/attendance-admin-audit">the attendance audit</a> before raising it with anyone.</p>
+
+<h2>Exporting</h2>
+
+<p>Reports export to <strong>CSV</strong> for spreadsheets, and to <strong>PDF</strong> for sharing. The PDF carries your organization's logo and address, so it can go outside the company as it is — upload a logo under Organization &amp; Setup if you have not.</p>
+
+<p>The CSV quotes values containing commas or quotation marks, so free-text remarks survive intact.</p>
+
+<h2>Emailing a report</h2>
+
+<p>Reports can be sent by email to stakeholders, and recent send activity is shown on the screen with a status against each — sent, pending, or failed.</p>
+
+<p>Check that list after sending anything that matters. A failed send is visible there and nowhere else; the report will not tell you it did not arrive.</p>
+
+<h2>Reading reports well</h2>
+
+<ul>
+  <li><strong>Run to a whole pay period.</strong> A range ending mid-week produces a working-days figure nobody can reconcile against payroll.</li>
+  <li><strong>Check the late report against shifts first.</strong> A cluster of lateness in one team is more often a wrong shift assignment than a behaviour problem, and the report cannot tell the difference.</li>
+  <li><strong>Cross-check absences against leave.</strong> Approved leave should show as leave; an absence over an approved leave day means the two records disagree and one needs fixing.</li>
+  <li><strong>Look at a person before a percentage.</strong> A single number over a month hides the shape of it — five consecutive missing days mean something different from five scattered ones.</li>
+</ul>
+
+<h2>Common questions</h2>
+
+<h3>The report is empty</h3>
+
+<p>Almost always the date range or a leftover filter. Widen the range, clear the department and employee filters, and try again.</p>
+
+<h3>Working days looks wrong for someone</h3>
+
+<p>Working days come from that person's shift where they have one, and from the organization configuration otherwise. Somebody on a different shift pattern will legitimately show a different figure from a colleague over the same dates.</p>
+
+<h3>Can I schedule a report to run automatically?</h3>
+
+<p>Reports are generated when you ask for them. For a recurring need, run it on the same day each month rather than expecting it to arrive.</p>
+
+<h3>Numbers do not match the attendance screen</h3>
+
+<p>Compare the date ranges first, and check whether one view has a filter the other does not. Both read the same records, so a genuine mismatch means one of them is filtered.</p>
+
+<h2>Related guides</h2>
+
+<ul>
+  <li><a href="/how-to-use/attendance-admin-audit">Attendance audit</a> — correcting the records behind the figures</li>
+  <li><a href="/how-to-use/understanding-attendance-logs">Understanding attendance logs</a> — what each status means</li>
+  <li><a href="/how-to-use/exporting-employee-data">Exporting employee data</a> — exporting people rather than attendance</li>
+  <li><a href="/features/reports-analytics">Reports and analytics</a> — how the feature works</li>
+</ul>

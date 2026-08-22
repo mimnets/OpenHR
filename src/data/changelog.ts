@@ -16,6 +16,18 @@ export interface ChangelogRelease {
 export const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-22',
+    title: 'Rewrote every how-to guide, and found several that described features we no longer have',
+    entries: [
+      { type: 'improvement', description: 'Rewrote all 24 how-to guides. Between them they went from 9,536 words to 19,922 — the shortest guide was 226 words and is now 681, and none is under 600 any more. The additions are the parts that were missing rather than padding: what each screen actually shows, what to do when something does not work, and how each feature interacts with shifts, holidays and permissions.' },
+      { type: 'fix', description: 'The theme guide described a grid of 14 colour themes, an organization-wide default theme, and a preference that synced across your devices. None of those has existed since we moved to a single brand colour. What remains — light, dark and follow-your-device — is now covered properly in the profile guide, and the old page redirects there rather than leaving a dead link.' },
+      { type: 'fix', description: 'The leave feature guide told people they could cancel a request, described a team calendar, and said employees could book half days. None of the three is true: requests cannot be withdrawn once submitted, there is no calendar view, and only HR or an admin can enter a half day. All three are corrected.' },
+      { type: 'fix', description: 'The notification guide described SMTP settings and a retention control that organizations do not have — retention is a platform-level setting. The performance review guide listed two of the five rating labels incorrectly.' },
+      { type: 'improvement', description: 'Added question-style headings across the guides and five articles, so that a page answering "why is my export missing people?" says so in the heading. This is how search engines and assistants match a page to a question, and it also makes the guides easier to skim.' },
+      { type: 'improvement', description: 'Documented two behaviours that were not written down anywhere: lateness is only calculated for Office check-ins, so a Factory punch is always recorded as present whatever the time; and leave requests automatically exclude both your non-working days and public holidays, with the breakdown shown as you pick the dates.' },
+    ],
+  },
+  {
+    date: '2026-08-22',
     title: 'Internal links across every article now point straight at the page instead of bouncing through a redirect',
     entries: [
       { type: 'improvement', description: 'Converted 410 internal links across all 44 published guides and articles from full web addresses to site-relative ones. Every one of them previously pointed at the www address, which now forwards to the main one — so each link a reader or a search engine followed took an extra hop. They now go straight to the page. The link text, the destinations and the article content are all completely unchanged; only the addresses in the links were shortened.' },

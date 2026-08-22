@@ -1,0 +1,99 @@
+<p>The employee directory is where people are added, edited, and connected to the teams and managers that make the rest of OpenHRApp work. Adding someone takes a minute; the fields that decide what they can see and who approves their leave are the ones worth getting right.</p>
+
+<h2>Who can do what here</h2>
+
+<ul>
+  <li><strong>Admin and HR</strong> — see everyone, and can add, edit and remove employees.</li>
+  <li><strong>Managers</strong> — see their own people and can view records, but cannot edit them.</li>
+  <li><strong>Employees</strong> — see their teammates only.</li>
+</ul>
+
+<p>The page heading tells you which view you are in: <em>Organization Directory</em>, <em>My Team &amp; Reports</em>, or <em>My Teammates</em>.</p>
+
+<h2>Adding an employee</h2>
+
+<p>Open <strong>Team Directory</strong> and add a new employee. The fields divide into three groups by how much they matter downstream.</p>
+
+<h3>Identity — who they are</h3>
+
+<p>Name, work email, employee ID, mobile, joining date. The <strong>email</strong> is what they sign in with, so a typo here means they cannot get in at all — check it before saving.</p>
+
+<h3>Placement — where they sit</h3>
+
+<p>Department, designation, location, employment type (permanent, contract or temporary) and work type (office or field).</p>
+
+<h3>The four that change behaviour</h3>
+
+<p>These are the ones people forget, and each has a visible consequence:</p>
+
+<ul>
+  <li><strong>Role</strong> — decides which screens they can open and whose records they see. See <a href="/how-to-use/roles-and-permissions">roles and permissions</a>.</li>
+  <li><strong>Line manager</strong> — decides who approves their leave. Left empty, every request goes straight to HR.</li>
+  <li><strong>Team</strong> — decides which colleagues they can see, and feeds manager visibility.</li>
+  <li><strong>Shift</strong> — decides what "late" means for them. Left empty, lateness cannot be calculated.</li>
+</ul>
+
+<p>An employee created without these four still works, but leave routes to HR, they see nobody in the directory, and their attendance is never marked late. All four are invisible failures — nothing errors, the behaviour is just quietly wrong.</p>
+
+<h2>Editing someone</h2>
+
+<p>Open their record, change what you need, and save. Changes take effect immediately.</p>
+
+<p>Two that need thought before you make them:</p>
+
+<ul>
+  <li><strong>Changing a role</strong> changes what they can see straight away — including, when promoting someone to Manager or above, colleagues' contact details and attendance.</li>
+  <li><strong>Changing a shift</strong> changes how future attendance is judged. It does not retrospectively re-evaluate past days, so a shift corrected in March leaves January and February scored against the old one. Those days need correcting individually in <a href="/how-to-use/attendance-admin-audit">the attendance audit</a> if it matters.</li>
+</ul>
+
+<h2>Teams and line managers</h2>
+
+<p>These two are the most misunderstood part of the app, because they look similar and do different jobs.</p>
+
+<ul>
+  <li>A <strong>team</strong> groups people and has a leader. Team members can see each other; the leader can see the team.</li>
+  <li>A <strong>line manager</strong> is a person-to-person link. It decides leave approval and gives that manager visibility of that individual.</li>
+</ul>
+
+<p>A manager sees someone if they lead a team that person is in, <em>or</em> if they are set as that person's line manager. Sharing a department does nothing on its own.</p>
+
+<p>The common failure is a manager who reports "I cannot see my team". Nine times in ten neither link has been set, and their role is fine.</p>
+
+<h2>Profile photos</h2>
+
+<p>Photos are uploaded here, on the employee's record — <strong>employees cannot set their own</strong>. Where there is no photo, OpenHRApp shows the first letter of the person's name.</p>
+
+<p>Images are converted automatically on upload, so any common format is fine.</p>
+
+<h2>Making someone inactive</h2>
+
+<p>When a person leaves, set their status to <strong>Inactive</strong> rather than deleting them. Their attendance history, leave records and reviews stay intact and keep making sense, which matters for payroll queries and anything you may be asked to evidence later.</p>
+
+<p>Inactive employees still appear in exports, marked as such, so filter on status when you want current staff only.</p>
+
+<h2>Common questions</h2>
+
+<h3>A new employee cannot sign in</h3>
+
+<p>Check the email on their record character by character. It is the most common cause by a wide margin.</p>
+
+<h3>Their leave went to HR instead of their manager</h3>
+
+<p>They have no line manager set, or their department is configured to route to HR. Both are visible on the record and in your leave workflow settings.</p>
+
+<h3>Can I import a list of employees?</h3>
+
+<p>Employees are added individually through this screen. For a large intake, add them in batches and set the four behavioural fields as you go rather than planning to sweep back through later — the sweep rarely happens.</p>
+
+<h3>Can a manager edit their own team?</h3>
+
+<p>No. Viewing and editing are separated deliberately, so the person who manages someone is not also the person who can rewrite their record.</p>
+
+<h2>Related guides</h2>
+
+<ul>
+  <li><a href="/how-to-use/setting-up-organization">Setting up your organization</a> — creating the teams and shifts you assign here</li>
+  <li><a href="/how-to-use/roles-and-permissions">Roles and permissions</a> — what each role unlocks</li>
+  <li><a href="/how-to-use/exporting-employee-data">Exporting employee data</a> — getting this list out</li>
+  <li><a href="/how-to-use/understanding-leave-policies">Understanding leave policies</a> — how line managers affect routing</li>
+</ul>

@@ -1,0 +1,87 @@
+<p>Almost every "why can't I see that?" question in OpenHRApp has the same answer: your role. Roles decide which screens appear in your sidebar, and — more importantly — <em>whose</em> records you see once you are on a screen. Two people can open the same page and see completely different things, and that is working as intended.</p>
+
+<h2>The roles</h2>
+
+<ul>
+  <li><strong>Employee</strong> — the default. Sees their own records and their immediate team.</li>
+  <li><strong>Manager</strong> and <strong>Team Lead</strong> — everything an employee has, plus the people they are responsible for.</li>
+  <li><strong>HR</strong> — organization-wide access to people, attendance, leave and reviews.</li>
+  <li><strong>Admin</strong> — everything HR has, plus organization configuration.</li>
+  <li><strong>Super Admin</strong> — the OpenHRApp platform operator, not a role inside your organization. They manage organizations, not your employees.</li>
+</ul>
+
+<p>Your own role is shown on your profile, and only an administrator can change it.</p>
+
+<h2>What each role can open</h2>
+
+<p>The sidebar only lists what your role can reach, so the fastest way to know what you have is to look at it.</p>
+
+<ul>
+  <li><strong>Everyone</strong> — Dashboard, My Profile, My Attendance, Leave, Announcements, Performance.</li>
+  <li><strong>Managers and above</strong> — Attendance Audit and Team Directory as well.</li>
+  <li><strong>HR and Admin only</strong> — Organization, Reports, Notifications and Settings.</li>
+</ul>
+
+<p>If a screen is not in your sidebar, it is not hidden behind a setting — your role does not have it, and an administrator has to change your role to grant it.</p>
+
+<h2>Who can see whose records?</h2>
+
+<p>This is the part that matters day to day. The same screen shows a different set of people depending on who opens it.</p>
+
+<ul>
+  <li><strong>Employees</strong> — the directory shows only their own team; attendance, leave and reviews show only their own records.</li>
+  <li><strong>Managers and team leads</strong> — people in teams they lead, plus anyone whose line manager is set to them. Not their whole department, and not colleagues at the same level.</li>
+  <li><strong>HR and Admin</strong> — everyone in the organization.</li>
+</ul>
+
+<p>The heading on the page tells you which view you are in. The employee directory reads <em>Organization Directory</em>, <em>My Team &amp; Reports</em>, or <em>My Teammates</em>; attendance reads <em>Attendance Audit</em>, <em>Team Attendance</em>, or <em>My Attendance History</em>. Checking the heading is quicker than counting rows.</p>
+
+<h3>Why does my manager not see my records?</h3>
+
+<p>Because manager visibility comes from two specific fields, not from job titles or departments:</p>
+
+<ul>
+  <li>the <strong>team leader</strong> of a team you belong to, or</li>
+  <li>the person set as your <strong>line manager</strong>.</li>
+</ul>
+
+<p>Someone can carry the Manager role and still see nobody, if no team names them as leader and nobody has them as line manager. Sharing a department is not enough. If a manager is missing people, the fix is almost always in those two fields rather than in their role — see <a href="/how-to-use/managing-employees">managing employees</a>.</p>
+
+<h2>How roles change what a screen does</h2>
+
+<p>Role does not only filter rows; on some screens it changes the available actions.</p>
+
+<ul>
+  <li><strong>Leave</strong> — an employee applies. A manager approves for their own people, but that approval is not final: it passes the request to HR. Only HR or Admin completes it. See <a href="/how-to-use/leave-approval-for-managers">leave approval for managers</a>.</li>
+  <li><strong>Performance reviews</strong> — the employee writes the self-assessment, the manager reviews it, and HR finalises. Three different roles hold the same review at different stages.</li>
+  <li><strong>Attendance</strong> — everyone records their own. Only Admin and HR can correct a record, deliberately: a record you can edit yourself is not evidence of anything.</li>
+  <li><strong>Employee records</strong> — managers can view their people but not edit them. Creating employees, changing roles, assigning shifts and uploading photos are all Admin and HR.</li>
+</ul>
+
+<h2>Can I have more than one role?</h2>
+
+<p>No. Each person holds exactly one role, and it applies across the whole application. There is no per-module permission — you cannot grant someone HR-level access to leave while keeping them an employee elsewhere.</p>
+
+<p>In practice this means choosing the role by the widest thing a person needs to do. Someone who must approve leave for a team needs Manager even if that is the only management task they perform.</p>
+
+<h2>What should a small organization use?</h2>
+
+<p>A common and workable setup:</p>
+
+<ul>
+  <li>One or two <strong>Admins</strong> — usually the owner and one other person. Keep it small; Admin can change organization-wide configuration.</li>
+  <li><strong>HR</strong> for whoever runs people operations day to day. HR sees everything about people without being able to reconfigure the organization.</li>
+  <li><strong>Manager</strong> for anyone who approves leave or writes performance reviews — and make sure they are actually set as a team leader or line manager, or the role does nothing.</li>
+  <li><strong>Employee</strong> for everyone else.</li>
+</ul>
+
+<p>Resist making everyone an Admin to avoid permission questions. Admin can see every salary and every attendance record in the organization, and the audit value of the whole system depends on that being a small group.</p>
+
+<h2>Related guides</h2>
+
+<ul>
+  <li><a href="/how-to-use/managing-employees">Managing employees</a> — setting roles, teams and line managers</li>
+  <li><a href="/how-to-use/setting-up-organization">Setting up your organization</a> — teams and departments</li>
+  <li><a href="/how-to-use/leave-approval-for-managers">Leave approval for managers</a> — what a manager can and cannot finalise</li>
+  <li><a href="/how-to-use/managing-profile-settings">Managing your profile and settings</a> — why some of your own fields are read-only</li>
+</ul>

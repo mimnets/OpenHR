@@ -1,0 +1,105 @@
+<p>Your leave policy is three separate things working together: the <strong>types</strong> of leave that exist, the <strong>quota</strong> each person gets of each type, and the <strong>route</strong> a request takes to get approved. Changing one does not change the others, and most confusion about leave comes from adjusting the wrong one.</p>
+
+<h2>What leave types exist?</h2>
+
+<p>OpenHRApp ships with seven, split by whether they draw down a balance:</p>
+
+<p><strong>Types with a balance</strong> — these count against a quota:</p>
+
+<ul>
+  <li><strong>Annual Leave</strong></li>
+  <li><strong>Casual Leave</strong></li>
+  <li><strong>Sick Leave</strong></li>
+</ul>
+
+<p><strong>Types without a balance</strong> — these are recorded but not counted down:</p>
+
+<ul>
+  <li><strong>Maternity</strong> and <strong>Paternity</strong> leave</li>
+  <li><strong>Earned Leave</strong></li>
+  <li><strong>Unpaid Leave</strong></li>
+</ul>
+
+<p>The distinction is deliberate. Maternity leave is governed by statute and duration rather than by an annual allowance, and unpaid leave has no allowance by definition. Giving them a quota would imply a limit that does not exist.</p>
+
+<p>Administrators can add custom leave types and decide for each whether it carries a balance — study leave, compassionate leave, and religious observance are common additions.</p>
+
+<h2>How are quotas set?</h2>
+
+<p>Two levels, and the second overrides the first.</p>
+
+<ol>
+  <li><strong>Organization defaults</strong> — a number of days per balance-carrying type, applied to everyone.</li>
+  <li><strong>Per-employee overrides</strong> — a different number for one person, which replaces the default for them alone.</li>
+</ol>
+
+<p>Overrides exist for the cases policy cannot express as a single number: a senior hire negotiating extra annual leave, someone on a phased return, a part-time contract. Set an override and that person's entitlement is theirs; leave it alone and they follow the organization default, including any later change to it.</p>
+
+<p>Both are configured under <strong>Organization &amp; Setup</strong> by an administrator.</p>
+
+<h3>How is a remaining balance calculated?</h3>
+
+<p>Quota minus fully approved leave of that type. That is the whole formula, and the important word is <strong>approved</strong>.</p>
+
+<p>Requests still moving through the approval chain are <em>not</em> deducted. Someone with 20 days of annual leave who has one 5-day request approved and another 5-day request awaiting HR will show <strong>15 days remaining</strong>, not 10 — even though only 10 are truly available if both go through.</p>
+
+<p>Worth knowing before you plan around a number: check pending requests as well as the balance. It is also why a manager approving a request does not change the employee's balance — see <a href="/how-to-use/leave-approval-for-managers">leave approval for managers</a>.</p>
+
+<h2>How does a request get routed?</h2>
+
+<p>When leave is submitted, OpenHRApp decides who sees it first:</p>
+
+<ol>
+  <li>If the employee's <strong>department has a workflow set to HR or Admin</strong>, the request goes straight to HR, skipping the manager entirely.</li>
+  <li>Otherwise, if the employee <strong>has a line manager</strong>, it goes to that manager.</li>
+  <li>If they have <strong>no line manager</strong>, it goes to HR — so a request is never left with nobody to action it.</li>
+</ol>
+
+<p>After a manager approves, the request moves to HR rather than completing. HR or an administrator makes the final decision. A manager's rejection, by contrast, is final.</p>
+
+<p>So a request passes through at most two stages, and always ends at HR or Admin.</p>
+
+<h3>When should a department bypass managers?</h3>
+
+<p>Department workflows are useful where the manager stage adds nothing: a department whose head is already the HR lead, a small team where the manager and the approver are the same person, or a function where leave is scheduled centrally.</p>
+
+<p>Be careful setting it more widely. The manager stage exists because the manager is the only person who knows whether the team can absorb the absence — HR can verify the balance but cannot see that half the team is already away that week. Bypassing it trades operational judgement for speed.</p>
+
+<h2>How do holidays and weekends affect a request?</h2>
+
+<p>When an employee picks a start and end date, OpenHRApp counts only the days they would otherwise have worked. Two kinds of day are excluded automatically:</p>
+
+<ul>
+  <li><strong>Non-working days</strong> — taken from the employee's shift if they have one, otherwise from the organization's working-day configuration.</li>
+  <li><strong>Public holidays</strong> — from your holiday calendar.</li>
+</ul>
+
+<p>The employee sees the breakdown as they choose the dates, so a request spanning a weekend and a public holiday shows exactly how many days it will actually cost them. Nobody has to compute it, and nobody loses allowance to a bank holiday.</p>
+
+<p>Both calendars are configured under Organization &amp; Setup, and the holiday list can be pre-populated for your country.</p>
+
+<p>Keep the calendar current. A holiday added after leave was requested does not retrospectively alter that request, so the order of operations matters: set the year's holidays before the year starts, rather than as they arrive.</p>
+
+<h2>Do unused days carry over?</h2>
+
+<p>No. Quotas are not automatically carried into a new year, and there is no accrual schedule that adds days monthly — the quota is the quota.</p>
+
+<p>If your policy does carry days over, the mechanism is a per-employee override: set that person's quota to their entitlement plus whatever they carried. It is a manual step, which means it is worth doing deliberately at year end rather than assuming the system has done it.</p>
+
+<h2>Setting a policy that works</h2>
+
+<ul>
+  <li><strong>Start from the statutory minimum</strong> for your country and treat it as the floor.</li>
+  <li><strong>Keep the type list short.</strong> Every additional type is a decision an employee has to make correctly when applying, and mis-categorised leave is harder to fix than to prevent.</li>
+  <li><strong>Decide whether sick leave should carry a balance.</strong> A quota discourages people from recording short illnesses honestly; no quota loses you the ability to spot a pattern. Both are defensible — choose deliberately.</li>
+  <li><strong>Set line managers before you need them.</strong> Every employee without one routes to HR, and a policy that quietly sends everything to HR is not the policy you designed.</li>
+</ul>
+
+<h2>Related guides</h2>
+
+<ul>
+  <li><a href="/how-to-use/how-to-apply-for-leave">How to apply for leave</a> — the employee's side</li>
+  <li><a href="/how-to-use/custom-leave-types">Custom leave types</a> — adding your own</li>
+  <li><a href="/how-to-use/leave-approval-for-managers">Leave approval for managers</a> — the first approval stage</li>
+  <li><a href="/how-to-use/setting-up-organization">Setting up your organization</a> — working days and holidays</li>
+</ul>

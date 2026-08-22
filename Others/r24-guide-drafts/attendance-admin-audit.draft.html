@@ -1,0 +1,93 @@
+<p>The attendance audit is where administrators and HR see attendance across the organization, and the only place a record can be corrected. It is also the screen where the most damage can be done, so this guide covers the checks worth making before you change anything.</p>
+
+<h2>Opening the audit</h2>
+
+<p>Go to <strong>Attendance Audit</strong> in the sidebar. It is available to Admin, HR and managers, but they do not see the same thing:</p>
+
+<ul>
+  <li><strong>Admin and HR</strong> — the whole organization. The heading reads <em>Attendance Audit</em>.</li>
+  <li><strong>Managers</strong> — only their own people. The heading reads <em>Team Attendance</em>.</li>
+</ul>
+
+<p>Editing is <strong>Admin and HR only</strong>. Managers can review their team's attendance but cannot alter it, which keeps the person being measured and the person able to change the measurement separate.</p>
+
+<h2>What you are looking at</h2>
+
+<p>One row per employee per day, not one row per punch. Multiple punches in a day are consolidated: the <strong>earliest</strong> check-in and the <strong>latest</strong> check-out become that day's record, and any remarks are joined together. See <a href="/how-to-use/understanding-attendance-logs">understanding attendance logs</a> for the full rule.</p>
+
+<p>Two consequences when auditing. Hours are the span from first punch to last, so <strong>breaks are inside the total, not deducted</strong>. And a 0.0 hours figure means one end of the day is missing, not that somebody worked no time.</p>
+
+<h2>Filtering</h2>
+
+<p>You can narrow by employee, by department, and by date range. Filters combine, and — as with exports — <strong>what you filter to is what you see</strong>. Before concluding that somebody has no attendance for a period, widen the range and clear the employee filter.</p>
+
+<p>For payroll, filter to the pay period and one department at a time. It is slower than pulling everything at once, and it makes an omission far easier to spot.</p>
+
+<h2>Correcting a record</h2>
+
+<ol>
+  <li>Find the day and open it.</li>
+  <li>Adjust the check-in, check-out or status.</li>
+  <li>Add a remark saying what you changed and why.</li>
+  <li>Save.</li>
+</ol>
+
+<h3>Always write the remark</h3>
+
+<p>An attendance record is the evidence behind a payroll figure and, occasionally, behind a dispute. A corrected time with no explanation is indistinguishable from an error, and months later nobody — including you — will remember which it was.</p>
+
+<p>"Employee confirmed 17:30 departure, forgot to check out" takes seconds to type and is the difference between a record that survives scrutiny and one that does not.</p>
+
+<h2>Marking someone absent</h2>
+
+<p>Marking an absence creates a record with status <strong>Absent</strong> and no location data, since there was no punch to take one from.</p>
+
+<p>Before doing it, check that the day is not covered by approved leave. An absence recorded over an approved leave day is wrong twice — it understates attendance and contradicts the leave record — and the two screens will disagree with each other permanently.</p>
+
+<h2>Deleting a record</h2>
+
+<p>Deletion is permanent. There is no undo, no archive, and no recovery.</p>
+
+<p>Almost every case that feels like deletion is actually a correction. A wrong time should be corrected; a duplicate is already consolidated into a single row and does not need removing; a day recorded for the wrong person should be corrected to the right one.</p>
+
+<p>Genuine deletion cases are narrow — a test record from setting up the system, or an entry created against an employee who was never actually employed. If you are deleting something because the figure is inconvenient, stop: that is the exact scenario an audit trail exists to prevent.</p>
+
+<h2>Location and selfie verification</h2>
+
+<p>Where your organization uses them, records carry the location captured at punch time and, where enabled, a selfie. Both are captured at the moment of the punch and cannot be added retrospectively.</p>
+
+<p>Read them as supporting evidence rather than proof. A phone reporting a location a few hundred metres out is ordinary, especially indoors or in dense city centres — treat a small discrepancy as noise, and a person consistently punching from somewhere they have never worked as a conversation.</p>
+
+<p>Note also that a record you create by hand has no location at all. That is expected, and it is another reason the remark matters.</p>
+
+<h2>What to check each month</h2>
+
+<ul>
+  <li><strong>Days with a check-in and no check-out.</strong> The most common data problem, and the one that quietly deflates hours.</li>
+  <li><strong>Absences that overlap approved leave.</strong> These should be leave, not absence.</li>
+  <li><strong>Unexpected Late statuses.</strong> Frequently a wrong shift assignment rather than lateness — check the employee's shift before raising it with them.</li>
+  <li><strong>Employees with no records at all.</strong> Usually someone who has not been shown how to check in.</li>
+</ul>
+
+<h2>Common questions</h2>
+
+<h3>Why can't a manager fix their team's attendance?</h3>
+
+<p>Deliberate. The person who benefits from a record and the person able to change it should not be the same, and a manager's rating and their team's attendance are related closely enough to matter. Managers raise corrections with HR.</p>
+
+<h3>Someone is marked Late but arrived on time</h3>
+
+<p>Check their assigned shift first. Late is calculated against shift start plus that shift's grace period, so a wrong shift produces wrong statuses across every day at once — fix the shift rather than the records.</p>
+
+<h3>Can I bulk-edit a month?</h3>
+
+<p>No, records are corrected one at a time. That is slow by design: bulk attendance edits are the single easiest way to destroy the credibility of the underlying data.</p>
+
+<h2>Related guides</h2>
+
+<ul>
+  <li><a href="/how-to-use/understanding-attendance-logs">Understanding attendance logs</a> — statuses and the consolidation rule</li>
+  <li><a href="/how-to-use/how-to-clock-in-and-out">How to clock in and out</a> — what employees are doing</li>
+  <li><a href="/how-to-use/generating-reports">Generating reports</a> — turning audited attendance into monthly figures</li>
+  <li><a href="/how-to-use/roles-and-permissions">Roles and permissions</a> — who can edit and who can only look</li>
+</ul>
