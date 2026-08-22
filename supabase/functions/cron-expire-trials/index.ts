@@ -1,9 +1,16 @@
-// OpenHR — Trial Expiration Cron
+// OpenHR — End of the ad-free period
 // Schedule: 0 0 * * * (daily midnight UTC)
 //
-// 1. Finds orgs where subscription_status = 'TRIAL' and trial_end_date < now() → sets EXPIRED.
-//    Sends expiry email to org admins via Resend.
-// 2. Finds orgs whose trial expires in exactly 7, 3, or 1 day(s) → sends reminder email.
+// 1. Finds orgs where subscription_status = 'TRIAL' and trial_end_date < now() →
+//    sets AD_SUPPORTED. Emails the org admins.
+// 2. Finds orgs whose ad-free period ends in exactly 7, 3, or 1 day(s) → sends a heads-up.
+//
+// This used to set EXPIRED, which sets isReadOnly in organization.service.ts and disables
+// attendance punching, leave, announcements, org settings and performance reviews. That
+// contradicted every public statement the product makes — the FAQ ("permanently free… no
+// time limits, no feature gates"), the landing page, and the signup screen. TRIAL is an
+// ad-free window, not a paid trial: nothing is taken away when it ends, ads simply start.
+// EXPIRED still exists and still means read-only, but only a super admin can apply it now.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -57,11 +64,11 @@ Deno.serve(async (req: Request) => {
 
     await admin
       .from('organizations')
-      .update({ subscription_status: 'EXPIRED', updated: now.toISOString() })
+      .update({ subscription_status: 'AD_SUPPORTED', updated: now.toISOString() })
       .eq('id', org.id);
 
     expired++;
-    console.log(`[cron-expire-trials] Expired org: ${org.name} (${org.id})`);
+    console.log(`[cron-expire-trials] Org moved to ad-supported: ${org.name} (${org.id})`);
 
     if (!resendKey) continue;
 
@@ -81,12 +88,15 @@ Deno.serve(async (req: Request) => {
       await sendEmail(
         resendKey,
         adm.email,
-        `OpenHR Trial Expired — ${org.name}`,
-        `<h2>Your OpenHR Trial Has Expired</h2>
+        `Your ad-free period has ended — ${org.name}`,
+        `<h2>Your ad-free period has ended</h2>
          <p>Dear ${adm.name || 'Admin'},</p>
-         <p>Your 14-day trial for <strong>${org.name}</strong> has ended.</p>
-         <p>Your account is now in read-only mode. Contact our team to upgrade.</p>
-         <p>Your data is safe and remains accessible.</p>`,
+         <p>The first 14 days for <strong>${org.name}</strong> are up, so you will start seeing
+            ads in OpenHR from today.</p>
+         <p><strong>Nothing else changes.</strong> OpenHRApp is free forever — every feature
+            stays available, there are no employee limits, and nothing has been switched off.</p>
+         <p>If you would rather not see ads, a donation removes them for your whole
+            organization. Visit the Upgrade page in your account for details.</p>`,
       );
 
       // Bell notification.
@@ -94,10 +104,10 @@ Deno.serve(async (req: Request) => {
         user_id: adm.id,
         organization_id: org.id,
         type: 'SYSTEM',
-        title: 'Trial Expired',
-        message: 'Your OpenHR trial has ended. Account is now in read-only mode.',
+        title: 'Ads are now on',
+        message: 'Your 14-day ad-free period has ended. Every feature stays available — donate to remove ads.',
         is_read: false,
-        priority: 'URGENT',
+        priority: 'NORMAL',
         action_url: 'upgrade',
       });
     }
@@ -135,9 +145,7 @@ Deno.serve(async (req: Request) => {
 
       const isUrgent = daysLeft <= 3;
       const dayLabel = daysLeft === 1 ? 'day' : 'days';
-      const subject = isUrgent
-        ? `Urgent: Your OpenHR Trial Expires in ${daysLeft} ${dayLabel} — ${org.name}`
-        : `Your OpenHR Trial Expires in ${daysLeft} ${dayLabel} — ${org.name}`;
+      const subject = `Your ad-free period ends in ${daysLeft} ${dayLabel} — ${org.name}`;
 
       for (const adm of admins ?? []) {
         if (!adm.email) {
@@ -149,14 +157,14 @@ Deno.serve(async (req: Request) => {
           resendKey,
           adm.email,
           subject,
-          `<h2>Trial Expiration Reminder</h2>
+          `<h2>Your ad-free period is ending</h2>
            <p>Dear ${adm.name || 'Admin'},</p>
-           <p>Your OpenHR trial for <strong>${org.name}</strong> expires in
-              <strong>${daysLeft} ${dayLabel}</strong>.</p>
-           ${isUrgent
-             ? `<p style="color:#dc2626;font-weight:bold;">After expiration, your account switches to read-only mode.</p>`
-             : `<p>After expiration, your account switches to read-only mode.</p>`}
-           <p>Log in to your OpenHR account and visit the Upgrade page to continue.</p>`,
+           <p>The ad-free period for <strong>${org.name}</strong> ends in
+              <strong>${daysLeft} ${dayLabel}</strong>, after which you will start seeing ads.</p>
+           <p><strong>You do not need to do anything.</strong> OpenHRApp stays free and every
+              feature keeps working — this is not a trial that runs out.</p>
+           <p>If you would prefer to stay ad-free, a donation removes ads for your whole
+              organization. See the Upgrade page in your account.</p>`,
         );
 
         // Bell notification.
@@ -164,10 +172,10 @@ Deno.serve(async (req: Request) => {
           user_id: adm.id,
           organization_id: org.id,
           type: 'SYSTEM',
-          title: `Trial expires in ${daysLeft} ${dayLabel}`,
-          message: `Your OpenHR trial for ${org.name} expires in ${daysLeft} ${dayLabel}.`,
+          title: `Ad-free period ends in ${daysLeft} ${dayLabel}`,
+          message: `Ads start for ${org.name} in ${daysLeft} ${dayLabel}. Every feature stays available.`,
           is_read: false,
-          priority: isUrgent ? 'URGENT' : 'HIGH',
+          priority: isUrgent ? 'HIGH' : 'NORMAL',
           action_url: 'upgrade',
         });
 

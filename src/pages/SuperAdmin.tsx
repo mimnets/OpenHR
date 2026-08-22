@@ -46,6 +46,7 @@ const SuperAdmin: React.FC<SuperAdminProps> = () => {
     address: '',
     subscriptionStatus: 'TRIAL',
     trialEndDate: '',
+    showOnLanding: false,
     adminName: '',
     adminEmail: '',
     adminPassword: ''
@@ -108,7 +109,7 @@ const SuperAdmin: React.FC<SuperAdminProps> = () => {
     if (result.success) {
       setMessage({ type: 'success', text: result.message });
       setViewMode('list');
-      setFormData({ name: '', address: '', subscriptionStatus: 'TRIAL', trialEndDate: '', adminName: '', adminEmail: '', adminPassword: '' });
+      setFormData({ name: '', address: '', subscriptionStatus: 'TRIAL', trialEndDate: '', showOnLanding: false, adminName: '', adminEmail: '', adminPassword: '' });
       await loadData();
     } else {
       setMessage({ type: 'error', text: result.message });
@@ -124,7 +125,8 @@ const SuperAdmin: React.FC<SuperAdminProps> = () => {
       name: formData.name,
       address: formData.address,
       subscriptionStatus: formData.subscriptionStatus as any,
-      trialEndDate: formData.trialEndDate || undefined
+      trialEndDate: formData.trialEndDate || undefined,
+      showOnLanding: formData.showOnLanding
     });
 
     if (result.success) {
@@ -210,6 +212,7 @@ const SuperAdmin: React.FC<SuperAdminProps> = () => {
       address: org.address || '',
       subscriptionStatus: org.subscriptionStatus || 'TRIAL',
       trialEndDate: trialEndDateFormatted,
+      showOnLanding: org.showOnLanding === true,
       adminName: '',
       adminEmail: '',
       adminPassword: ''
@@ -226,6 +229,7 @@ const SuperAdmin: React.FC<SuperAdminProps> = () => {
       address: '',
       subscriptionStatus: 'TRIAL',
       trialEndDate: defaultTrialEnd.toISOString().split('T')[0],
+      showOnLanding: false,
       adminName: '',
       adminEmail: '',
       adminPassword: ''
@@ -749,9 +753,10 @@ const SuperAdmin: React.FC<SuperAdminProps> = () => {
                 onChange={(e) => setFormData({ ...formData, subscriptionStatus: e.target.value })}
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-primary-light outline-none"
               >
-                <option value="TRIAL">Trial</option>
-                <option value="ACTIVE">Active</option>
-                <option value="EXPIRED">Expired</option>
+                <option value="TRIAL">Trial — ad-free period</option>
+                <option value="AD_SUPPORTED">Ad Supported — free, ads shown</option>
+                <option value="ACTIVE">Active — donated, ad-free</option>
+                <option value="EXPIRED">Expired — read-only</option>
                 <option value="SUSPENDED">Suspended</option>
               </select>
             </div>
@@ -765,7 +770,7 @@ const SuperAdmin: React.FC<SuperAdminProps> = () => {
                   onChange={(e) => setFormData({ ...formData, trialEndDate: e.target.value })}
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-primary-light outline-none"
                 />
-                <p className="text-xs text-slate-400">Organization will auto-expire after this date</p>
+                <p className="text-xs text-slate-400">After this date the organization moves to Ad Supported. Nothing is disabled — ads simply start.</p>
               </div>
             )}
 
@@ -779,6 +784,37 @@ const SuperAdmin: React.FC<SuperAdminProps> = () => {
                 placeholder="e.g., 123 Business Street, City"
               />
             </div>
+
+            {/*
+              Showcase consent (Addendum 4 §5b). The organization's own ADMIN opts in from
+              Organization & Setup → System; this mirror exists for consent obtained out of
+              band — by email or contract — and to let a super admin withdraw it. The database
+              trigger stamps landing_consent_at and refuses demo organizations either way.
+            */}
+            {viewMode === 'edit' && (
+              <div className="md:col-span-2">
+                <label
+                  htmlFor="sa-show-on-landing"
+                  className="flex items-start gap-3 p-4 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:border-primary-light transition-colors"
+                >
+                  <input
+                    id="sa-show-on-landing"
+                    type="checkbox"
+                    checked={formData.showOnLanding}
+                    onChange={(e) => setFormData({ ...formData, showOnLanding: e.target.checked })}
+                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-primary focus:ring-2 focus:ring-primary-light cursor-pointer"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-bold text-slate-700">Show in landing-page showcase</span>
+                    <span className="block mt-1 text-xs font-medium text-slate-500 leading-relaxed">
+                      Only tick this if the organization has actually agreed — their name and logo
+                      go on the public homepage. Normally they opt in themselves from Organization
+                      &amp; Setup.
+                    </span>
+                  </span>
+                </label>
+              </div>
+            )}
 
             {viewMode === 'create' && (
               <>

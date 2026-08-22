@@ -16,6 +16,17 @@ export interface ChangelogRelease {
 export const changelog: ChangelogRelease[] = [
   {
     date: '2026-08-22',
+    title: 'Day 15 no longer switches your account off, and you can now choose to be featured on our homepage',
+    entries: [
+      { type: 'breaking', description: 'The end of the 14-day period no longer puts an organization into read-only mode. It used to disable attendance punching, leave requests, announcements, organization settings and performance reviews until someone got in touch — which contradicted everything we say publicly, including our own FAQ ("permanently free, no time limits, no feature gates"). What actually happens now is what was always meant to: the account moves to ad-supported. Every feature keeps working and ads start appearing. A donation still removes them.' },
+      { type: 'improvement', description: 'Rewrote the emails and notifications that go out at the end of the ad-free period, and the reminders at 7, 3 and 1 days before. They previously warned that the account was about to become read-only and told people to upgrade. They now explain that nothing is being taken away and that a donation is the way to stay ad-free.' },
+      { type: 'feature', description: 'Organization admins can now opt in to be featured in a showcase on our homepage, from Organization & Setup → System, just below the logo upload. It shows your organization name and logo, nothing else, and you can switch it off again at any time in the same place. It is off for everyone by default — we will never show an organization that has not deliberately turned this on.' },
+      { type: 'security', description: 'The showcase opt-in is restricted to organization admins. HR staff can open the same page but do not see the control, and the database rejects the change regardless of where it comes from — publishing the company name and logo is not a decision that should sit with any account that happens to have settings access. Demo organizations can never be featured.' },
+      { type: 'improvement', description: 'Super admins can now set an organization to Ad Supported directly. The option was missing from the dropdown even though it is the state an organization lands in after the first 14 days.' },
+    ],
+  },
+  {
+    date: '2026-08-22',
     title: 'Every public page rendered and checked at three widths in both themes — and what that found',
     entries: [
       { type: 'fix', description: 'The site footer showed a floating "HR" instead of the OpenHRApp wordmark on every page in light mode. The footer is a dark slab, but the wordmark was using the near-black text colour, so "Open" and "App" were near-black on near-black — invisible. Dark mode was unaffected, which is why it survived this long: the colour flips there and the problem disappears. Every page had it.' },
