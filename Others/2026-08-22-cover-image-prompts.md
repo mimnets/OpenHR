@@ -22,9 +22,11 @@
 | Text in image | **None** | Cards crop unpredictably and overlay their own title. Text baked into the image gets cut in half. |
 | Safe area | Keep the subject in the **left two thirds** | The right side is where crops and overlays land. |
 
-**Alt text matters.** Each entry below carries a suggested `alt` value. Set it when
-uploading rather than leaving it blank: it is read by screen readers and is one of the
-few remaining places to state what a page is about in plain language.
+**Alt text is already handled.** OpenHRApp has no `cover_alt` field — every cover
+renders with the article title as its alt text, and the prerendered document derives
+`og:image:alt` the same way. The suggested `alt` on each entry below is reference
+only, for reusing an image somewhere that does need one. There is nothing to paste it
+into here, and nothing to remember to set.
 
 ---
 
@@ -64,7 +66,7 @@ than none, because it reads as a stock image.
 - **Kind:** post
 - **Category:** —
 - **Filename to save as:** `openhr-complete-guide.png`
-- **Alt text:** Cover illustration for the OpenHRApp article "The Complete Guide to OpenHR: Free Open Source HR Software That Actually Works"
+- **Alt text** (reference only — the app uses the title): Cover illustration for the OpenHRApp article "The Complete Guide to OpenHR: Free Open Source HR Software That Actually Works"
 
 **Prompt**
 
@@ -88,7 +90,7 @@ Editorial cover illustration for a blog article titled "The Complete Guide to Op
 - **Kind:** guide
 - **Category:** Attendance
 - **Filename to save as:** `attendance-admin-audit.png`
-- **Alt text:** Cover illustration for the OpenHRApp guide "Attendance for Admins — Audit and Manual Entries", Attendance
+- **Alt text** (reference only — the app uses the title): Cover illustration for the OpenHRApp guide "Attendance for Admins — Audit and Manual Entries", Attendance
 
 **Prompt**
 
@@ -112,7 +114,7 @@ Editorial cover illustration for a how-to guide titled "Attendance for Admins �
 - **Kind:** guide
 - **Category:** Performance
 - **Filename to save as:** `performance-review-for-managers.png`
-- **Alt text:** Cover illustration for the OpenHRApp guide "Performance Reviews — For Managers", Performance
+- **Alt text** (reference only — the app uses the title): Cover illustration for the OpenHRApp guide "Performance Reviews — For Managers", Performance
 
 **Prompt**
 
@@ -136,7 +138,7 @@ Editorial cover illustration for a how-to guide titled "Performance Reviews — 
 - **Kind:** guide
 - **Category:** Employees
 - **Filename to save as:** `managing-employees.png`
-- **Alt text:** Cover illustration for the OpenHRApp guide "Managing Employees — Adding and Editing Staff", Employees
+- **Alt text** (reference only — the app uses the title): Cover illustration for the OpenHRApp guide "Managing Employees — Adding and Editing Staff", Employees
 
 **Prompt**
 
@@ -160,7 +162,7 @@ Editorial cover illustration for a how-to guide titled "Managing Employees — A
 - **Kind:** guide
 - **Category:** Organization
 - **Filename to save as:** `setting-up-organization.png`
-- **Alt text:** Cover illustration for the OpenHRApp guide "Setting Up Your Organization", Organization
+- **Alt text** (reference only — the app uses the title): Cover illustration for the OpenHRApp guide "Setting Up Your Organization", Organization
 
 **Prompt**
 
@@ -184,7 +186,7 @@ Editorial cover illustration for a how-to guide titled "Setting Up Your Organiza
 - **Kind:** guide
 - **Category:** Getting Started
 - **Filename to save as:** `roles-and-permissions.png`
-- **Alt text:** Cover illustration for the OpenHRApp guide "Roles and Permissions in OpenHRApp", Getting Started
+- **Alt text** (reference only — the app uses the title): Cover illustration for the OpenHRApp guide "Roles and Permissions in OpenHRApp", Getting Started
 
 **Prompt**
 
@@ -208,7 +210,7 @@ Editorial cover illustration for a how-to guide titled "Roles and Permissions in
 - **Kind:** guide
 - **Category:** Leave
 - **Filename to save as:** `how-to-apply-for-leave.png`
-- **Alt text:** Cover illustration for the OpenHRApp guide "How to Apply for Leave", Leave
+- **Alt text** (reference only — the app uses the title): Cover illustration for the OpenHRApp guide "How to Apply for Leave", Leave
 
 **Prompt**
 
@@ -232,7 +234,7 @@ Editorial cover illustration for a how-to guide titled "How to Apply for Leave".
 - **Kind:** guide
 - **Category:** Leave
 - **Filename to save as:** `understanding-leave-policies.png`
-- **Alt text:** Cover illustration for the OpenHRApp guide "Understanding Leave Policies", Leave
+- **Alt text** (reference only — the app uses the title): Cover illustration for the OpenHRApp guide "Understanding Leave Policies", Leave
 
 **Prompt**
 
@@ -256,7 +258,7 @@ Editorial cover illustration for a how-to guide titled "Understanding Leave Poli
 - **Kind:** guide
 - **Category:** Performance
 - **Filename to save as:** `performance-review-self-assessment.png`
-- **Alt text:** Cover illustration for the OpenHRApp guide "Performance Reviews — Employee Self-Assessment", Performance
+- **Alt text** (reference only — the app uses the title): Cover illustration for the OpenHRApp guide "Performance Reviews — Employee Self-Assessment", Performance
 
 **Prompt**
 
@@ -280,7 +282,7 @@ Editorial cover illustration for a how-to guide titled "Performance Reviews — 
 - **Kind:** guide
 - **Category:** Reports
 - **Filename to save as:** `generating-reports.png`
-- **Alt text:** Cover illustration for the OpenHRApp guide "Generating Reports", Reports
+- **Alt text** (reference only — the app uses the title): Cover illustration for the OpenHRApp guide "Generating Reports", Reports
 
 **Prompt**
 
@@ -304,7 +306,7 @@ Editorial cover illustration for a how-to guide titled "Generating Reports". Sub
 - **Kind:** guide
 - **Category:** Leave
 - **Filename to save as:** `leave-approval-for-managers.png`
-- **Alt text:** Cover illustration for the OpenHRApp guide "Leave Approval — For Managers", Leave
+- **Alt text** (reference only — the app uses the title): Cover illustration for the OpenHRApp guide "Leave Approval — For Managers", Leave
 
 **Prompt**
 
@@ -328,7 +330,7 @@ Editorial cover illustration for a how-to guide titled "Leave Approval — For M
 - **Kind:** guide
 - **Category:** Leave
 - **Filename to save as:** `leave-approval-for-hr.png`
-- **Alt text:** Cover illustration for the OpenHRApp guide "Leave Approval — For HR and Admins", Leave
+- **Alt text** (reference only — the app uses the title): Cover illustration for the OpenHRApp guide "Leave Approval — For HR and Admins", Leave
 
 **Prompt**
 
@@ -352,7 +354,7 @@ Editorial cover illustration for a how-to guide titled "Leave Approval — For H
 - **Kind:** guide
 - **Category:** Attendance
 - **Filename to save as:** `understanding-attendance-logs.png`
-- **Alt text:** Cover illustration for the OpenHRApp guide "Understanding Your Attendance Logs", Attendance
+- **Alt text** (reference only — the app uses the title): Cover illustration for the OpenHRApp guide "Understanding Your Attendance Logs", Attendance
 
 **Prompt**
 
@@ -376,7 +378,7 @@ Editorial cover illustration for a how-to guide titled "Understanding Your Atten
 - **Kind:** guide
 - **Category:** Settings
 - **Filename to save as:** `managing-profile-settings.png`
-- **Alt text:** Cover illustration for the OpenHRApp guide "Managing Your Profile and Settings", Settings
+- **Alt text** (reference only — the app uses the title): Cover illustration for the OpenHRApp guide "Managing Your Profile and Settings", Settings
 
 **Prompt**
 
@@ -400,7 +402,7 @@ Editorial cover illustration for a how-to guide titled "Managing Your Profile an
 - **Kind:** guide
 - **Category:** Announcements
 - **Filename to save as:** `announcements-guide.png`
-- **Alt text:** Cover illustration for the OpenHRApp guide "Announcements — Viewing and Creating", Announcements
+- **Alt text** (reference only — the app uses the title): Cover illustration for the OpenHRApp guide "Announcements — Viewing and Creating", Announcements
 
 **Prompt**
 
@@ -424,7 +426,7 @@ Editorial cover illustration for a how-to guide titled "Announcements — Viewin
 - **Kind:** guide
 - **Category:** Getting Started
 - **Filename to save as:** `install-openhrapp-pwa.png`
-- **Alt text:** Cover illustration for the OpenHRApp guide "Install OpenHRApp as an App (PWA) on Android and iOS", Getting Started
+- **Alt text** (reference only — the app uses the title): Cover illustration for the OpenHRApp guide "Install OpenHRApp as an App (PWA) on Android and iOS", Getting Started
 
 **Prompt**
 
@@ -448,7 +450,7 @@ Editorial cover illustration for a how-to guide titled "Install OpenHRApp as an 
 - **Kind:** guide
 - **Category:** Performance
 - **Filename to save as:** `performance-reviews-hr-calibration.png`
-- **Alt text:** Cover illustration for the OpenHRApp guide "Performance Reviews — HR Calibration", Performance
+- **Alt text** (reference only — the app uses the title): Cover illustration for the OpenHRApp guide "Performance Reviews — HR Calibration", Performance
 
 **Prompt**
 
@@ -472,7 +474,7 @@ Editorial cover illustration for a how-to guide titled "Performance Reviews — 
 - **Kind:** guide
 - **Category:** Leave
 - **Filename to save as:** `custom-leave-types.png`
-- **Alt text:** Cover illustration for the OpenHRApp guide "Custom Leave Types and Special Leave", Leave
+- **Alt text** (reference only — the app uses the title): Cover illustration for the OpenHRApp guide "Custom Leave Types and Special Leave", Leave
 
 **Prompt**
 
@@ -496,7 +498,7 @@ Editorial cover illustration for a how-to guide titled "Custom Leave Types and S
 - **Kind:** guide
 - **Category:** Organization
 - **Filename to save as:** `notification-settings.png`
-- **Alt text:** Cover illustration for the OpenHRApp guide "Configuring Notification Settings", Organization
+- **Alt text** (reference only — the app uses the title): Cover illustration for the OpenHRApp guide "Configuring Notification Settings", Organization
 
 **Prompt**
 
@@ -520,7 +522,7 @@ Editorial cover illustration for a how-to guide titled "Configuring Notification
 - **Kind:** guide
 - **Category:** Getting Started
 - **Filename to save as:** `understanding-dashboard.png`
-- **Alt text:** Cover illustration for the OpenHRApp guide "Understanding the Dashboard", Getting Started
+- **Alt text** (reference only — the app uses the title): Cover illustration for the OpenHRApp guide "Understanding the Dashboard", Getting Started
 
 **Prompt**
 
@@ -544,7 +546,7 @@ Editorial cover illustration for a how-to guide titled "Understanding the Dashbo
 - **Kind:** guide
 - **Category:** Settings
 - **Filename to save as:** `notifications-guide.png`
-- **Alt text:** Cover illustration for the OpenHRApp guide "Notifications — Bell Notifications and Admin Management", Settings
+- **Alt text** (reference only — the app uses the title): Cover illustration for the OpenHRApp guide "Notifications — Bell Notifications and Admin Management", Settings
 
 **Prompt**
 
@@ -568,7 +570,7 @@ Editorial cover illustration for a how-to guide titled "Notifications — Bell N
 - **Kind:** guide
 - **Category:** Getting Started
 - **Filename to save as:** `subscription-upgrade-options.png`
-- **Alt text:** Cover illustration for the OpenHRApp guide "Subscription and Upgrade Options", Getting Started
+- **Alt text** (reference only — the app uses the title): Cover illustration for the OpenHRApp guide "Subscription and Upgrade Options", Getting Started
 
 **Prompt**
 
@@ -592,7 +594,7 @@ Editorial cover illustration for a how-to guide titled "Subscription and Upgrade
 - **Kind:** guide
 - **Category:** Reports
 - **Filename to save as:** `exporting-employee-data.png`
-- **Alt text:** Cover illustration for the OpenHRApp guide "Exporting Employee Data", Reports
+- **Alt text** (reference only — the app uses the title): Cover illustration for the OpenHRApp guide "Exporting Employee Data", Reports
 
 **Prompt**
 

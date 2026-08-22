@@ -80,7 +80,10 @@ for (const e of entries) {
   out.push(`- **Kind:** ${e.kind}`);
   if (e.category) out.push(`- **Category:** ${e.category}`);
   out.push(`- **Filename to save as:** \`${e.slug}.png\``);
-  if (e.alt) out.push(`- **Alt text:** ${e.alt}`);
+  // Alt text is shown for reference only. OpenHRApp has no cover_alt field — every
+  // cover renders with the article title as its alt, so there is nothing to paste this
+  // into. It is here for anyone reusing an image somewhere that does need it.
+  if (e.alt) out.push(`- **Alt text** (reference only — the app uses the title): ${e.alt}`);
   out.push('');
   out.push('**Prompt**');
   out.push('');

@@ -161,9 +161,11 @@ export const SPEC_NOTE = `**Output spec — the same for every image:**
 | Text in image | **None** | Cards crop unpredictably and overlay their own title. Text baked into the image gets cut in half. |
 | Safe area | Keep the subject in the **left two thirds** | The right side is where crops and overlays land. |
 
-**Alt text matters.** Each entry below carries a suggested \`alt\` value. Set it when
-uploading rather than leaving it blank: it is read by screen readers and is one of the
-few remaining places to state what a page is about in plain language.
+**Alt text is already handled.** OpenHRApp has no \`cover_alt\` field — every cover
+renders with the article title as its alt text, and the prerendered document derives
+\`og:image:alt\` the same way. The suggested \`alt\` on each entry below is reference
+only, for reusing an image somewhere that does need one. There is nothing to paste it
+into here, and nothing to remember to set.
 
 ---
 

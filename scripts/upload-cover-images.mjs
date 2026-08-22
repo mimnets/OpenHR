@@ -8,9 +8,14 @@
  * Files are matched to articles by filename: `<slug>.png` (or .jpg/.jpeg/.webp).
  * Anything that does not match a published article is reported rather than guessed at.
  *
- * Why a script rather than the admin UI: there are 23 of these, each needing an upload,
- * a save, and alt text. Doing it by hand is an hour of clicking and the alt text is the
- * part that quietly gets skipped.
+ * Why a script rather than the admin UI: there are 23 of these, each needing an upload
+ * and a save. Doing it by hand is an hour of clicking, and a mis-paired cover is easy to
+ * make and hard to spot afterwards.
+ *
+ * Alt text is not set here and needs no flag. There is no cover_alt column: all four
+ * render sites already use the article title (BlogPage.tsx:239, BlogPostPage.tsx:154,
+ * TutorialsPage.tsx:150, TutorialPage.tsx:208), and the prerendered document derives
+ * og:image:alt the same way. Decided 2026-08-22 to leave that as it is.
  *
  * Format. This mirrors the app's own upload path exactly: covers are re-encoded to
  * JPEG at quality 0.85 with the long edge capped at 1920px, matching
