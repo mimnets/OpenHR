@@ -2,6 +2,22 @@
 -- Enable the nightly ad-free-period transition
 -- scripts/enable-trial-transition-cron.sql
 --
+-- ┌────────────────────────────────────────────────────────────────────────┐
+-- │  HELD — DO NOT RUN YET.                                                │
+-- │                                                                        │
+-- │  Decision, 2026-08-22: the schedule stays off until `dev` has been      │
+-- │  merged to `main` and the AdSense re-review has settled.               │
+-- │                                                                        │
+-- │  Nothing is broken while it is off. No organization is locked out —     │
+-- │  there are zero on EXPIRED — and the only effect of waiting is that     │
+-- │  127 organizations stay ad-free a while longer. The reason to wait is   │
+-- │  that the first runs send a burst of outbound mail and start a step     │
+-- │  change in ad impressions, and neither is a signal worth generating     │
+-- │  in the middle of a re-review.                                         │
+-- │                                                                        │
+-- │  When the merge and the review are done, run this from Step 1.         │
+-- └────────────────────────────────────────────────────────────────────────┘
+--
 -- Run this in the Supabase SQL Editor. It is NOT part of `supabase db push`:
 -- cron.schedule() needs the project ref and the cron secret, neither of which
 -- belongs in a committed migration.
