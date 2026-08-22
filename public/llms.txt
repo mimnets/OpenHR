@@ -1,0 +1,66 @@
+# OpenHRApp
+
+> OpenHRApp is free, open-source HR management software for small and mid-sized organizations. It covers attendance tracking with GPS and selfie verification, leave management, employee records, performance reviews, and reporting. It can be used as a hosted service or self-hosted with Docker. The guides below are practical HR documentation — policy templates, workflow design, and step-by-step product walkthroughs.
+
+## Guides
+
+- [Install OpenHRApp as an App (PWA) on Android and iOS](https://openhrapp.com/how-to-use/install-openhrapp-pwa): Install OpenHRApp on your phone or desktop as a Progressive Web App PWA — no app store download required.
+- [Exporting Employee Data](https://openhrapp.com/how-to-use/exporting-employee-data): How to export your employee directory as CSV for data analysis or branded PDF for stakeholder sharing.
+- [Subscription and Upgrade Options](https://openhrapp.com/how-to-use/subscription-upgrade-options): OpenHRApp's subscription model explained — Trial, Donation tiers, Ad-Supported free tier, and what happens when your trial expires.
+- [Understanding the Dashboard](https://openhrapp.com/how-to-use/understanding-dashboard): A detailed tour of OpenHRApp's role-based dashboard — what each widget shows for Employees, Managers, and Admins.
+- [Configuring Notification Settings](https://openhrapp.com/how-to-use/notification-settings): How to configure email notifications, enable or disable notification types, set up SMTP, and manage notification retention.
+- [Custom Leave Types and Special Leave](https://openhrapp.com/how-to-use/custom-leave-types): Understanding all leave types in OpenHRApp — Maternity, Paternity, Earned, Unpaid, half-day leave, and custom-configured types.
+- [Theme Customization](https://openhrapp.com/how-to-use/theme-customization): Personalize OpenHRApp with 14 color themes, dark mode, light mode, and system preference — saved across devices.
+- [Notifications — Bell Notifications and Admin Management](https://openhrapp.com/how-to-use/notifications-guide): How OpenHRApp's bell and email notification system works, what events trigger notifications, and how admins manage them.
+- [Announcements — Viewing and Creating](https://openhrapp.com/how-to-use/announcements-guide): How to view organization announcements in OpenHRApp, and how Admins can create, target, and manage company-wide communications.
+- [Performance Reviews — HR Calibration](https://openhrapp.com/how-to-use/performance-reviews-hr-calibration): How HR calibrates performance reviews, assigns final overall ratings, manages review cycles, and completes the process.
+- [Performance Reviews — For Managers](https://openhrapp.com/how-to-use/performance-review-for-managers): How managers review employee self-assessments, provide competency ratings and feedback, and submit for HR calibration.
+- [Performance Reviews — Employee Self-Assessment](https://openhrapp.com/how-to-use/performance-review-self-assessment): How to complete your self-assessment in OpenHRApp — rate competencies, add comments, and submit for manager review.
+- [Roles and Permissions in OpenHRApp](https://openhrapp.com/how-to-use/roles-and-permissions): Complete guide to OpenHR's role-based access control — what Admin, HR, Manager, Team Lead, and Employee roles can access.
+- [Managing Your Profile and Settings](https://openhrapp.com/how-to-use/managing-profile-settings): How to view your employee profile, update your name and email, change your password, and customize your app theme.
+- [Generating Reports](https://openhrapp.com/how-to-use/generating-reports): How to generate attendance and leave reports in OpenHRApp, export as CSV or PDF, and email summaries to stakeholders.
+- [Setting Up Your Organization](https://openhrapp.com/how-to-use/setting-up-organization): Complete admin guide to configuring departments, teams, shifts, GPS locations, leave policies, holidays, and workflows in OpenHRApp.
+- [Managing Employees — Adding and Editing Staff](https://openhrapp.com/how-to-use/managing-employees): How admins add new employees, assign roles and departments, manage the employee directory, and export staff data.
+- [Understanding Leave Policies](https://openhrapp.com/how-to-use/understanding-leave-policies): How leave types, balances, quotas, approval workflows, and holiday exclusions are configured in OpenHRApp.
+- [Leave Approval — For HR and Admins](https://openhrapp.com/how-to-use/leave-approval-for-hr): How HR and Admin users verify, approve, reject, and manage leave records with admin override capabilities.
+- [Leave Approval — For Managers](https://openhrapp.com/how-to-use/leave-approval-for-managers): How managers review, approve, or reject leave requests from direct reports in OpenHR's multi-step approval workflow.
+- [How to Apply for Leave](https://openhrapp.com/how-to-use/how-to-apply-for-leave): Step-by-step guide to applying for leave in OpenHR — check your balance, submit a request, and track the approval status.
+- [Attendance for Admins — Audit and Manual Entries](https://openhrapp.com/how-to-use/attendance-admin-audit): How admins can audit attendance records, edit clock-in times, create manual entries, and mark employees as absent.
+- [Understanding Your Attendance Logs](https://openhrapp.com/how-to-use/understanding-attendance-logs): How to view your personal attendance history, understand attendance status badges, and read consolidated daily records.
+- [How to Clock In and Out](https://openhrapp.com/how-to-use/how-to-clock-in-and-out): A complete guide to clocking in and out of work using OpenHR's selfie and GPS-based attendance system.
+- [Welcome to OpenHRApp — Your First Steps](https://openhrapp.com/how-to-use/welcome-to-openhrapp): Complete guide to OpenHR's selfie-based attendance system with GPS location verification, office and factory clock-in modes.
+
+## Blog
+
+- [The Complete Guide to OpenHR: Free Open Source HR Software That Actually Works](https://openhrapp.com/blog/openhr-complete-guide): Look, I get it. You've probably spent hours Googling "free HR software" and every result either wants your credit card after five users or looks like it hasn't been updated since Windows XP was cool.…
+- [OpenHRApp Reports and Analytics: Making Data-Driven HR Decisions](https://openhrapp.com/blog/openhrapp-reports-analytics-guide): Turn your HR data into actionable insights. This guide covers OpenHRApp's reporting capabilities — from attendance summaries to leave analytics to team performance dashboards — and how to use them…
+- [Getting Started with OpenHRApp: A Step-by-Step Setup Guide](https://openhrapp.com/blog/getting-started-with-openhrapp): Learn how to set up your OpenHRApp account from scratch. This comprehensive guide walks you through organization creation, employee setup, and configuration — everything you need to go live in under…
+- [The Ultimate "No-Install" HRMS: High-Precision Attendance Without the App Store Headache](https://openhrapp.com/blog/the-ultimate-no-install-hrms-high-precision-attendance-without-the-app-store-headache): Ditch the bulky downloads and expensive licenses. OpenHRApp uses modern PWA technology to provide a high-precision, no-install attendance system. From geofencing with GPS coordinates to biometric…
+- [The Complete Guide to OpenHRApp: Features, Setup, and Daily Workflows](https://openhrapp.com/blog/complete-guide-openhrapp): Everything you need to know about OpenHRApp — from selfie-based attendance and leave management to performance reviews and reports. A no-nonsense walkthrough of every feature, honest setup…
+- [Building a Performance Review Process That Actually Works](https://openhrapp.com/blog/building-effective-performance-review-process): Traditional annual reviews don't work. Learn how to build a performance review process that drives real growth, boosts engagement, and actually gets completed — using modern HR tools and best…
+- [How to Choose the Right HR Management Software for Your Small Business](https://openhrapp.com/blog/choosing-hr-software-small-business): A practical guide to evaluating HR software for your small business. Learn what features matter, how to budget effectively, and why open-source might be your best option.
+- [Why We Built OpenHRApp: The Story Behind the Open-Source HR Platform](https://openhrapp.com/blog/why-we-built-openhrapp): The origin story of OpenHRApp — why we decided to build a free, open-source HR platform, the challenges we faced, and our vision for the future of HR technology.
+- [10 Common HR Compliance Mistakes and How to Avoid Them](https://openhrapp.com/blog/hr-compliance-mistakes-to-avoid): HR compliance errors can cost your business thousands in fines and legal fees. Learn the 10 most common mistakes small and mid-size organizations make — and how to prevent them before they happen.
+- [The Complete Guide to Employee Attendance Tracking](https://openhrapp.com/blog/employee-attendance-tracking-guide): Everything you need to know about modern attendance tracking — from manual methods to selfie-based verification. Learn how to choose the right system for your organization and eliminate time theft.
+- [Comparing OpenHRApp vs Commercial HRMS: An Honest Look](https://openhrapp.com/blog/openhrapp-vs-commercial-hrms-comparison): A transparent, data-driven comparison between OpenHRApp and popular commercial HR platforms. Feature coverage, total cost analysis, and guidance on when to choose each option.
+- [A Day in the Life: How HR Teams Use OpenHRApp to Save 10+ Hours Per Week](https://openhrapp.com/blog/day-in-life-hr-teams-openhrapp): Walk through a typical day for an HR manager using OpenHRApp. From morning attendance checks to afternoon report generation, see how automation reclaims hours of administrative time.
+- [Leave Management Best Practices for Growing Teams](https://openhrapp.com/blog/leave-management-best-practices): Design leave policies that scale with your organization. Learn how to handle accruals, carry-over, team coverage, and compliance — without the administrative headache.
+- [How Selfie-Based Attendance Works in OpenHRApp](https://openhrapp.com/blog/how-selfie-attendance-works): A deep dive into OpenHRApp's selfie-based attendance system. Learn how photo verification eliminates buddy punching, how GPS confirms location, and how to set it up for your team.
+- [Employee Privacy in the Age of Workplace Surveillance](https://openhrapp.com/blog/employee-privacy-workplace-surveillance): How to balance the need for attendance verification and productivity tracking with respect for employee privacy. Practical guidance for ethical HR technology adoption.
+- [Remote Work and HR: Adapting Your Policies for a Distributed Workforce](https://openhrapp.com/blog/remote-work-hr-policies): Remote and hybrid work are here to stay. Learn how to adapt your HR policies — from attendance tracking to leave management to performance reviews — for a distributed workforce.
+- [A Guide to OpenHRApp's Performance Review Module](https://openhrapp.com/blog/openhrapp-performance-review-guide): Learn how to set up and run performance review cycles in OpenHRApp. From defining competencies to finalizing reviews, this guide covers the complete process for HR administrators and managers.
+- [Managing Employee Leave with OpenHRApp](https://openhrapp.com/blog/managing-leave-with-openhrapp): A practical guide to using OpenHRApp's leave management system. Learn how employees apply for leave, how managers approve requests, and how HR can configure policies to match your organization.
+- [The Rise of Open-Source HR Software: Why It's the Future](https://openhrapp.com/blog/rise-of-open-source-hr-software): Open-source HR platforms are disrupting the $25B+ HR software market. Discover why organizations are switching from proprietary solutions, the total cost savings, and what the future holds.
+
+## Pages
+
+- [Features](https://openhrapp.com/features)
+- [Changelog](https://openhrapp.com/changelog)
+- [About](https://openhrapp.com/about)
+- [Contact](https://openhrapp.com/contact)
+- [Privacy Policy](https://openhrapp.com/privacy)
+- [Terms of Service](https://openhrapp.com/terms)
+
+## Full text
+
+- [All content as plain text](https://openhrapp.com/llms-full.txt)

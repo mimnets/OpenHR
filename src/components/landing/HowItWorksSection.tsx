@@ -7,39 +7,37 @@ const steps = [
     step: '01',
     title: 'Register Organization',
     description: 'Create your organization account in seconds. Just your name, email, and company details.',
-    color: 'text-primary',
-    bg: 'bg-primary/10',
   },
   {
     icon: UserPlus,
     step: '02',
     title: 'Add Your Employees',
     description: 'Invite team members and set up departments, designations, and leave policies.',
-    color: 'text-emerald-600',
-    bg: 'bg-emerald-50',
   },
   {
     icon: Rocket,
     step: '03',
     title: 'Start Managing',
     description: 'Track attendance, manage leave requests, run performance reviews, and generate reports — all from day one.',
-    color: 'text-amber-600',
-    bg: 'bg-amber-50',
   },
 ];
 
 const HowItWorksSection: React.FC = () => {
   return (
-    <section id="how-it-works" className="py-20 md:py-28 bg-slate-50">
+    <section id="how-it-works" className="py-20 md:py-28 bg-dl-ground">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <span className="text-xs font-bold text-primary uppercase tracking-wide">How It Works</span>
-          <h2 className="text-3xl sm:text-4xl font-semibold text-slate-900 mt-3 mb-4">
-            Get Started in 3 Steps
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <span className="text-dl-xs font-bold text-dl-teal uppercase tracking-dl-label">How It Works</span>
+          <h2 className="font-dl-display text-dl-3xl sm:text-dl-4xl font-semibold text-dl-ink tracking-dl-display mt-3 mb-5">
+            Running by lunchtime, not next quarter
           </h2>
-          <p className="text-slate-500 text-lg max-w-xl mx-auto">
-            From sign-up to fully operational in just a few minutes. No installation, no credit card, no commitment — start managing your HR today.
+          <p className="text-dl-lg text-dl-muted leading-relaxed">
+            Most HR rollouts stall at the import step, waiting on a data template and a call with
+            an onboarding specialist. There is no such step here. You create an organisation, add
+            the people in it, and the product starts recording from that moment — no installation,
+            no card, and nothing to migrate before you can see whether it suits you. If it does
+            not, the export button gives your data straight back.
           </p>
         </div>
 
@@ -49,17 +47,17 @@ const HowItWorksSection: React.FC = () => {
             <div key={s.step} className="relative text-center">
               {/* Connector line */}
               {idx < steps.length - 1 && (
-                <div className="hidden md:block absolute top-10 left-[60%] w-[80%] h-px bg-slate-200"></div>
+                <div className="hidden md:block absolute top-10 left-[60%] w-[80%] h-px bg-dl-hair"></div>
               )}
 
-              <div className={`w-20 h-20 ${s.bg} rounded-2xl flex items-center justify-center mx-auto mb-5 relative`}>
-                <s.icon size={28} className={s.color} aria-hidden="true" />
-                <span className="absolute -top-2 -right-2 w-7 h-7 bg-white border-2 border-slate-200 rounded-full flex items-center justify-center text-xs font-semibold text-slate-500">
+              <div className="w-20 h-20 bg-dl-teal/10 rounded-dl-lg flex items-center justify-center mx-auto mb-5 relative">
+                <s.icon size={28} className="text-dl-teal" aria-hidden="true" />
+                <span className="absolute -top-2 -right-2 w-7 h-7 bg-dl-surface border border-dl-hair rounded-full flex items-center justify-center font-dl-mono text-dl-xs font-medium text-dl-muted tabular-nums">
                   {s.step}
                 </span>
               </div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">{s.title}</h3>
-              <p className="text-sm text-slate-500 leading-relaxed max-w-xs mx-auto">{s.description}</p>
+              <h3 className="font-dl-display text-dl-base font-semibold text-dl-ink tracking-dl-head mb-2">{s.title}</h3>
+              <p className="text-dl-sm text-dl-muted leading-relaxed max-w-xs mx-auto">{s.description}</p>
             </div>
           ))}
         </div>

@@ -10,14 +10,22 @@
   <meta name="author" content="OpenHRApp">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://openhrapp.com/">
-  <link rel="alternate" type="application/rss+xml" title="OpenHR Blog RSS Feed" href="https://openhrapp.com/feed.xml">
+  <link rel="alternate" type="application/rss+xml" title="OpenHRApp Blog RSS Feed" href="https://openhrapp.com/feed.xml">
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://openhrapp.com/">
   <meta property="og:title" content="OpenHRApp — Free Open-Source HR Management Software">
   <meta property="og:description" content="Free, open-source HR management system with attendance tracking, leave management, employee directory, and compliance tools for modern organizations.">
-  <meta property="og:image" content="https://openhrapp.com/img/screenshot-wide.webp">
+  <!-- PNG, not WebP: Facebook, LinkedIn, X, and WhatsApp do not render WebP in
+       link previews, so a .webp here yields a card with no image at all.
+       Explicit dimensions and type make the large card render on first scrape. -->
+  <meta property="og:image" content="https://openhrapp.com/img/screenshot-wide.png">
+  <meta property="og:image:secure_url" content="https://openhrapp.com/img/screenshot-wide.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1920">
+  <meta property="og:image:height" content="1080">
+  <meta property="og:image:alt" content="OpenHRApp — free open-source HR management software">
   <meta property="og:site_name" content="OpenHRApp">
   <meta property="og:locale" content="en_US">
 
@@ -26,7 +34,8 @@
   <meta name="twitter:site" content="@openhrapp">
   <meta name="twitter:title" content="OpenHRApp — Free Open-Source HR Management Software">
   <meta name="twitter:description" content="Free, open-source HR management system with attendance tracking, leave management, employee directory, and compliance tools for modern organizations.">
-  <meta name="twitter:image" content="https://openhrapp.com/img/screenshot-wide.webp">
+  <meta name="twitter:image" content="https://openhrapp.com/img/screenshot-wide.png">
+  <meta name="twitter:image:alt" content="OpenHRApp — free open-source HR management software">
 
   <!-- PWA & iOS Specific Meta Tags -->
   <meta name="theme-color" content="#fcfdfe">
@@ -90,40 +99,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://www.youtube.com">
   <link rel="preconnect" href="https://i.ytimg.com">
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"></noscript>
+  <!-- Inter for the app; Schibsted Grotesk / Public Sans / IBM Plex Mono for the
+       Daylight public surface. One request, non-blocking, display=swap.
+       Inter previously pulled 300/800/900 which nothing uses — see the weight
+       audit: only font-medium, font-semibold and font-bold appear in src/. -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Schibsted+Grotesk:wght@600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Schibsted+Grotesk:wght@600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"></noscript>
 <script>
-  // Theme preload: apply cached theme BEFORE React loads to prevent flash
-  (function() {
-    try {
-      var themeId = localStorage.getItem('openhr-global-theme');
-      if (!themeId) return;
-      var themes = {
-        'arctic-frost':     { p: '#4a6fa5', h: '#3b5d8c', l: '#d4e4f7' },
-        'corporate-blue':   { p: '#2563eb', h: '#1d4ed8', l: '#dbeafe' },
-        'ocean-depths':     { p: '#2d8b8b', h: '#24706f', l: '#ccecec' },
-        'modern-minimal':   { p: '#36454f', h: '#2a363e', l: '#e8ecef' },
-        'forest-canopy':    { p: '#2d4a2b', h: '#1f3620', l: '#d5e3d4' },
-        'midnight-galaxy':  { p: '#4a4e8f', h: '#3b3f73', l: '#e0e1f0' },
-        'tech-innovation':  { p: '#0066ff', h: '#0052cc', l: '#d6e8ff' },
-        'sunset-orange':    { p: '#e2582e', h: '#c44a25', l: '#fde0d5' },
-        'rose-garden':      { p: '#e11d62', h: '#be1854', l: '#fce4ef' },
-        'golden-amber':     { p: '#b8860b', h: '#9a7009', l: '#faf0d4' },
-        'deep-indigo':      { p: '#4f46e5', h: '#4338ca', l: '#e0e0fc' },
-        'royal-purple':     { p: '#7c3aed', h: '#6d28d9', l: '#ede4fd' },
-        'teal-wave':        { p: '#0d9488', h: '#0f766e', l: '#ccfbf1' },
-        'charcoal-slate':   { p: '#475569', h: '#334155', l: '#e2e8f0' }
-      };
-      var t = themes[themeId];
-      if (!t) return;
-      var s = document.documentElement.style;
-      s.setProperty('--primary', t.p);
-      s.setProperty('--primary-hover', t.h);
-      s.setProperty('--primary-light', t.l);
-      s.setProperty('--primary-light-dark', t.p + '20');
-    } catch(e) {}
-  })();
-
   // Dark mode preload — prevents white flash on refresh
   (function() {
     try {
@@ -153,8 +135,7 @@
     "react/": "https://esm.sh/react@19.2.3/",
     "react-dom/": "https://esm.sh/react-dom@19.2.3/",
     "lucide-react": "https://esm.sh/lucide-react@0.460.0",
-    "recharts": "https://esm.sh/recharts@2.13.3",
-
+    "recharts": "https://esm.sh/recharts@2.13.3"
   }
 }
 </script>
@@ -172,49 +153,95 @@
     <div id="static-hero">
       <style>
         /* Critical above-the-fold CSS — inlined so the hero renders immediately
-           before the Tailwind bundle or external stylesheets load. */
-        #static-hero{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fcfdfe;min-height:100vh}
+           before the Tailwind bundle or external stylesheets load.
+
+           This block MIRRORS src/components/landing/HeroSection.tsx. When the two
+           drift, the skeleton paints one design and React immediately replaces it
+           with another, which reads to a visitor as the hero rendering twice —
+           exactly what happened when Daylight (DL4) rebuilt the hero and left this
+           block on the old --primary palette. Every colour below is a Daylight
+           token with a hardcoded fallback: the fallback covers the moment before
+           index.css arrives, then the token takes over and dark mode follows
+           html.dark on its own. Keep the two in step. */
+        #static-hero{font-family:var(--dl-font-body,"Public Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif);background:var(--dl-ground,#FFFFFF);min-height:100vh}
         #static-hero .sh-wrap{max-width:80rem;margin:0 auto;padding:0 1rem;text-align:center}
-        #static-hero .sh-headline{font-size:2.25rem;line-height:1.1;font-weight:600;color:#0f172a;letter-spacing:-0.025em;margin:0 0 1.5rem}
-        #static-hero .sh-headline span{color:var(--primary, #4a6fa5)}
-        #static-hero .sh-subtext{font-size:1.125rem;line-height:1.625;color:#64748b;max-width:42rem;margin:0 auto 2.5rem}
-        #static-hero .sh-btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:1rem 2rem;font-weight:700;font-size:.875rem;border-radius:1rem;text-decoration:none;cursor:pointer;border:none;font-family:inherit;transition:opacity .15s}
-        #static-hero .sh-btn-dark{background:#0f172a;color:#fff;box-shadow:0 10px 15px -3px rgba(15,23,42,.2)}
-        #static-hero .sh-btn-primary{background:var(--primary, #4a6fa5);color:#fff;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+        #static-hero .sh-inner{max-width:56rem;margin:0 auto}
+        #static-hero .sh-headline{font-family:var(--dl-font-display,"Schibsted Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif);font-size:2.25rem;line-height:1.1;font-weight:600;color:var(--dl-ink,#0E2A33);letter-spacing:-0.03em;margin:0 0 1.5rem}
+        #static-hero .sh-headline span{color:var(--dl-teal,#1C6E7E)}
+        #static-hero .sh-subtext{font-size:1.125rem;line-height:1.625;color:var(--dl-muted,#55707A);max-width:42rem;margin:0 auto 2.5rem}
+        #static-hero .sh-btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:1rem 2rem;font-weight:700;font-size:.875rem;border-radius:var(--dl-r-md,14px);text-decoration:none;cursor:pointer;border:1px solid transparent;font-family:inherit;transition:opacity .15s}
+        #static-hero .sh-btn-dark{background:var(--dl-ink,#0E2A33);color:var(--dl-surface,#FFFFFF);box-shadow:var(--dl-lift-2,0 1px 2px rgba(14,42,51,.05), 0 14px 34px -14px rgba(14,42,51,.16))}
+        #static-hero .sh-btn-demo{background:transparent;color:var(--dl-teal,#1C6E7E);border-color:rgba(28,110,126,.4)}
+        #static-hero .sh-btn-primary{background:var(--dl-teal,#1C6E7E);color:var(--dl-surface,#FFFFFF);box-shadow:var(--dl-lift-1,0 1px 1px rgba(14,42,51,.045), 0 4px 10px -4px rgba(14,42,51,.08))}
         #static-hero .sh-btn:hover{opacity:.9}
-        #static-hero .sh-badge{display:inline-flex;align-items:center;gap:.5rem;padding:.5rem 1rem;background:var(--primary-light, #d4e4f7);border:1px solid rgba(0,0,0,.06);border-radius:9999px;margin-bottom:1.5rem}
-        #static-hero .sh-badge-dot{width:.5rem;height:.5rem;background:#10b981;border-radius:50%;animation:sh-pulse 2s ease-in-out infinite}
-        #static-hero .sh-badge-text{font-size:.75rem;font-weight:700;color:var(--primary, #4a6fa5)}
+        /* Mirrors .dl-cta-cycle / .dl-cta-pulse in src/index.css so the two CTAs
+           do not visibly start animating at the moment React takes over. */
+        @property --sh-ring-angle{syntax:"<angle>";inherits:false;initial-value:0deg}
+        @keyframes sh-cta-ring-spin{to{--sh-ring-angle:360deg}}
+        #static-hero .sh-btn-demo{border:2px solid transparent;background:linear-gradient(var(--dl-ground,#FFFFFF),var(--dl-ground,#FFFFFF)) padding-box,conic-gradient(from var(--sh-ring-angle),var(--dl-teal,#1C6E7E),var(--dl-dawn,#B4560F),var(--dl-noon,#A83E58),var(--dl-dusk,#5C4E8E),var(--dl-teal,#1C6E7E)) border-box;animation:sh-cta-ring-spin 4s linear infinite}
+        #static-hero .sh-dots{display:inline-flex;align-items:center;gap:.3rem}
+        #static-hero .sh-dot{width:.45rem;height:.45rem;border-radius:50%;display:block;animation:sh-dot-blink 1.8s ease-in-out infinite}
+        #static-hero .sh-dot-red{background:#E5484D}
+        #static-hero .sh-dot-green{background:#30A46C;animation-delay:.9s}
+        @keyframes sh-dot-blink{0%,100%{opacity:1}50%{opacity:.22}}
+        #static-hero .sh-btn-primary{position:relative;overflow:hidden;animation:sh-cta-halo 2.6s ease-out infinite}
+        #static-hero .sh-btn-primary::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;pointer-events:none;background:linear-gradient(100deg,transparent 0%,rgba(255,255,255,.38) 50%,transparent 100%);transform:skewX(-18deg);animation:sh-cta-sheen 3.4s ease-in-out infinite}
+        @media(prefers-reduced-motion:reduce){
+          #static-hero .sh-btn-demo,#static-hero .sh-btn-primary,#static-hero .sh-btn-primary::after,#static-hero .sh-dot{animation:none}
+        }
+        #static-hero .sh-note{font-size:.75rem;color:var(--dl-muted,#55707A);margin:0 0 3rem}
+        #static-hero .sh-note-desktop{display:none}
+        #static-hero .sh-badge{display:inline-flex;align-items:center;gap:.5rem;padding:.5rem 1rem;background:rgba(28,110,126,.05);border:1px solid rgba(28,110,126,.15);border-radius:9999px;margin-bottom:1.5rem}
+        #static-hero .sh-badge-dot{width:.5rem;height:.5rem;background:var(--dl-teal,#1C6E7E);border-radius:50%}
+        #static-hero .sh-badge-text{font-size:.75rem;font-weight:700;color:var(--dl-teal,#1C6E7E);text-transform:uppercase;letter-spacing:.12em}
         #static-hero .sh-trust{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:1.5rem;margin-top:3rem}
-        #static-hero .sh-trust-item{display:flex;align-items:center;gap:.5rem;color:#94a3b8;font-size:.75rem;font-weight:600}
-        #static-hero .sh-trust-icon{color:#10b981;flex-shrink:0}
+        #static-hero .sh-trust-item{display:flex;align-items:center;gap:.5rem;color:var(--dl-muted,#55707A);font-size:.75rem;font-weight:600}
+        #static-hero .sh-trust-icon{color:var(--dl-teal,#1C6E7E);flex-shrink:0}
         #static-hero .sh-cta-mobile{display:flex;flex-direction:column;gap:.75rem;margin-bottom:2rem}
         #static-hero .sh-cta-desktop{display:none;align-items:center;justify-content:center;gap:1rem;margin-bottom:3rem}
         #static-hero .sh-section{position:relative;padding-top:7rem;padding-bottom:4rem;overflow:hidden}
         #static-hero .sh-blob{position:absolute;border-radius:50%;filter:blur(120px);z-index:0}
-        #static-hero .sh-blob-top{top:0;right:-20%;width:60%;height:60%;background:radial-gradient(circle, rgba(74,111,165,.08) 0%, transparent 70%)}
-        #static-hero .sh-blob-bottom{bottom:0;left:-10%;width:40%;height:40%;background:radial-gradient(circle, rgba(16,185,129,.08) 0%, transparent 70%)}
-        @keyframes sh-pulse{0%,100%{opacity:1}50%{opacity:.5}}
+        #static-hero .sh-blob-top{top:0;right:-20%;width:60%;height:60%;background:radial-gradient(circle, rgba(28,110,126,.05) 0%, transparent 70%)}
+        #static-hero .sh-blob-bottom{bottom:0;left:-10%;width:40%;height:40%;background:radial-gradient(circle, rgba(14,42,51,.05) 0%, transparent 70%)}
         @media(min-width:640px){
           #static-hero .sh-headline{font-size:3rem}
-          #static-hero .sh-subtext{font-size:1.25rem}
+          #static-hero .sh-subtext{font-size:1.406rem}
           #static-hero .sh-trust{gap:2rem}
           #static-hero .sh-cta-mobile{display:none}
+          #static-hero .sh-cta-mobile+.sh-note{display:none}
           #static-hero .sh-cta-desktop{display:flex}
+          #static-hero .sh-note-desktop{display:block}
+        }
+        @media(min-width:768px){
           #static-hero .sh-section{padding-top:9rem;padding-bottom:6rem}
         }
         @media(min-width:1024px){
           #static-hero .sh-headline{font-size:3.75rem}
         }
-        /* Dark mode overrides — .dark class is applied on <html> by the
-           synchronous <head> script before the body parses, so these rules
-           are active on first paint and eliminate the white flash. */
-        .dark #static-hero{background:#0f172a!important;color:#e2e8f0!important}
-        .dark #static-hero .sh-headline{color:#f1f5f9!important}
-        .dark #static-hero .sh-subtext{color:#94a3b8!important}
-        .dark #static-hero .sh-trust-item{color:#64748b!important}
-        .dark #static-hero .sh-badge{background:rgba(255,255,255,.08)!important;border-color:rgba(255,255,255,.1)!important}
-        .dark #static-hero .sh-btn-dark{background:#334155!important}
+        /* Dark mode. The .dark class is applied on <html> by the synchronous
+           <head> script before the body parses, so these are active on first
+           paint and eliminate the white flash. They only restate the fallbacks —
+           once index.css loads, html.dark has already flipped the tokens. */
+        .dark #static-hero{background:var(--dl-ground,#0A1518)}
+        .dark #static-hero .sh-headline{color:var(--dl-ink,#E4EDEF)}
+        .dark #static-hero .sh-headline span{color:var(--dl-teal,#5FBDCE)}
+        .dark #static-hero .sh-subtext,
+        .dark #static-hero .sh-note,
+        .dark #static-hero .sh-trust-item{color:var(--dl-muted,#93AAB2)}
+        .dark #static-hero .sh-badge-text,
+        .dark #static-hero .sh-badge-dot,
+        .dark #static-hero .sh-trust-icon,
+        .dark #static-hero .sh-btn-demo{color:var(--dl-teal,#5FBDCE)}
+        .dark #static-hero .sh-badge-dot{background:var(--dl-teal,#5FBDCE)}
+        .dark #static-hero .sh-btn-dark{background:var(--dl-ink,#E4EDEF);color:var(--dl-surface,#102026)}
+        .dark #static-hero .sh-badge{background:rgba(95,189,206,.06);border-color:rgba(95,189,206,.18)}
+        .dark #static-hero .sh-btn-demo{background:linear-gradient(var(--dl-ground,#0A1518),var(--dl-ground,#0A1518)) padding-box,conic-gradient(from var(--sh-ring-angle),var(--dl-teal,#5FBDCE),var(--dl-dawn,#E2925A),var(--dl-noon,#DE8199),var(--dl-dusk,#A99BDA),var(--dl-teal,#5FBDCE)) border-box}
+        .dark #static-hero .sh-btn-primary{animation-name:sh-cta-halo-dark}
+        .dark #static-hero .sh-btn-primary::after{background:linear-gradient(100deg,transparent 0%,rgba(14,42,51,.30) 50%,transparent 100%)}
+        @keyframes sh-cta-halo-dark{0%{box-shadow:0 0 0 0 rgba(95,189,206,.55)}70%{box-shadow:0 0 0 12px rgba(95,189,206,0)}100%{box-shadow:0 0 0 0 rgba(95,189,206,0)}}
+        .dark #static-hero .sh-blob-top{background:radial-gradient(circle, rgba(95,189,206,.06) 0%, transparent 70%)}
+        .dark #static-hero .sh-blob-bottom{background:radial-gradient(circle, rgba(228,237,239,.04) 0%, transparent 70%)}
+        .dark #static-hero .sh-btn-primary{background:var(--dl-teal,#5FBDCE);color:var(--dl-surface,#102026)}
         /* Auth-aware: when the user has a cached Supabase session, hide the
            landing-page skeleton to avoid a flash-of-wrong-page on refresh.
            The inline script below toggles this class synchronously. */
@@ -224,17 +251,24 @@
         <div class="sh-blob sh-blob-top"></div>
         <div class="sh-blob sh-blob-bottom"></div>
         <div class="sh-wrap" style="position:relative;z-index:1">
+         <div class="sh-inner">
           <!-- Mobile CTA Buttons (visible below 640px, matches HeroSection.tsx sm:hidden) -->
           <div class="sh-cta-mobile">
             <a class="sh-btn sh-btn-dark" href="/" style="width:100%">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
               Login to Your Account
             </a>
+            <a class="sh-btn sh-btn-demo" href="/" style="width:100%">
+              <span class="sh-dots" aria-hidden="true"><i class="sh-dot sh-dot-red"></i><i class="sh-dot sh-dot-green"></i></span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Try Live Demo →
+            </a>
             <a class="sh-btn sh-btn-primary" href="/" style="width:100%">
               Get Started Free
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </a>
           </div>
+          <p class="sh-note">Demo resets daily. No data saved.</p>
 
           <!-- Badge -->
           <div class="sh-badge">
@@ -254,11 +288,17 @@
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
               Login to Your Account
             </a>
+            <a class="sh-btn sh-btn-demo" href="/">
+              <span class="sh-dots" aria-hidden="true"><i class="sh-dot sh-dot-red"></i><i class="sh-dot sh-dot-green"></i></span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Try Live Demo →
+            </a>
             <a class="sh-btn sh-btn-primary" href="/">
               Get Started Free
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </a>
           </div>
+          <p class="sh-note sh-note-desktop">Demo resets daily. No data saved.</p>
 
           <!-- Trust Badges -->
           <div class="sh-trust">
@@ -275,6 +315,7 @@
               <span>Setup in 5 minutes</span>
             </div>
           </div>
+         </div>
         </div>
       </section>
     </div>

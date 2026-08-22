@@ -108,16 +108,19 @@ async function fetchAllRows(table) {
   let offset = 0;
   while (true) {
     const params = new URLSearchParams({
-      select: 'slug,title,excerpt,author_name,published_at,created_at,category',
-      status: 'eq.published',
+      // `status` is uppercase in the DB and PostgREST `eq` is case-sensitive; the timestamp
+      // column is `created`, not `created_at`. See 0001_initial_schema.sql.
+      select: 'slug,title,excerpt,author_name,published_at,created,category',
+      status: 'eq.PUBLISHED',
       order: 'published_at.desc',
       limit: String(limit),
       offset: String(offset),
     });
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, { headers: SUPABASE_HEADERS });
     if (!res.ok) {
-      console.warn(`  Warning: ${table} returned ${res.status}`);
-      break;
+      // Fail loudly rather than emitting an empty feed.
+      const body = await res.text().catch(() => '');
+      throw new Error(`${table} query failed: HTTP ${res.status} ${body}`);
     }
     const rangeHeader = res.headers.get('content-range');
     const records = await res.json();
@@ -148,20 +151,21 @@ function renderItem({ title, link, description, pubDate, author, category }) {
 async function main() {
   console.log('Generating RSS feed...');
 
-  let posts = [];
-  try {
-    posts = await fetchAllRows('blog_posts');
-    console.log(`  Found ${posts.length} blog post(s)`);
-  } catch (e) {
-    console.warn('  Warning: Could not fetch blog posts:', e.message);
-  }
+  const posts = await fetchAllRows('blog_posts');
+  console.log(`  Found ${posts.length} blog post(s)`);
 
-  let tutorials = [];
-  try {
-    tutorials = await fetchAllRows('tutorials');
-    console.log(`  Found ${tutorials.length} tutorial(s)`);
-  } catch (e) {
-    console.warn('  Warning: Could not fetch tutorials:', e.message);
+  const tutorials = await fetchAllRows('tutorials');
+  console.log(`  Found ${tutorials.length} tutorial(s)`);
+
+  // The feed is allowed to contain feature items only if there is genuinely no
+  // published content yet — but a zero result usually means a broken query.
+  if (posts.length === 0 && tutorials.length === 0 && process.env.ALLOW_EMPTY_CONTENT !== '1') {
+    throw new Error(
+      'No blog posts or tutorials resolved — refusing to emit a content-free feed.\n' +
+      '  Check the status casing (expects PUBLISHED, not published) and the column\n' +
+      '  names (created/updated, not created_at/updated_at).\n' +
+      '  If the database genuinely has no published content yet, set ALLOW_EMPTY_CONTENT=1.'
+    );
   }
 
   // Use features.ts mtime as the stable pubDate for feature items so the feed
@@ -254,5 +258,6 @@ async function main() {
 
 main().catch((err) => {
   console.error('RSS feed generation failed:', err.message);
-  process.exit(0);
+  // Fail the build rather than silently shipping a feed with no articles in it.
+  process.exit(1);
 });

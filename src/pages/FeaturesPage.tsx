@@ -59,7 +59,7 @@ const FeaturesPage: React.FC<FeaturesPageProps> = ({ onBack, onRegisterClick }) 
       'Features | OpenHRApp',
       'Explore all OpenHRApp features: selfie-based attendance with GPS, leave management, employee directory, performance reviews, reports, and more. Free and open-source.',
       'https://openhrapp.com/features',
-      'https://openhrapp.com/img/screenshot-wide.webp'
+      'https://openhrapp.com/img/screenshot-wide.png'
     );
     setJsonLd({
       '@context': 'https://schema.org',
@@ -104,29 +104,29 @@ const FeaturesPage: React.FC<FeaturesPageProps> = ({ onBack, onRegisterClick }) 
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-dl-ground flex flex-col">
       <BlogNavbar onBack={onBack} />
 
       {/* Hero */}
-      <div className="bg-white border-b border-slate-100">
+      <div className="bg-dl-surface border-b border-dl-hair-soft">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 text-center">
-          <span className="text-xs font-bold text-primary uppercase tracking-widest">Features</span>
-          <h1 className="text-4xl md:text-5xl font-semibold text-slate-900 tracking-tight mt-4 mb-6">
+          <span className="text-xs font-bold text-dl-teal uppercase tracking-widest">Features</span>
+          <h1 className="text-4xl md:text-5xl font-semibold text-dl-ink tracking-tight mt-4 mb-6">
             All-in-One HR Management
           </h1>
-          <p className="text-lg md:text-xl text-slate-500 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-lg md:text-xl text-dl-muted max-w-3xl mx-auto leading-relaxed">
             Everything you need to manage attendance, leave, employees, performance reviews, and reports — in one free, open-source platform.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
               onClick={handleGetStarted}
-              className="px-8 py-3.5 bg-primary text-white font-bold rounded-xl hover:bg-primary-hover transition-colors shadow-sm text-sm"
+              className="px-8 py-3.5 bg-dl-teal text-dl-surface font-bold rounded-dl-md hover:bg-dl-teal-deep transition-colors shadow-dl-1 text-sm"
             >
               Get Started Free
             </button>
             <button
               onClick={() => navigateTo('/how-to-use')}
-              className="px-8 py-3.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors text-sm border border-slate-200"
+              className="px-8 py-3.5 bg-dl-hair-soft text-dl-ink font-bold rounded-dl-md hover:bg-dl-hair transition-colors text-sm border border-dl-hair"
             >
               View Guides
             </button>
@@ -144,15 +144,15 @@ const FeaturesPage: React.FC<FeaturesPageProps> = ({ onBack, onRegisterClick }) 
                   {/* Text Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-4">
-                      <div className={`w-12 h-12 ${feature.bg} rounded-xl flex items-center justify-center`}>
+                      <div className={`w-12 h-12 ${feature.bg} rounded-dl-md flex items-center justify-center`}>
                         <feature.icon size={22} className={feature.color} />
                       </div>
                       <div>
-                        <h2 className="text-2xl md:text-3xl font-bold text-slate-900">{feature.title}</h2>
+                        <h2 className="text-2xl md:text-3xl font-bold text-dl-ink">{feature.title}</h2>
                       </div>
                     </div>
-                    <p className="text-sm font-semibold text-primary mb-4">{feature.subtitle}</p>
-                    <p className="text-slate-600 text-base leading-relaxed mb-8">
+                    <p className="text-sm font-semibold text-dl-teal mb-4">{feature.subtitle}</p>
+                    <p className="text-dl-muted text-base leading-relaxed mb-8">
                       {feature.description}
                     </p>
 
@@ -161,14 +161,14 @@ const FeaturesPage: React.FC<FeaturesPageProps> = ({ onBack, onRegisterClick }) 
                       {feature.subFeatures.map(sub => (
                         <li key={sub} className="flex items-start gap-3">
                           <Check size={18} className={`${feature.color} mt-0.5 flex-shrink-0`} />
-                          <span className="text-sm text-slate-700">{sub}</span>
+                          <span className="text-sm text-dl-ink">{sub}</span>
                         </li>
                       ))}
                     </ul>
 
                     <button
                       onClick={() => navigateTo(`/features/${feature.slug}`)}
-                      className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-primary hover:text-primary-hover transition-colors"
+                      className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-dl-teal hover:text-dl-teal-deep transition-colors"
                     >
                       Learn more about {feature.title.toLowerCase()} <ArrowRight size={14} />
                     </button>
@@ -176,9 +176,9 @@ const FeaturesPage: React.FC<FeaturesPageProps> = ({ onBack, onRegisterClick }) 
 
                   {/* Visual Placeholder */}
                   <div className="flex-1 min-w-0 w-full">
-                    <div className={`${feature.bg} ${feature.border} border rounded-2xl p-8 md:p-12 flex flex-col items-center justify-center min-h-[320px]`}>
+                    <div className={`${feature.bg} ${feature.border} border rounded-dl-lg p-8 md:p-12 flex flex-col items-center justify-center min-h-[320px]`}>
                       <feature.icon size={64} className={`${feature.color} opacity-20 mb-4`} />
-                      <p className="text-sm font-semibold text-slate-400">{feature.title}</p>
+                      <p className="text-sm font-semibold text-dl-muted">{feature.title}</p>
                     </div>
                   </div>
                 </div>
@@ -188,14 +188,14 @@ const FeaturesPage: React.FC<FeaturesPageProps> = ({ onBack, onRegisterClick }) 
         </div>
 
         {/* Platform Features */}
-        <div className="bg-white border-y border-slate-100">
+        <div className="bg-dl-surface border-y border-dl-hair-soft">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
             <div className="text-center max-w-2xl mx-auto mb-16">
-              <span className="text-xs font-bold text-primary uppercase tracking-widest">Platform</span>
-              <h2 className="text-3xl md:text-4xl font-semibold text-slate-900 mt-3 mb-4">
+              <span className="text-xs font-bold text-dl-teal uppercase tracking-widest">Platform</span>
+              <h2 className="text-3xl md:text-4xl font-semibold text-dl-ink mt-3 mb-4">
                 Built for Modern Teams
               </h2>
-              <p className="text-slate-500 text-lg">
+              <p className="text-dl-muted text-lg">
                 Beyond core HR features, OpenHRApp is designed to be fast, accessible, and customizable.
               </p>
             </div>
@@ -203,13 +203,13 @@ const FeaturesPage: React.FC<FeaturesPageProps> = ({ onBack, onRegisterClick }) 
               {platformFeatures.map(pf => (
                 <div
                   key={pf.title}
-                  className="p-6 bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 rounded-2xl hover:bg-white dark:hover:bg-slate-800 hover:shadow-lg hover:shadow-slate-100 dark:hover:shadow-black/30 hover:border-slate-200 dark:hover:border-slate-600 transition-all duration-300"
+                  className="p-6 bg-dl-ground border border-dl-hair-soft rounded-dl-lg hover:bg-dl-surface hover:shadow-dl-2 hover:border-dl-hair transition-all duration-300"
                 >
-                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-5">
-                    <pf.icon size={22} className="text-primary" />
+                  <div className="w-12 h-12 bg-dl-teal/10 rounded-dl-md flex items-center justify-center mb-5">
+                    <pf.icon size={22} className="text-dl-teal" />
                   </div>
-                  <h3 className="text-base font-bold text-slate-900 mb-2">{pf.title}</h3>
-                  <p className="text-sm text-slate-500 leading-relaxed">{pf.description}</p>
+                  <h3 className="text-base font-bold text-dl-ink mb-2">{pf.title}</h3>
+                  <p className="text-sm text-dl-muted leading-relaxed">{pf.description}</p>
                 </div>
               ))}
             </div>
@@ -219,43 +219,43 @@ const FeaturesPage: React.FC<FeaturesPageProps> = ({ onBack, onRegisterClick }) 
         {/* Comparison Table */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <span className="text-xs font-bold text-primary uppercase tracking-widest">Comparison</span>
-            <h2 className="text-3xl md:text-4xl font-semibold text-slate-900 mt-3 mb-4">
+            <span className="text-xs font-bold text-dl-teal uppercase tracking-widest">Comparison</span>
+            <h2 className="text-3xl md:text-4xl font-semibold text-dl-ink mt-3 mb-4">
               OpenHRApp vs Typical Paid HRMS
             </h2>
-            <p className="text-slate-500 text-lg">
+            <p className="text-dl-muted text-lg">
               Get more features out of the box — without the per-user pricing.
             </p>
           </div>
           <div className="max-w-3xl mx-auto">
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div className="bg-dl-surface rounded-dl-lg border border-dl-hair-soft shadow-dl-1 overflow-hidden">
               {/* Table Header */}
-              <div className="grid grid-cols-3 bg-slate-50 border-b border-slate-100">
-                <div className="px-6 py-4 text-sm font-bold text-slate-900">Feature</div>
-                <div className="px-6 py-4 text-sm font-bold text-primary text-center">OpenHRApp</div>
-                <div className="px-6 py-4 text-sm font-bold text-slate-500 text-center">Typical Paid HRMS</div>
+              <div className="grid grid-cols-3 bg-dl-ground border-b border-dl-hair-soft">
+                <div className="px-6 py-4 text-sm font-bold text-dl-ink">Feature</div>
+                <div className="px-6 py-4 text-sm font-bold text-dl-teal text-center">OpenHRApp</div>
+                <div className="px-6 py-4 text-sm font-bold text-dl-muted text-center">Typical Paid HRMS</div>
               </div>
               {/* Table Rows */}
               {comparisonRows.map((row, i) => (
                 <div
                   key={row.feature}
-                  className={`grid grid-cols-3 ${i < comparisonRows.length - 1 ? 'border-b border-slate-50' : ''} hover:bg-slate-50/50 transition-colors`}
+                  className={`grid grid-cols-3 ${i < comparisonRows.length - 1 ? 'border-b border-dl-hair-soft' : ''} hover:bg-dl-ground/50 transition-colors`}
                 >
-                  <div className="px-6 py-3.5 text-sm text-slate-700">{row.feature}</div>
+                  <div className="px-6 py-3.5 text-sm text-dl-ink">{row.feature}</div>
                   <div className="px-6 py-3.5 flex justify-center">
                     {row.openhr === true ? (
-                      <Check size={18} className="text-emerald-500" />
+                      <Check size={18} className="text-dl-teal" />
                     ) : (
-                      <span className="text-sm text-slate-400">{String(row.openhr)}</span>
+                      <span className="text-sm text-dl-muted">{String(row.openhr)}</span>
                     )}
                   </div>
                   <div className="px-6 py-3.5 flex justify-center">
                     {row.typical === true ? (
-                      <Check size={18} className="text-slate-400" />
+                      <Check size={18} className="text-dl-muted" />
                     ) : row.typical === false ? (
-                      <span className="text-sm text-slate-300">-</span>
+                      <span className="text-sm text-dl-muted">-</span>
                     ) : (
-                      <span className="text-xs text-amber-600 font-medium bg-amber-50 px-2 py-0.5 rounded-full">{String(row.typical)}</span>
+                      <span className="text-xs text-dl-teal font-medium bg-dl-teal/10 px-2 py-0.5 rounded-full">{String(row.typical)}</span>
                     )}
                   </div>
                 </div>
@@ -265,24 +265,24 @@ const FeaturesPage: React.FC<FeaturesPageProps> = ({ onBack, onRegisterClick }) 
         </div>
 
         {/* CTA */}
-        <div className="bg-primary/5 border-y border-primary/10">
+        <div className="bg-dl-teal/5 border-y border-dl-teal/15">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20 text-center">
-            <h2 className="text-3xl md:text-4xl font-semibold text-slate-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-semibold text-dl-ink mb-4">
               Ready to simplify your HR?
             </h2>
-            <p className="text-lg text-slate-500 mb-8 max-w-2xl mx-auto">
+            <p className="text-lg text-dl-muted mb-8 max-w-2xl mx-auto">
               Join organizations already using OpenHRApp. Free to start, no credit card required.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <button
                 onClick={handleGetStarted}
-                className="px-8 py-3.5 bg-primary text-white font-bold rounded-xl hover:bg-primary-hover transition-colors shadow-sm text-sm flex items-center gap-2"
+                className="px-8 py-3.5 bg-dl-teal text-dl-surface font-bold rounded-dl-md hover:bg-dl-teal-deep transition-colors shadow-dl-1 text-sm flex items-center gap-2"
               >
                 Get Started Free <ArrowRight size={16} />
               </button>
               <button
                 onClick={() => navigateTo('/blog')}
-                className="px-8 py-3.5 bg-white text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors text-sm border border-slate-200"
+                className="px-8 py-3.5 bg-dl-surface text-dl-ink font-bold rounded-dl-md hover:bg-dl-ground transition-colors text-sm border border-dl-hair"
               >
                 Read Our Blog
               </button>

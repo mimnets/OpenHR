@@ -1,7 +1,7 @@
 
 import { apiClient } from './api.client';
 import { BlogPost } from '../types';
-import { convertFileToWebP } from '../utils/imageConvert';
+import { convertFileToJpeg } from '../utils/imageConvert';
 import { getReadingMinutes } from '../utils/readingTime';
 import { supabase, isSupabaseConfigured, getSupabaseStorageUrl } from './supabase';
 
@@ -169,11 +169,12 @@ export const blogService = {
       let coverPath: string | null = null;
 
       if (data.coverImage) {
-        const webpCover = await convertFileToWebP(data.coverImage, 0.8, 1920);
-        const path = `blog-covers/${Date.now()}.webp`;
+        // JPEG, not WebP: covers become og:image and social crawlers cannot render WebP.
+        const coverFile = await convertFileToJpeg(data.coverImage, 0.85, 1920);
+        const path = `blog-covers/${Date.now()}.jpg`;
         const { error: uploadError } = await supabase.storage
           .from('content-images')
-          .upload(path, webpCover, { contentType: 'image/webp', upsert: true });
+          .upload(path, coverFile, { contentType: 'image/jpeg', upsert: true });
         if (uploadError) {
           console.error('[BlogService] Cover image upload failed:', uploadError);
           throw uploadError;
@@ -242,11 +243,12 @@ export const blogService = {
       }
 
       if (data.coverImage) {
-        const webpCover = await convertFileToWebP(data.coverImage, 0.8, 1920);
-        const path = `blog-covers/${Date.now()}.webp`;
+        // JPEG, not WebP: covers become og:image and social crawlers cannot render WebP.
+        const coverFile = await convertFileToJpeg(data.coverImage, 0.85, 1920);
+        const path = `blog-covers/${Date.now()}.jpg`;
         const { error: uploadError } = await supabase.storage
           .from('content-images')
-          .upload(path, webpCover, { contentType: 'image/webp', upsert: true });
+          .upload(path, coverFile, { contentType: 'image/jpeg', upsert: true });
         if (uploadError) {
           console.error('[BlogService] Cover image upload failed:', uploadError);
           throw uploadError;

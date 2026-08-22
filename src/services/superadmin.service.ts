@@ -67,6 +67,8 @@ function mapOrg(r: any, userCount = 0, adminEmail = '', adminVerified?: boolean)
     trialEndDate: r.trial_end_date || undefined,
     created: r.created,
     updated: r.updated,
+    showOnLanding: r.show_on_landing === true,
+    landingConsentAt: r.landing_consent_at || undefined,
     userCount,
     adminEmail,
     adminVerified,
@@ -174,6 +176,10 @@ export const superAdminService = {
       if (data.name !== undefined) update.name = data.name;
       if (data.address !== undefined) update.address = data.address;
       if (data.subscriptionStatus !== undefined) update.subscription_status = data.subscriptionStatus;
+      // Showcase consent (Addendum 4 §5b). A super admin may record consent obtained out of
+      // band — by email or contract — for an organization that has not opted in from its own
+      // settings. The database trigger stamps landing_consent_at and refuses demo orgs.
+      if (data.showOnLanding !== undefined) update.show_on_landing = data.showOnLanding;
 
       if (data.subscriptionStatus === 'ACTIVE' || data.subscriptionStatus === 'SUSPENDED' || data.subscriptionStatus === 'AD_SUPPORTED') {
         update.trial_end_date = null;

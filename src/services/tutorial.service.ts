@@ -1,7 +1,7 @@
 
 import { apiClient } from './api.client';
 import { Tutorial } from '../types';
-import { convertFileToWebP } from '../utils/imageConvert';
+import { convertFileToJpeg } from '../utils/imageConvert';
 import { supabase, isSupabaseConfigured, getSupabaseStorageUrl } from './supabase';
 
 export const tutorialService = {
@@ -131,9 +131,10 @@ export const tutorialService = {
     try {
       let coverPath: string | null = null;
       if (data.coverImage) {
-        const webpCover = await convertFileToWebP(data.coverImage);
-        const path = `tutorial-covers/${Date.now()}.webp`;
-        const { error: uploadErr } = await supabase.storage.from('content-images').upload(path, webpCover, { upsert: true });
+        // JPEG, not WebP: covers become og:image and social crawlers cannot render WebP.
+        const coverFile = await convertFileToJpeg(data.coverImage, 0.85, 1920);
+        const path = `tutorial-covers/${Date.now()}.jpg`;
+        const { error: uploadErr } = await supabase.storage.from('content-images').upload(path, coverFile, { upsert: true });
         if (uploadErr) throw uploadErr;
         coverPath = path;
       }
@@ -190,9 +191,10 @@ export const tutorialService = {
       if (data.publishedAt !== undefined) record.published_at = data.publishedAt;
 
       if (data.coverImage) {
-        const webpCover = await convertFileToWebP(data.coverImage);
-        const path = `tutorial-covers/${Date.now()}.webp`;
-        const { error: uploadErr } = await supabase.storage.from('content-images').upload(path, webpCover, { upsert: true });
+        // JPEG, not WebP: covers become og:image and social crawlers cannot render WebP.
+        const coverFile = await convertFileToJpeg(data.coverImage, 0.85, 1920);
+        const path = `tutorial-covers/${Date.now()}.jpg`;
+        const { error: uploadErr } = await supabase.storage.from('content-images').upload(path, coverFile, { upsert: true });
         if (uploadErr) throw uploadErr;
         record.cover_image = path;
       }

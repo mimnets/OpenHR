@@ -1,9 +1,24 @@
-// OpenHR — Trial Expiration Cron
+// OpenHR — End of the ad-free period
 // Schedule: 0 0 * * * (daily midnight UTC)
 //
-// 1. Finds orgs where subscription_status = 'TRIAL' and trial_end_date < now() → sets EXPIRED.
-//    Sends expiry email to org admins via Resend.
-// 2. Finds orgs whose trial expires in exactly 7, 3, or 1 day(s) → sends reminder email.
+// 1. Finds orgs where subscription_status = 'TRIAL' and trial_end_date < now() →
+//    sets AD_SUPPORTED. Emails the org admins.
+// 2. Finds orgs whose ad-free period ends in exactly 7, 3, or 1 day(s) → sends a heads-up.
+//
+// Step 1 is BATCHED. This job was never actually scheduled, so a backlog built up: on the day
+// staging was added, 127 of 145 TRIAL organizations were already past trial_end_date. Running
+// unbounded would move all 127 in one night and send 127 emails in one burst — a large,
+// irreversible, customer-visible event, and exactly the wrong signal to send during an AdSense
+// re-review. TRIAL_TRANSITION_BATCH caps how many move per run; the rest wait for tomorrow.
+// The backlog drains on its own at BATCH per night and the cap becomes irrelevant once it has,
+// because the natural daily cohort is far smaller than any sane batch size.
+//
+// This used to set EXPIRED, which sets isReadOnly in organization.service.ts and disables
+// attendance punching, leave, announcements, org settings and performance reviews. That
+// contradicted every public statement the product makes — the FAQ ("permanently free… no
+// time limits, no feature gates"), the landing page, and the signup screen. TRIAL is an
+// ad-free window, not a paid trial: nothing is taken away when it ends, ads simply start.
+// EXPIRED still exists and still means read-only, but only a super admin can apply it now.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -40,28 +55,61 @@ Deno.serve(async (req: Request) => {
   const resendKey = Deno.env.get('RESEND_API_KEY');
   const admin = createClient(supabaseUrl, serviceKey);
 
+  /**
+   * How many organizations may move to AD_SUPPORTED in a single run. Set
+   * TRIAL_TRANSITION_BATCH in the function's environment to change it; 10 is a deliberately
+   * cautious default that drains a 127-org backlog over roughly two weeks.
+   *
+   * TRIAL_TRANSITION_PAUSED=true stops transitions entirely while leaving the 7/3/1-day
+   * reminders running — the switch to reach for if something looks wrong mid-drain, since it
+   * needs no redeploy.
+   */
+  const parsedBatch = Number(Deno.env.get('TRIAL_TRANSITION_BATCH') ?? '10');
+  const batchSize = Number.isFinite(parsedBatch) && parsedBatch > 0 ? Math.floor(parsedBatch) : 10;
+  const paused = Deno.env.get('TRIAL_TRANSITION_PAUSED') === 'true';
+
   const now = new Date();
   let expired = 0;
   let reminded = 0;
+  let remaining = 0;
 
-  // ── 1. Expire overdue trials ────────────────────────────────────────────────
-  const { data: expiredOrgs } = await admin
+  // ── 1. Move overdue organizations to ad-supported, oldest first, BATCH at a time ──
+  //
+  // Oldest trial_end_date first is deliberate: it is deterministic, so a failed run resumes
+  // where it left off rather than reshuffling, and the longest-dormant organizations are the
+  // least likely to be mid-evaluation when ads appear.
+  const { count: overdueCount } = await admin
     .from('organizations')
-    .select('id, name')
+    .select('id', { count: 'exact', head: true })
     .eq('subscription_status', 'TRIAL')
     .not('trial_end_date', 'is', null)
     .lt('trial_end_date', now.toISOString());
+
+  const { data: expiredOrgs } = paused
+    ? { data: [] as Array<{ id: string; name: string }> }
+    : await admin
+        .from('organizations')
+        .select('id, name')
+        .eq('subscription_status', 'TRIAL')
+        .not('trial_end_date', 'is', null)
+        .lt('trial_end_date', now.toISOString())
+        .order('trial_end_date', { ascending: true })
+        .limit(batchSize);
+
+  if (paused) {
+    console.log(`[cron-expire-trials] PAUSED — ${overdueCount ?? 0} organizations overdue, none moved.`);
+  }
 
   for (const org of expiredOrgs ?? []) {
     if (org.name === '__SYSTEM__' || org.name === 'Platform') continue;
 
     await admin
       .from('organizations')
-      .update({ subscription_status: 'EXPIRED', updated: now.toISOString() })
+      .update({ subscription_status: 'AD_SUPPORTED', updated: now.toISOString() })
       .eq('id', org.id);
 
     expired++;
-    console.log(`[cron-expire-trials] Expired org: ${org.name} (${org.id})`);
+    console.log(`[cron-expire-trials] Org moved to ad-supported: ${org.name} (${org.id})`);
 
     if (!resendKey) continue;
 
@@ -81,12 +129,15 @@ Deno.serve(async (req: Request) => {
       await sendEmail(
         resendKey,
         adm.email,
-        `OpenHR Trial Expired — ${org.name}`,
-        `<h2>Your OpenHR Trial Has Expired</h2>
+        `Your ad-free period has ended — ${org.name}`,
+        `<h2>Your ad-free period has ended</h2>
          <p>Dear ${adm.name || 'Admin'},</p>
-         <p>Your 14-day trial for <strong>${org.name}</strong> has ended.</p>
-         <p>Your account is now in read-only mode. Contact our team to upgrade.</p>
-         <p>Your data is safe and remains accessible.</p>`,
+         <p>The first 14 days for <strong>${org.name}</strong> are up, so you will start seeing
+            ads in OpenHR from today.</p>
+         <p><strong>Nothing else changes.</strong> OpenHRApp is free forever — every feature
+            stays available, there are no employee limits, and nothing has been switched off.</p>
+         <p>If you would rather not see ads, a donation removes them for your whole
+            organization. Visit the Upgrade page in your account for details.</p>`,
       );
 
       // Bell notification.
@@ -94,10 +145,10 @@ Deno.serve(async (req: Request) => {
         user_id: adm.id,
         organization_id: org.id,
         type: 'SYSTEM',
-        title: 'Trial Expired',
-        message: 'Your OpenHR trial has ended. Account is now in read-only mode.',
+        title: 'Ads are now on',
+        message: 'Your 14-day ad-free period has ended. Every feature stays available — donate to remove ads.',
         is_read: false,
-        priority: 'URGENT',
+        priority: 'NORMAL',
         action_url: 'upgrade',
       });
     }
@@ -135,9 +186,7 @@ Deno.serve(async (req: Request) => {
 
       const isUrgent = daysLeft <= 3;
       const dayLabel = daysLeft === 1 ? 'day' : 'days';
-      const subject = isUrgent
-        ? `Urgent: Your OpenHR Trial Expires in ${daysLeft} ${dayLabel} — ${org.name}`
-        : `Your OpenHR Trial Expires in ${daysLeft} ${dayLabel} — ${org.name}`;
+      const subject = `Your ad-free period ends in ${daysLeft} ${dayLabel} — ${org.name}`;
 
       for (const adm of admins ?? []) {
         if (!adm.email) {
@@ -149,14 +198,14 @@ Deno.serve(async (req: Request) => {
           resendKey,
           adm.email,
           subject,
-          `<h2>Trial Expiration Reminder</h2>
+          `<h2>Your ad-free period is ending</h2>
            <p>Dear ${adm.name || 'Admin'},</p>
-           <p>Your OpenHR trial for <strong>${org.name}</strong> expires in
-              <strong>${daysLeft} ${dayLabel}</strong>.</p>
-           ${isUrgent
-             ? `<p style="color:#dc2626;font-weight:bold;">After expiration, your account switches to read-only mode.</p>`
-             : `<p>After expiration, your account switches to read-only mode.</p>`}
-           <p>Log in to your OpenHR account and visit the Upgrade page to continue.</p>`,
+           <p>The ad-free period for <strong>${org.name}</strong> ends in
+              <strong>${daysLeft} ${dayLabel}</strong>, after which you will start seeing ads.</p>
+           <p><strong>You do not need to do anything.</strong> OpenHRApp stays free and every
+              feature keeps working — this is not a trial that runs out.</p>
+           <p>If you would prefer to stay ad-free, a donation removes ads for your whole
+              organization. See the Upgrade page in your account.</p>`,
         );
 
         // Bell notification.
@@ -164,10 +213,10 @@ Deno.serve(async (req: Request) => {
           user_id: adm.id,
           organization_id: org.id,
           type: 'SYSTEM',
-          title: `Trial expires in ${daysLeft} ${dayLabel}`,
-          message: `Your OpenHR trial for ${org.name} expires in ${daysLeft} ${dayLabel}.`,
+          title: `Ad-free period ends in ${daysLeft} ${dayLabel}`,
+          message: `Ads start for ${org.name} in ${daysLeft} ${dayLabel}. Every feature stays available.`,
           is_read: false,
-          priority: isUrgent ? 'URGENT' : 'HIGH',
+          priority: isUrgent ? 'HIGH' : 'NORMAL',
           action_url: 'upgrade',
         });
 
@@ -176,6 +225,29 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  console.log(`[cron-expire-trials] Done. expired=${expired} reminded=${reminded}`);
-  return jsonResponse(200, { success: true, expired, reminded });
+  // Never truncate silently: a capped run that does not say what it skipped reads in the logs
+  // exactly like a run that had nothing left to do.
+  remaining = Math.max(0, (overdueCount ?? 0) - expired);
+  if (remaining > 0) {
+    const nights = Math.ceil(remaining / batchSize);
+    console.log(
+      `[cron-expire-trials] Batch cap ${batchSize} reached — ${remaining} organization(s) still ` +
+      `overdue, about ${nights} more run(s) to drain.`,
+    );
+  }
+
+  console.log(
+    `[cron-expire-trials] Done. moved=${expired} reminded=${reminded} remaining=${remaining} ` +
+    `batch=${batchSize} paused=${paused}`,
+  );
+  return jsonResponse(200, {
+    success: true,
+    moved: expired,
+    reminded,
+    remaining,
+    batchSize,
+    paused,
+    // Retained so anything already reading `expired` keeps working.
+    expired,
+  });
 });

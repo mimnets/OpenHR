@@ -32,6 +32,7 @@ const STATIC_PAGES = [
   { path: '/features/reports-analytics', changefreq: 'monthly', priority: '0.7' },
   { path: '/changelog', changefreq: 'weekly', priority: '0.7' },
   { path: '/how-to-use', changefreq: 'weekly', priority: '0.7' },
+  { path: '/contact', changefreq: 'monthly', priority: '0.5' },
   { path: '/privacy', changefreq: 'monthly', priority: '0.3' },
   { path: '/terms', changefreq: 'monthly', priority: '0.3' },
 ];
@@ -41,14 +42,18 @@ const SUPABASE_HEADERS = {
   'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
 };
 
-async function fetchAllRows(table, select = 'slug,updated_at,published_at') {
+// NOTE: `status` is stored uppercase ('DRAFT' | 'PUBLISHED' | 'ARCHIVED') per the CHECK
+// constraint in 0001_initial_schema.sql, and PostgREST `eq` is case-sensitive. The timestamp
+// columns are `created` / `updated` — NOT `created_at` / `updated_at`. Getting either wrong
+// silently yields zero rows, which drops every post and guide out of the sitemap.
+async function fetchAllRows(table, select = 'slug,updated,published_at') {
   const items = [];
   const limit = 1000;
   let offset = 0;
   while (true) {
     const params = new URLSearchParams({
       select,
-      status: 'eq.published',
+      status: 'eq.PUBLISHED',
       order: 'published_at.desc',
       limit: String(limit),
       offset: String(offset),
@@ -57,8 +62,9 @@ async function fetchAllRows(table, select = 'slug,updated_at,published_at') {
       headers: { ...SUPABASE_HEADERS, 'Accept': 'application/json' },
     });
     if (!res.ok) {
-      console.warn(`  Warning: ${table} returned ${res.status}`);
-      break;
+      // Fail loudly. A silent warn+break here is what hid the broken query for months.
+      const body = await res.text().catch(() => '');
+      throw new Error(`${table} query failed: HTTP ${res.status} ${body}`);
     }
     // Prefer header range for count; fall back to body length
     const rangeHeader = res.headers.get('content-range');
@@ -92,35 +98,47 @@ async function main() {
   );
 
   // Fetch blog posts
-  try {
+  {
     console.log('  Fetching blog posts...');
     const posts = await fetchAllRows('blog_posts');
     console.log(`  Found ${posts.length} blog post(s)`);
     for (const post of posts) {
       if (!post.slug) continue;
-      const lastmod = (post.updated_at || post.published_at || '').split('T')[0] || null;
+      const lastmod = (post.updated || post.published_at || '').split('T')[0] || null;
       entries.push(
         buildUrlEntry(`${SITE_URL}/blog/${post.slug}`, lastmod, 'weekly', '0.6')
       );
     }
-  } catch (e) {
-    console.warn('  Warning: Could not fetch blog posts:', e.message);
   }
 
   // Fetch tutorials
-  try {
+  {
     console.log('  Fetching tutorials...');
     const tutorials = await fetchAllRows('tutorials');
     console.log(`  Found ${tutorials.length} tutorial(s)`);
     for (const tut of tutorials) {
       if (!tut.slug) continue;
-      const lastmod = (tut.updated_at || tut.published_at || '').split('T')[0] || null;
+      const lastmod = (tut.updated || tut.published_at || '').split('T')[0] || null;
       entries.push(
         buildUrlEntry(`${SITE_URL}/how-to-use/${tut.slug}`, lastmod, 'weekly', '0.6')
       );
     }
-  } catch (e) {
-    console.warn('  Warning: Could not fetch tutorials:', e.message);
+  }
+
+  // Guard against a silent regression: if the content tables resolve to nothing at all,
+  // the sitemap would ship with only the static marketing URLs — the exact failure mode
+  // that made every blog post and guide invisible to search and AdSense crawlers.
+  const contentUrls = entries.length - STATIC_PAGES.length;
+  if (contentUrls === 0 && process.env.ALLOW_EMPTY_CONTENT !== '1') {
+    throw new Error(
+      'No blog posts or tutorials resolved — refusing to emit a static-only sitemap.\n' +
+      '  A sitemap listing only marketing pages tells search engines and the AdSense\n' +
+      '  crawler that this site has no content, which is what caused the original\n' +
+      '  low-value-content rejection.\n' +
+      '  Check the status casing (expects PUBLISHED, not published) and the column\n' +
+      '  names (created/updated, not created_at/updated_at).\n' +
+      '  If the database genuinely has no published content yet, set ALLOW_EMPTY_CONTENT=1.'
+    );
   }
 
   // Build final XML
@@ -151,6 +169,7 @@ async function main() {
 
 main().catch((err) => {
   console.error('Sitemap generation failed:', err.message);
-  // Don't fail the build — the static sitemap in public/ is still valid
-  process.exit(0);
+  // Fail the build. Shipping a sitemap that omits every article is worse than not
+  // shipping at all: it tells Google the site has 14 marketing pages and no content.
+  process.exit(1);
 });

@@ -81,19 +81,19 @@ const BlogSidebar: React.FC<BlogSidebarProps> = ({
     return (
       <div className="space-y-6">
         {/* Skeleton */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 animate-pulse">
-          <div className="h-5 bg-slate-100 rounded w-1/2 mb-4" />
+        <div className="bg-dl-surface rounded-dl-lg border border-dl-hair-soft shadow-dl-1 p-6 animate-pulse">
+          <div className="h-5 bg-dl-hair-soft rounded-dl-sm w-1/2 mb-4" />
           <div className="space-y-3">
-            <div className="h-4 bg-slate-50 rounded w-full" />
-            <div className="h-4 bg-slate-50 rounded w-4/5" />
-            <div className="h-4 bg-slate-50 rounded w-3/4" />
+            <div className="h-4 bg-dl-hair-soft rounded-dl-sm w-full" />
+            <div className="h-4 bg-dl-hair-soft rounded-dl-sm w-4/5" />
+            <div className="h-4 bg-dl-hair-soft rounded-dl-sm w-3/4" />
           </div>
         </div>
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 animate-pulse">
-          <div className="h-5 bg-slate-100 rounded w-1/2 mb-4" />
+        <div className="bg-dl-surface rounded-dl-lg border border-dl-hair-soft shadow-dl-1 p-6 animate-pulse">
+          <div className="h-5 bg-dl-hair-soft rounded-dl-sm w-1/2 mb-4" />
           <div className="space-y-3">
-            <div className="h-4 bg-slate-50 rounded w-full" />
-            <div className="h-4 bg-slate-50 rounded w-3/5" />
+            <div className="h-4 bg-dl-hair-soft rounded-dl-sm w-full" />
+            <div className="h-4 bg-dl-hair-soft rounded-dl-sm w-3/5" />
           </div>
         </div>
       </div>
@@ -104,8 +104,8 @@ const BlogSidebar: React.FC<BlogSidebarProps> = ({
     <div className="space-y-6">
       {/* Recent Posts */}
       {recentPosts.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-4 flex items-center gap-2">
+        <div className="bg-dl-surface rounded-dl-lg border border-dl-hair-soft shadow-dl-1 p-6">
+          <h3 className="text-sm font-bold text-dl-ink uppercase tracking-dl-label mb-4 flex items-center gap-2">
             <BookmarkIcon /> Recent Posts
           </h3>
           <ul className="space-y-3">
@@ -115,10 +115,10 @@ const BlogSidebar: React.FC<BlogSidebarProps> = ({
                   onClick={() => navigateToPost(post.slug)}
                   className="group w-full text-left"
                 >
-                  <p className="text-sm font-semibold text-slate-700 group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+                  <p className="text-sm font-semibold text-dl-ink group-hover:text-dl-teal transition-colors line-clamp-2 leading-snug">
                     {post.title}
                   </p>
-                  <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                  <p className="text-xs text-dl-muted mt-1 flex items-center gap-1">
                     <Calendar size={10} />
                     {new Date(post.publishedAt || post.created).toLocaleDateString('en-US', {
                       month: 'short',
@@ -134,9 +134,9 @@ const BlogSidebar: React.FC<BlogSidebarProps> = ({
 
       {/* Blog Archive */}
       {archives.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-4 flex items-center gap-2">
-            <Archive size={14} className="text-primary" /> Archive
+        <div className="bg-dl-surface rounded-dl-lg border border-dl-hair-soft shadow-dl-1 p-6">
+          <h3 className="text-sm font-bold text-dl-ink uppercase tracking-dl-label mb-4 flex items-center gap-2">
+            <Archive size={14} className="text-dl-teal" /> Archive
           </h3>
           <ul className="space-y-1">
             {archives.map(entry => {
@@ -147,18 +147,18 @@ const BlogSidebar: React.FC<BlogSidebarProps> = ({
                 <li key={`${entry.year}-${entry.month}`}>
                   <button
                     onClick={() => onArchiveSelect?.(entry.year, entry.month)}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm transition-all ${
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-dl-md text-sm transition-all ${
                       isActive
-                        ? 'bg-primary/10 text-primary font-bold'
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-primary font-medium'
+                        ? 'bg-dl-teal/10 text-dl-teal font-bold'
+                        : 'text-dl-muted hover:bg-dl-surface-2 hover:text-dl-teal font-medium'
                     }`}
                   >
                     <span className="flex items-center gap-1.5">
-                      <ChevronRight size={12} className={isActive ? 'text-primary' : 'text-slate-300'} />
+                      <ChevronRight size={12} className={isActive ? 'text-dl-teal' : 'text-dl-soft'} />
                       {entry.label}
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      isActive ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'
+                      isActive ? 'bg-dl-teal text-dl-surface' : 'bg-dl-hair-soft text-dl-muted'
                     }`}>
                       {entry.count}
                     </span>
@@ -170,7 +170,7 @@ const BlogSidebar: React.FC<BlogSidebarProps> = ({
           {selectedArchive && (
             <button
               onClick={() => onArchiveSelect?.(0, 0)}
-              className="mt-3 w-full text-xs text-center text-primary hover:text-primary-hover font-semibold transition-colors"
+              className="mt-3 w-full text-xs text-center text-dl-teal hover:text-dl-teal-deep font-semibold transition-colors"
             >
               Clear filter
             </button>
@@ -180,17 +180,17 @@ const BlogSidebar: React.FC<BlogSidebarProps> = ({
 
       {/* Categories */}
       {categories.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-4 flex items-center gap-2">
-            <Tag size={14} className="text-primary" /> Categories
+        <div className="bg-dl-surface rounded-dl-lg border border-dl-hair-soft shadow-dl-1 p-6">
+          <h3 className="text-sm font-bold text-dl-ink uppercase tracking-dl-label mb-4 flex items-center gap-2">
+            <Tag size={14} className="text-dl-teal" /> Categories
           </h3>
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => onCategorySelect?.('')}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
                 !selectedCategory
-                  ? 'bg-primary text-white shadow-sm'
-                  : 'bg-slate-100 text-slate-600 hover:bg-primary/10 hover:text-primary'
+                  ? 'bg-dl-teal text-dl-surface shadow-dl-1'
+                  : 'bg-dl-hair-soft text-dl-muted hover:bg-dl-teal/10 hover:text-dl-teal'
               }`}
             >
               All Posts
@@ -203,14 +203,14 @@ const BlogSidebar: React.FC<BlogSidebarProps> = ({
                   onClick={() => onCategorySelect?.(isActive ? '' : category)}
                   className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all inline-flex items-center gap-1.5 max-w-[160px] ${
                     isActive
-                      ? 'bg-primary text-white shadow-sm'
-                      : 'bg-slate-100 text-slate-600 hover:bg-primary/10 hover:text-primary'
+                      ? 'bg-dl-teal text-dl-surface shadow-dl-1'
+                      : 'bg-dl-hair-soft text-dl-muted hover:bg-dl-teal/10 hover:text-dl-teal'
                   }`}
                   title={category}
                 >
                   <span className="truncate">{category}</span>
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-white text-slate-500'
+                    isActive ? 'bg-dl-surface/25 text-dl-surface' : 'bg-dl-surface text-dl-muted'
                   }`}>
                     {count}
                   </span>
@@ -226,7 +226,7 @@ const BlogSidebar: React.FC<BlogSidebarProps> = ({
 
 // Small icon component for Recent Posts header
 const BookmarkIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-dl-teal">
     <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
   </svg>
 );

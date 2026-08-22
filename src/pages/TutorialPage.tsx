@@ -68,7 +68,7 @@ const TutorialPage: React.FC<TutorialPageProps> = ({ slug, onBack }) => {
           '@type': 'Article',
           headline: tutorialData.title,
           description: tutorialData.excerpt || '',
-          image: tutorialData.coverImage || 'https://openhrapp.com/img/screenshot-wide.webp',
+          image: tutorialData.coverImage || 'https://openhrapp.com/img/screenshot-wide.png',
           datePublished: tutorialData.created,
           dateModified: tutorialData.updated || tutorialData.created,
           author: {
@@ -148,22 +148,22 @@ const TutorialPage: React.FC<TutorialPageProps> = ({ slug, onBack }) => {
   const categories = Array.from(new Set(topLevel.map(t => t.category || 'General')));
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-dl-ground flex flex-col">
       <TutorialsNavbar onBack={onBack} />
 
       <div className="flex-1">
         {isLoading ? (
           <div className="text-center py-20">
-            <Loader2 className="animate-spin mx-auto mb-4 text-primary" size={40} />
-            <p className="text-slate-500">Loading tutorial...</p>
+            <Loader2 className="animate-spin mx-auto mb-4 text-dl-teal" size={40} />
+            <p className="text-dl-muted">Loading tutorial...</p>
           </div>
         ) : notFound ? (
           <div className="text-center py-20">
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">Tutorial Not Found</h2>
-            <p className="text-slate-500 mb-6">The tutorial you're looking for doesn't exist or has been unpublished.</p>
+            <h2 className="text-2xl font-bold text-dl-ink mb-2">Tutorial Not Found</h2>
+            <p className="text-dl-muted mb-6">The tutorial you're looking for doesn't exist or has been unpublished.</p>
             <button
               onClick={goToTutorials}
-              className="px-6 py-3 bg-primary text-white rounded-xl font-bold hover:bg-primary-hover transition-all"
+              className="px-6 py-3 bg-dl-teal text-dl-surface rounded-dl-md font-bold hover:bg-dl-teal-deep transition-all"
             >
               Back to Tutorials
             </button>
@@ -171,10 +171,10 @@ const TutorialPage: React.FC<TutorialPageProps> = ({ slug, onBack }) => {
         ) : tutorial && (
           <>
             {/* Breadcrumb */}
-            <div className="bg-white border-b border-slate-100">
+            <div className="bg-dl-surface border-b border-dl-hair-soft">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                <nav className="flex items-center gap-2 text-sm text-slate-500 flex-wrap">
-                  <button onClick={goToTutorials} className="hover:text-primary transition-colors font-medium">
+                <nav className="flex items-center gap-2 text-sm text-dl-muted flex-wrap">
+                  <button onClick={goToTutorials} className="hover:text-dl-teal transition-colors font-medium">
                     Guides
                   </button>
                   {tutorial.category && (
@@ -188,21 +188,21 @@ const TutorialPage: React.FC<TutorialPageProps> = ({ slug, onBack }) => {
                       <ChevronRight size={14} />
                       <button
                         onClick={() => navigateToTutorial(parentTutorial.slug)}
-                        className="hover:text-primary transition-colors font-medium"
+                        className="hover:text-dl-teal transition-colors font-medium"
                       >
                         {parentTutorial.title}
                       </button>
                     </>
                   )}
                   <ChevronRight size={14} />
-                  <span className="text-slate-900 font-semibold truncate">{tutorial.title}</span>
+                  <span className="text-dl-ink font-semibold truncate">{tutorial.title}</span>
                 </nav>
               </div>
             </div>
 
             {/* Cover Image */}
             {tutorial.coverImage && (
-              <div className="w-full h-64 md:h-80 bg-slate-200">
+              <div className="w-full h-64 md:h-80 bg-dl-hair">
                 <img
                   src={tutorial.coverImage}
                   alt={tutorial.title}
@@ -216,62 +216,62 @@ const TutorialPage: React.FC<TutorialPageProps> = ({ slug, onBack }) => {
               <div className="flex flex-col lg:flex-row gap-8">
                 {/* Main Article */}
                 <article className="flex-1 min-w-0 overflow-x-hidden">
-                  <h1 className="text-3xl md:text-4xl font-semibold text-slate-900 tracking-tight mb-4">
+                  <h1 className="text-3xl md:text-4xl font-semibold text-dl-ink tracking-tight mb-4">
                     {tutorial.title}
                   </h1>
 
                   {tutorial.authorName && (
-                    <div className="flex items-center gap-4 text-sm text-slate-500 mb-8 pb-8 border-b border-slate-200">
+                    <div className="flex items-center gap-4 text-sm text-dl-muted mb-8 pb-8 border-b border-dl-hair">
                       <span>By {tutorial.authorName}</span>
                     </div>
                   )}
 
                   {tutorial.excerpt && (
-                    <p className="text-lg text-slate-600 italic mb-8 border-l-4 border-primary pl-4">
+                    <p className="text-lg text-dl-muted italic mb-8 border-l-4 border-dl-teal pl-4">
                       {tutorial.excerpt}
                     </p>
                   )}
 
                   <div
-                    className="prose prose-slate prose-lg max-w-none dark:prose-invert prose-headings:font-bold prose-a:text-primary prose-a:underline prose-img:rounded-xl"
+                    className="prose prose-slate prose-lg max-w-none dark:prose-invert prose-headings:font-dl-display prose-headings:font-semibold prose-headings:tracking-dl-head prose-a:text-dl-teal prose-a:underline prose-img:rounded-dl-md"
                     dangerouslySetInnerHTML={{ __html: sanitizeHtml(tutorial.content) }}
                   />
 
                   {/* Previous / Next Navigation */}
                   {(prevTutorial || nextTutorial) && (
-                    <div className="mt-12 pt-8 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="mt-12 pt-8 border-t border-dl-hair grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {prevTutorial ? (
                         <button
                           onClick={() => navigateToTutorial(prevTutorial.slug)}
-                          className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:border-primary hover:shadow-sm transition-all text-left"
+                          className="flex items-center gap-3 p-4 bg-dl-surface border border-dl-hair rounded-dl-md hover:border-dl-teal hover:shadow-dl-1 transition-all text-left"
                         >
-                          <ArrowLeft size={16} className="text-slate-400 flex-shrink-0" />
+                          <ArrowLeft size={16} className="text-dl-muted flex-shrink-0" />
                           <div className="min-w-0">
-                            <p className="text-xs text-slate-400 font-medium">Previous</p>
-                            <p className="text-sm font-bold text-slate-900 truncate">{prevTutorial.title}</p>
+                            <p className="text-xs text-dl-muted font-medium">Previous</p>
+                            <p className="text-sm font-bold text-dl-ink truncate">{prevTutorial.title}</p>
                           </div>
                         </button>
                       ) : <div />}
                       {nextTutorial && (
                         <button
                           onClick={() => navigateToTutorial(nextTutorial.slug)}
-                          className="flex items-center justify-end gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:border-primary hover:shadow-sm transition-all text-right"
+                          className="flex items-center justify-end gap-3 p-4 bg-dl-surface border border-dl-hair rounded-dl-md hover:border-dl-teal hover:shadow-dl-1 transition-all text-right"
                         >
                           <div className="min-w-0">
-                            <p className="text-xs text-slate-400 font-medium">Next</p>
-                            <p className="text-sm font-bold text-slate-900 truncate">{nextTutorial.title}</p>
+                            <p className="text-xs text-dl-muted font-medium">Next</p>
+                            <p className="text-sm font-bold text-dl-ink truncate">{nextTutorial.title}</p>
                           </div>
-                          <ChevronRight size={16} className="text-slate-400 flex-shrink-0" />
+                          <ChevronRight size={16} className="text-dl-muted flex-shrink-0" />
                         </button>
                       )}
                     </div>
                   )}
 
                   {/* Back to Tutorials */}
-                  <div className="mt-8 pt-8 border-t border-slate-200">
+                  <div className="mt-8 pt-8 border-t border-dl-hair">
                     <button
                       onClick={goToTutorials}
-                      className="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-primary transition-colors"
+                      className="flex items-center gap-2 text-sm font-semibold text-dl-muted hover:text-dl-teal transition-colors"
                     >
                       <ArrowLeft size={16} /> Back to Guides
                     </button>
@@ -281,14 +281,14 @@ const TutorialPage: React.FC<TutorialPageProps> = ({ slug, onBack }) => {
                 {/* Right Sidebar - Tutorial Tree Navigation */}
                 <div className="lg:w-72 flex-shrink-0">
                   <div className="lg:sticky lg:top-24">
-                    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                      <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4">Tutorials</h4>
+                    <div className="bg-dl-surface rounded-dl-lg border border-dl-hair-soft shadow-dl-1 p-6">
+                      <h4 className="text-sm font-bold text-dl-ink uppercase tracking-wider mb-4">Tutorials</h4>
                       <nav className="space-y-1">
                         {categories.map(cat => {
                           const catTutorials = topLevel.filter(t => (t.category || 'General') === cat);
                           return (
                             <div key={cat} className="mb-4">
-                              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{cat}</p>
+                              <p className="text-xs font-bold text-dl-muted uppercase tracking-wider mb-2">{cat}</p>
                               {catTutorials.map(t => {
                                 const tChildren = getChildren(t.id);
                                 const isActive = t.id === tutorial.id;
@@ -296,16 +296,16 @@ const TutorialPage: React.FC<TutorialPageProps> = ({ slug, onBack }) => {
                                   <div key={t.id}>
                                     <button
                                       onClick={() => navigateToTutorial(t.slug)}
-                                      className={`block w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${
+                                      className={`block w-full text-left px-3 py-2 text-sm rounded-dl-sm transition-colors ${
                                         isActive
-                                          ? 'bg-primary/10 text-primary font-bold'
-                                          : 'text-slate-600 hover:text-primary hover:bg-primary/5 font-medium'
+                                          ? 'bg-dl-teal/10 text-dl-teal font-bold'
+                                          : 'text-dl-muted hover:text-dl-teal hover:bg-dl-teal/5 font-medium'
                                       }`}
                                     >
                                       {t.title}
                                     </button>
                                     {tChildren.length > 0 && (
-                                      <div className="ml-3 border-l border-slate-200 pl-3 mt-1 mb-2 space-y-1">
+                                      <div className="ml-3 border-l border-dl-hair pl-3 mt-1 mb-2 space-y-1">
                                         {tChildren.map(child => {
                                           const isChildActive = child.id === tutorial.id;
                                           return (
@@ -314,8 +314,8 @@ const TutorialPage: React.FC<TutorialPageProps> = ({ slug, onBack }) => {
                                               onClick={() => navigateToTutorial(child.slug)}
                                               className={`block w-full text-left px-2 py-1.5 text-xs rounded-md transition-colors ${
                                                 isChildActive
-                                                  ? 'bg-primary/10 text-primary font-bold'
-                                                  : 'text-slate-500 hover:text-primary hover:bg-primary/5 font-medium'
+                                                  ? 'bg-dl-teal/10 text-dl-teal font-bold'
+                                                  : 'text-dl-muted hover:text-dl-teal hover:bg-dl-teal/5 font-medium'
                                               }`}
                                             >
                                               {child.title}

@@ -42,14 +42,34 @@ const SLOT_SIZES: Record<AdSlot, { width: number; height: number }> = {
   'blog-post-content': { width: 300, height: 250 } // Medium Rectangle in post
 };
 
+/**
+ * AdSense policy gate — plan item 27 / AC1.10, root cause F6.
+ *
+ * `public/robots.txt` Disallows /dashboard, /reports, /settings and friends, so Google cannot
+ * crawl the pages these slots render on. Serving AdSense on pages the crawler is blocked from
+ * is a publisher-policy exposure in its own right, separate from the content problem that
+ * caused the original rejection.
+ *
+ * These slots stay dark until the re-application is approved. To restore them afterwards set
+ * VITE_ENABLE_AUTHENTICATED_ADS=true — one switch, one place. Do not delete this gate and
+ * scatter the decision back through the component tree.
+ */
+export const AUTHENTICATED_AD_SLOTS: readonly AdSlot[] = ['dashboard', 'reports', 'sidebar', 'footer'];
+
+export const isSlotSuppressedPendingApproval = (slot: AdSlot): boolean =>
+  import.meta.env.VITE_ENABLE_AUTHENTICATED_ADS !== 'true' &&
+  AUTHENTICATED_AD_SLOTS.includes(slot);
+
 
 export const AdBanner: React.FC<AdBannerProps> = ({ slot, className = '' }) => {
   const { subscription } = useSubscription();
   const [adConfig, setAdConfig] = useState<AdConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Only show ads for AD_SUPPORTED organizations
-  const shouldShowAds = subscription?.showAds === true;
+  // Only show ads for AD_SUPPORTED organizations — and never on a robots.txt-Disallowed
+  // authenticated route while AdSense approval is pending (item 27 / AC1.10 / F6).
+  // Folding the gate into shouldShowAds suppresses the network fetch as well as the render.
+  const shouldShowAds = subscription?.showAds === true && !isSlotSuppressedPendingApproval(slot);
 
   useEffect(() => {
     const loadAdConfig = async () => {

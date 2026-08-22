@@ -6,19 +6,20 @@ import { PublicAdBanner } from '../components/ads';
 import BlogNavbar from '../components/blog/BlogNavbar';
 import BlogSidebar from '../components/blog/BlogSidebar';
 import BlogFooter from '../components/blog/BlogFooter';
-import { navigateTo, updatePageMeta, setJsonLd } from '../utils/seo';
+import { updatePageMeta, setJsonLd } from '../utils/seo';
+import { spaLinkProps, STRETCHED_LINK } from '../utils/spaLink';
 import { getReadingTime } from '../utils/readingTime';
 
 const BlogCardSkeleton = () => (
-  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden animate-pulse">
-    <div className="w-full h-48 bg-slate-100" />
+  <div className="bg-dl-surface rounded-dl-lg border border-dl-hair-soft shadow-dl-1 overflow-hidden animate-pulse">
+    <div className="w-full h-48 bg-dl-hair-soft" />
     <div className="p-6 space-y-3">
-      <div className="h-5 bg-slate-100 rounded w-5/6" />
-      <div className="h-4 bg-slate-50 rounded w-full" />
-      <div className="h-4 bg-slate-50 rounded w-3/4" />
+      <div className="h-5 bg-dl-hair-soft rounded w-5/6" />
+      <div className="h-4 bg-dl-ground rounded w-full" />
+      <div className="h-4 bg-dl-ground rounded w-3/4" />
       <div className="flex items-center gap-4 pt-2">
-        <div className="h-3 bg-slate-50 rounded w-20" />
-        <div className="h-3 bg-slate-50 rounded w-24" />
+        <div className="h-3 bg-dl-ground rounded w-20" />
+        <div className="h-3 bg-dl-ground rounded w-24" />
       </div>
     </div>
   </div>
@@ -148,22 +149,18 @@ const BlogPage: React.FC<BlogPageProps> = ({ onBack, onRegisterClick }) => {
     setSelectedCategory(category || null);
   };
 
-  const navigateToPost = (slug: string) => {
-    navigateTo(`/blog/${slug}`);
-  };
-
   const displayPosts = filteredPosts;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-dl-ground flex flex-col">
       {/* Navbar */}
       <BlogNavbar onBack={onBack} onRegisterClick={onRegisterClick} />
 
       {/* Header */}
-      <div className="bg-white border-b border-slate-100">
+      <div className="bg-dl-surface border-b border-dl-hair-soft">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-          <h1 className="text-4xl font-semibold text-slate-900 tracking-tight">Blog</h1>
-          <p className="text-slate-500 mt-3 text-lg">Latest news, updates, and insights</p>
+          <h1 className="text-4xl font-semibold text-dl-ink tracking-tight">Blog</h1>
+          <p className="text-dl-muted mt-3 text-lg">Latest news, updates, and insights</p>
         </div>
       </div>
 
@@ -175,23 +172,23 @@ const BlogPage: React.FC<BlogPageProps> = ({ onBack, onRegisterClick }) => {
       {/* Active Filter Banner */}
       {(selectedArchive || selectedCategory) && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-          <div className="bg-primary/5 border border-primary/10 rounded-xl px-4 py-3 flex items-center justify-between">
-            <p className="text-sm text-primary font-semibold">
+          <div className="bg-dl-teal/5 border border-dl-teal/15 rounded-dl-md px-4 py-3 flex items-center justify-between">
+            <p className="text-sm text-dl-teal font-semibold">
               Filtering by:{' '}
               {selectedArchive && (
-                <span className="inline-flex items-center gap-1 bg-primary/10 px-2 py-0.5 rounded-full text-xs mr-2">
+                <span className="inline-flex items-center gap-1 bg-dl-teal/10 px-2 py-0.5 rounded-full text-xs mr-2">
                   {new Date(selectedArchive.year, selectedArchive.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                 </span>
               )}
               {selectedCategory && (
-                <span className="inline-flex items-center gap-1 bg-primary/10 px-2 py-0.5 rounded-full text-xs">
+                <span className="inline-flex items-center gap-1 bg-dl-teal/10 px-2 py-0.5 rounded-full text-xs">
                   {selectedCategory}
                 </span>
               )}
             </p>
             <button
               onClick={() => { setSelectedArchive(null); setSelectedCategory(null); }}
-              className="text-xs font-bold text-primary hover:text-primary-hover transition-colors"
+              className="text-xs font-bold text-dl-teal hover:text-dl-teal-deep transition-colors"
             >
               Clear all
             </button>
@@ -214,7 +211,7 @@ const BlogPage: React.FC<BlogPageProps> = ({ onBack, onRegisterClick }) => {
                 </div>
               ) : displayPosts.length === 0 ? (
                 <div className="text-center py-20">
-                  <p className="text-slate-500 text-lg">
+                  <p className="text-dl-muted text-lg">
                     {selectedArchive || selectedCategory
                       ? 'No posts found for this filter. Try a different selection.'
                       : 'No posts published yet. Check back soon!'}
@@ -222,7 +219,7 @@ const BlogPage: React.FC<BlogPageProps> = ({ onBack, onRegisterClick }) => {
                   {(selectedArchive || selectedCategory) && (
                     <button
                       onClick={() => { setSelectedArchive(null); setSelectedCategory(null); }}
-                      className="mt-4 px-5 py-2.5 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary-hover transition-all"
+                      className="mt-4 px-5 py-2.5 bg-dl-teal text-dl-surface rounded-dl-md font-bold text-sm hover:bg-dl-teal-deep transition-all"
                     >
                       Clear Filters
                     </button>
@@ -234,8 +231,7 @@ const BlogPage: React.FC<BlogPageProps> = ({ onBack, onRegisterClick }) => {
                     {displayPosts.map(post => (
                       <article
                         key={post.id}
-                        onClick={() => navigateToPost(post.slug)}
-                        className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden cursor-pointer hover:shadow-md hover:-translate-y-1 transition-all duration-200"
+                        className="relative bg-dl-surface rounded-dl-lg border border-dl-hair-soft shadow-dl-1 overflow-hidden cursor-pointer hover:shadow-dl-1 hover:-translate-y-1 transition-all duration-200 focus-within:shadow-dl-1"
                       >
                         {post.coverImage ? (
                           <img
@@ -244,16 +240,20 @@ const BlogPage: React.FC<BlogPageProps> = ({ onBack, onRegisterClick }) => {
                             className="w-full h-48 object-cover"
                           />
                         ) : (
-                          <div className="w-full h-48 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
-                            <span className="text-4xl font-semibold text-primary/20">{post.title.charAt(0)}</span>
+                          <div className="w-full h-48 bg-gradient-to-br from-dl-teal/10 to-dl-teal/5 flex items-center justify-center">
+                            <span className="text-4xl font-semibold text-dl-teal/20">{post.title.charAt(0)}</span>
                           </div>
                         )}
                         <div className="p-6">
-                          <h2 className="text-lg font-bold text-slate-900 mb-2 line-clamp-2">{post.title}</h2>
+                          <h2 className="text-lg font-bold text-dl-ink mb-2 line-clamp-2">
+                            <a {...spaLinkProps(`/blog/${post.slug}`)} className={STRETCHED_LINK}>
+                              {post.title}
+                            </a>
+                          </h2>
                           {post.excerpt && (
-                            <p className="text-slate-500 text-sm mb-4 line-clamp-3">{post.excerpt}</p>
+                            <p className="text-dl-muted text-sm mb-4 line-clamp-3">{post.excerpt}</p>
                           )}
-                          <div className="flex items-center gap-4 text-xs text-slate-400">
+                          <div className="flex items-center gap-4 text-xs text-dl-muted">
                             {post.authorName && (
                               <span className="flex items-center gap-1">
                                 <User size={12} /> {post.authorName}
@@ -285,17 +285,17 @@ const BlogPage: React.FC<BlogPageProps> = ({ onBack, onRegisterClick }) => {
                       <button
                         onClick={() => setPage(p => Math.max(1, p - 1))}
                         disabled={page === 1}
-                        className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        className="px-5 py-2.5 bg-dl-surface border border-dl-hair rounded-dl-md font-bold text-sm text-dl-muted hover:bg-dl-ground disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                       >
                         Previous
                       </button>
-                      <span className="text-sm text-slate-500">
+                      <span className="text-sm text-dl-muted">
                         Page {page} of {totalPages}
                       </span>
                       <button
                         onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                         disabled={page === totalPages}
-                        className="px-5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        className="px-5 py-2.5 bg-dl-surface border border-dl-hair rounded-dl-md font-bold text-sm text-dl-muted hover:bg-dl-ground disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                       >
                         Next
                       </button>

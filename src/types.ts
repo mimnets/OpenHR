@@ -49,6 +49,14 @@ export interface Organization {
   trialEndDate?: string;
   created?: string;
   updated?: string;
+  /**
+   * Showcase consent (Addendum 4 §5b). True only if an ADMIN of this organization has
+   * explicitly agreed to show its name and logo on the public landing page. Defaults to
+   * false for every organization and is withdrawable from Organization & Setup → System.
+   * `landingConsentAt` is retained after withdrawal as an audit record.
+   */
+  showOnLanding?: boolean;
+  landingConsentAt?: string;
   // Computed fields
   userCount?: number;
   adminEmail?: string;

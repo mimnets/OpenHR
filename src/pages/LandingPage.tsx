@@ -4,19 +4,18 @@ import HeroSection from '../components/landing/HeroSection';
 import FeaturesSection from '../components/landing/FeaturesSection';
 import HowItWorksSection from '../components/landing/HowItWorksSection';
 import PricingSection from '../components/landing/PricingSection';
-import TestimonialsSection from '../components/landing/TestimonialsSection';
+import ProofSection from '../components/landing/ProofSection';
 import Footer from '../components/landing/Footer';
 import { updatePageMeta, setJsonLd } from '../utils/seo';
 
 const ShowcaseSection = React.lazy(() => import('../components/landing/ShowcaseSection'));
 const FAQSection = React.lazy(() => import('../components/landing/FAQSection'));
 const RoadmapSection = React.lazy(() => import('../components/landing/RoadmapSection'));
-const ContactSection = React.lazy(() => import('../components/landing/ContactSection'));
 const CTASection = React.lazy(() => import('../components/landing/CTASection'));
 
 const SectionSkeleton = () => (
   <div className="py-20 flex justify-center">
-    <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+    <div className="w-8 h-8 border-2 border-dl-teal/20 border-t-dl-teal rounded-full animate-spin" />
   </div>
 );
 
@@ -34,7 +33,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
       'OpenHRApp — Free Open-Source HR Management Software',
       'OpenHRApp is a free, open-source HR platform with attendance tracking, leave management, and employee directory. Get started today — no credit card required, completely free forever.',
       'https://openhrapp.com/',
-      'https://openhrapp.com/img/screenshot-wide.webp'
+      'https://openhrapp.com/img/screenshot-wide.png'
     );
 
     setJsonLd({
@@ -52,7 +51,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
           },
           description: 'Free, open-source HR management system with attendance tracking, leave management, employee directory, and compliance tools.',
           url: 'https://openhrapp.com',
-          image: 'https://openhrapp.com/img/screenshot-wide.webp',
+          image: 'https://openhrapp.com/img/screenshot-wide.png',
         },
         {
           '@type': 'FAQPage',
@@ -104,21 +103,33 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
     <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-primary focus:text-white focus:font-semibold focus:shadow-lg"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-dl-sm focus:bg-dl-teal focus:text-dl-surface focus:font-semibold focus:shadow-dl-2"
       >
         Skip to content
       </a>
       <Navbar onLoginClick={onLoginClick} onRegisterClick={onRegisterClick} onLoginSuccess={onLoginSuccess} />
-      <main id="main-content">
+      <main id="main-content" className="dl-bands">
+        {/* Section order per plan Addendum 1, N5 (finding F-L2). The page previously ran
+            Hero -> Testimonials -> Features, putting social proof before the visitor knew what
+            the product did, and burying the Showcase — the actual screenshots, the strongest
+            evidence the thing is real — in sixth place below the fold.
+
+            Now: explain the product, show it, price it, then answer objections. The proof block
+            sits immediately after the Showcase, where evidence belongs once there is something
+            to be evidence *for*.
+
+            ContactSection is deliberately NOT here. It now lives only at /contact (N1), which is
+            the distinct page AdSense reviewers look for; duplicating the form inline gave the
+            visitor two places to submit the same thing and gave the page a second <h2> competing
+            with the CTA. The navbar and footer both link to /contact. */}
         <HeroSection onLoginClick={onLoginClick} onRegisterClick={onRegisterClick} onLoginSuccess={onLoginSuccess} />
-        <TestimonialsSection />
         <FeaturesSection />
         <HowItWorksSection />
-        <Suspense fallback={<SectionSkeleton />}><PricingSection onRegisterClick={onRegisterClick} /></Suspense>
         <Suspense fallback={<SectionSkeleton />}><ShowcaseSection /></Suspense>
+        <ProofSection />
+        <Suspense fallback={<SectionSkeleton />}><PricingSection onRegisterClick={onRegisterClick} /></Suspense>
         <Suspense fallback={<SectionSkeleton />}><FAQSection /></Suspense>
         <Suspense fallback={<SectionSkeleton />}><RoadmapSection /></Suspense>
-        <Suspense fallback={<SectionSkeleton />}><ContactSection /></Suspense>
         <Suspense fallback={<SectionSkeleton />}><CTASection onRegisterClick={onRegisterClick} /></Suspense>
       </main>
       <Footer />

@@ -35,6 +35,7 @@ import FeaturesPage from './pages/FeaturesPage';
 import FeatureDetailPage from './pages/FeatureDetailPage';
 import ChangelogPage from './pages/ChangelogPage';
 import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
 
 // Lazy: authenticated pages loaded on demand after login.
 // lazyWithReload auto-recovers from stale chunk hashes after a deploy
@@ -135,11 +136,15 @@ const AppContent: React.FC = () => {
     const path = window.location.pathname;
     return path === '/about' || path === '/about/';
   });
+  const [contactRoute, setContactRoute] = useState<boolean>(() => {
+    const path = window.location.pathname;
+    return path === '/contact' || path === '/contact/';
+  });
   const [is404, setIs404] = useState<boolean>(() => {
     const path = window.location.pathname;
     const hash = window.location.hash;
     const search = window.location.search;
-    const knownPaths = ['/', '/privacy', '/privacy/', '/terms', '/terms/', '/features', '/features/', '/changelog', '/changelog/', '/about', '/about/', '/_/', '/_'];
+    const knownPaths = ['/', '/privacy', '/privacy/', '/terms', '/terms/', '/features', '/features/', '/changelog', '/changelog/', '/about', '/about/', '/contact', '/contact/', '/_/', '/_'];
 
     // Don't show 404 if URL contains a verification token
     if (new URLSearchParams(search).has('token')) return false;
@@ -152,6 +157,7 @@ const AppContent: React.FC = () => {
     if (parseFeaturesRoute(path)) return false;
     if (parseChangelogRoute(path)) return false;
     if (path === '/about' || path === '/about/') return false;
+    if (path === '/contact' || path === '/contact/') return false;
 
     // Don't show 404 for hash-based routes (legacy compat)
     if (hash && hash !== '#' && hash !== '#/') return false;
@@ -308,13 +314,13 @@ const AppContent: React.FC = () => {
       const path = window.location.pathname;
       const hash = window.location.hash;
       const search = window.location.search;
-      const knownPaths = ['/', '/privacy', '/privacy/', '/terms', '/terms/', '/features', '/features/', '/changelog', '/changelog/', '/about', '/about/', '/_/', '/_'];
+      const knownPaths = ['/', '/privacy', '/privacy/', '/terms', '/terms/', '/features', '/features/', '/changelog', '/changelog/', '/about', '/about/', '/contact', '/contact/', '/_/', '/_'];
 
       // Never show 404 for verification tokens or hash-based routes
       const hasToken = new URLSearchParams(search).has('token') || hash.includes('token=') || hash.includes('/auth/confirm-verification/');
       const hasHashRoute = hash && hash !== '#' && hash !== '#/';
 
-      const clearAll = () => { setPolicyRoute(null); setBlogRoute(null); setTutorialRoute(null); setFeaturesRoute(null); setChangelogRoute(false); setAboutRoute(false); };
+      const clearAll = () => { setPolicyRoute(null); setBlogRoute(null); setTutorialRoute(null); setFeaturesRoute(null); setChangelogRoute(false); setAboutRoute(false); setContactRoute(false); };
 
       // Clean up /_/ path (PocketBase admin path leaked into verification URLs)
       if (path === '/_/' || path === '/_') {
@@ -336,6 +342,14 @@ const AppContent: React.FC = () => {
       if (path === '/about' || path === '/about/') {
         clearAll();
         setAboutRoute(true);
+        setIs404(false);
+        return;
+      }
+
+      // Check contact route (separate path, same reasoning as /about)
+      if (path === '/contact' || path === '/contact/') {
+        clearAll();
+        setContactRoute(true);
         setIs404(false);
         return;
       }
@@ -459,6 +473,11 @@ const AppContent: React.FC = () => {
   // Priority 0c2: Public About (accessible regardless of auth)
   if (aboutRoute) {
     return <AboutPage onBack={() => { navigateTo('/'); }} onRegisterClick={() => { navigateTo('/'); setShowLanding(false); setShowRegister(true); }} />;
+  }
+
+  // Priority 0c3: Public Contact (accessible regardless of auth)
+  if (contactRoute) {
+    return <ContactPage onBack={() => { navigateTo('/'); }} onRegisterClick={() => { navigateTo('/'); setShowLanding(false); setShowRegister(true); }} />;
   }
 
   // Priority 0d: Public Tutorials (accessible regardless of auth)

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Globe, Moon, MapPin, Building2, Tag } from 'lucide-react';
+import { Globe, Moon, MapPin, Building2, Tag, Sparkles } from 'lucide-react';
 import { AppConfig } from '../../types';
 import { COUNTRIES, getFlagEmoji } from '../../data/countries';
 import { TIMEZONE_OPTIONS } from '../../constants';
@@ -8,6 +8,7 @@ import { apiClient } from '../../services/api.client';
 import { supabase } from '../../services/supabase';
 import { convertFileToWebP } from '../../utils/imageConvert';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 
 interface Props {
   config: AppConfig;
@@ -16,26 +17,53 @@ interface Props {
 
 export const OrgSystem: React.FC<Props> = ({ config, onSave }) => {
   const { showToast } = useToast();
-  const [orgData, setOrgData] = useState({ name: '', country: 'BD', address: '', logo: '' });
+  const { user } = useAuth();
+  /**
+   * The Organization page is reachable by ADMIN and HR (Sidebar.tsx). Agreeing to publish the
+   * company's name and trademark is not an HR-clerk decision, so the showcase block below is
+   * gated more narrowly than the tab around it. The database trigger enforces the same rule.
+   */
+  const isOrgAdmin = user?.role === 'ADMIN';
+  const [orgData, setOrgData] = useState({ name: '', country: 'BD', address: '', logo: '', showOnLanding: false });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  /** False when the schema predates migration 0024 — hide the control rather than offer a save that fails. */
+  const [consentSupported, setConsentSupported] = useState(true);
 
   useEffect(() => {
     const loadOrgData = async () => {
       const orgId = apiClient.getOrganizationId();
       if (!orgId) return;
-      const { data: org, error } = await supabase
+      /**
+       * `show_on_landing` arrives in migration 0024. A deployment that has not run it yet —
+       * a self-hosted install on an older schema, or this branch before `supabase db push` —
+       * would otherwise get a 42703 on the whole select and render an empty form, losing the
+       * name, country, address and logo along with the column it was actually missing. Fall
+       * back to the pre-0024 column list and treat consent as not given.
+       */
+      let { data: org, error } = await supabase
         .from('organizations')
-        .select('name, country, address, logo')
+        .select('name, country, address, logo, show_on_landing')
         .eq('id', orgId)
         .maybeSingle();
+
+      if (error?.code === '42703') {
+        ({ data: org, error } = await supabase
+          .from('organizations')
+          .select('name, country, address, logo')
+          .eq('id', orgId)
+          .maybeSingle());
+        setConsentSupported(false);
+      }
+
       if (error || !org) return;
       setOrgData({
         name: org.name || '',
         country: org.country || 'BD',
         address: org.address || '',
-        logo: org.logo || ''
+        logo: org.logo || '',
+        showOnLanding: (org as { show_on_landing?: boolean }).show_on_landing === true,
       });
       if (org.logo) {
         const { data } = supabase.storage.from('org-logos').getPublicUrl(org.logo);
@@ -86,7 +114,14 @@ export const OrgSystem: React.FC<Props> = ({ config, onSave }) => {
       }
       const { error } = await supabase
         .from('organizations')
-        .update({ name: orgData.name, country: orgData.country, address: orgData.address, logo: logoPath })
+        .update({
+          name: orgData.name,
+          country: orgData.country,
+          address: orgData.address,
+          logo: logoPath,
+          // Only an ADMIN may send this. HR sees no control, and the trigger rejects it anyway.
+          ...(isOrgAdmin && consentSupported ? { show_on_landing: orgData.showOnLanding } : {}),
+        })
         .eq('id', orgId);
       if (error) throw error;
       showToast('Organization details updated successfully!', 'success');
@@ -154,6 +189,48 @@ export const OrgSystem: React.FC<Props> = ({ config, onSave }) => {
                  )}
                </div>
             </div>
+
+            {/*
+              Showcase consent — Addendum 4 §5b. Sits directly under the logo field because this
+              is the one screen where an admin is already looking at both assets being licensed:
+              the organization name above and the logo immediately preceding.
+
+              It names what is being agreed to rather than just offering a switch, and withdrawal
+              is in the same place as the grant — a consent you cannot easily take back is not
+              really a consent. ADMIN only; see isOrgAdmin above.
+            */}
+            {isOrgAdmin && consentSupported && (
+              <div className="md:col-span-2">
+                <label
+                  htmlFor="show-on-landing"
+                  className="flex items-start gap-4 p-5 bg-slate-50 border border-slate-200 rounded-2xl cursor-pointer hover:border-blue-200 transition-colors"
+                >
+                  <input
+                    id="show-on-landing"
+                    type="checkbox"
+                    checked={orgData.showOnLanding}
+                    onChange={e => setOrgData({ ...orgData, showOnLanding: e.target.checked })}
+                    className="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300 text-primary focus:ring-4 focus:ring-blue-50 cursor-pointer"
+                  />
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-2 text-sm font-bold text-slate-900">
+                      <Sparkles size={15} className="text-primary shrink-0" />
+                      Feature us on the OpenHRApp website
+                    </span>
+                    <span className="block mt-1.5 text-xs font-medium text-slate-500 leading-relaxed">
+                      Show your organization&rsquo;s name and logo in the showcase on our homepage.
+                      We will not use them anywhere else, and you can turn this off at any time —
+                      it takes effect immediately. Off by default.
+                    </span>
+                    {orgData.showOnLanding && !logoPreview && (
+                      <span className="block mt-2 text-xs font-semibold text-amber-600">
+                        No logo uploaded yet — your organization will appear as a monogram until you add one.
+                      </span>
+                    )}
+                  </span>
+                </label>
+              </div>
+            )}
 
             <div className="space-y-1 md:col-span-2">
                <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest px-1">Address</label>

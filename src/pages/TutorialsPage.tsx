@@ -4,7 +4,8 @@ import { tutorialService } from '../services/tutorial.service';
 import { Tutorial } from '../types';
 import TutorialsNavbar from '../components/tutorials/TutorialsNavbar';
 import TutorialsFooter from '../components/tutorials/TutorialsFooter';
-import { navigateTo, updatePageMeta, setJsonLd } from '../utils/seo';
+import { updatePageMeta, setJsonLd } from '../utils/seo';
+import { spaLinkProps, STRETCHED_LINK } from '../utils/spaLink';
 
 // Preferred category display order — categories not listed here appear at the end
 const CATEGORY_ORDER = [
@@ -73,10 +74,6 @@ const TutorialsPage: React.FC<TutorialsPageProps> = ({ onBack, onRegisterClick }
     setIsLoading(false);
   };
 
-  const navigateToTutorial = (slug: string) => {
-    navigateTo(`/how-to-use/${slug}`);
-  };
-
   // Group tutorials: separate parents and children
   const topLevel = tutorials.filter(t => !t.parentId);
   const children = tutorials.filter(t => t.parentId);
@@ -108,14 +105,14 @@ const TutorialsPage: React.FC<TutorialsPageProps> = ({ onBack, onRegisterClick }
       .sort((a, b) => a.displayOrder - b.displayOrder);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-dl-ground flex flex-col">
       <TutorialsNavbar onBack={onBack} onRegisterClick={onRegisterClick} />
 
       {/* Header */}
-      <div className="bg-white border-b border-slate-100">
+      <div className="bg-dl-surface border-b border-dl-hair-soft">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-          <h1 className="text-4xl font-semibold text-slate-900 tracking-tight">Guides</h1>
-          <p className="text-slate-500 mt-3 text-lg">Step-by-step guides to help you get the most out of OpenHR</p>
+          <h1 className="text-4xl font-semibold text-dl-ink tracking-tight">Guides</h1>
+          <p className="text-dl-muted mt-3 text-lg">Step-by-step guides to help you get the most out of OpenHRApp</p>
         </div>
       </div>
 
@@ -124,13 +121,13 @@ const TutorialsPage: React.FC<TutorialsPageProps> = ({ onBack, onRegisterClick }
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {isLoading ? (
             <div className="text-center py-20">
-              <Loader2 className="animate-spin mx-auto mb-4 text-primary" size={40} />
-              <p className="text-slate-500">Loading tutorials...</p>
+              <Loader2 className="animate-spin mx-auto mb-4 text-dl-teal" size={40} />
+              <p className="text-dl-muted">Loading tutorials...</p>
             </div>
           ) : tutorials.length === 0 ? (
             <div className="text-center py-20">
-              <BookOpen size={48} className="mx-auto text-slate-300 mb-4" />
-              <p className="text-slate-500 text-lg">No tutorials published yet. Check back soon!</p>
+              <BookOpen size={48} className="mx-auto text-dl-muted mb-4" />
+              <p className="text-dl-muted text-lg">No tutorials published yet. Check back soon!</p>
             </div>
           ) : (
             <div className="flex flex-col lg:flex-row gap-8">
@@ -138,49 +135,50 @@ const TutorialsPage: React.FC<TutorialsPageProps> = ({ onBack, onRegisterClick }
               <div className="flex-1 min-w-0 space-y-10">
                 {grouped.map(group => (
                   <div key={group.category} id={`cat-${group.category.toLowerCase().replace(/\s+/g, '-')}`}>
-                    <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-3">
-                      <span className="w-1.5 h-8 bg-primary rounded-full" />
+                    <h2 className="text-2xl font-bold text-dl-ink mb-6 flex items-center gap-3">
+                      <span className="w-1.5 h-8 bg-dl-teal rounded-full" />
                       {group.category}
                     </h2>
                     <div className="space-y-4">
                       {group.tutorials.map(tutorial => {
                         const tutorialChildren = getChildren(tutorial.id);
                         return (
-                          <div key={tutorial.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                          <div key={tutorial.id} className="bg-dl-surface rounded-dl-lg border border-dl-hair-soft shadow-dl-1 overflow-hidden">
                             {/* Parent card */}
-                            <div
-                              onClick={() => navigateToTutorial(tutorial.slug)}
-                              className="flex items-center gap-4 p-5 cursor-pointer hover:bg-slate-50 transition-colors"
-                            >
+                            <div className="relative flex items-center gap-4 p-5 cursor-pointer hover:bg-dl-ground transition-colors focus-within:bg-dl-ground">
                               {tutorial.coverImage ? (
-                                <img src={tutorial.coverImage} alt={tutorial.title} className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
+                                <img src={tutorial.coverImage} alt={tutorial.title} className="w-16 h-16 rounded-dl-md object-cover flex-shrink-0" />
                               ) : (
-                                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center flex-shrink-0">
-                                  <BookOpen size={24} className="text-primary/40" />
+                                <div className="w-16 h-16 rounded-dl-md bg-gradient-to-br from-dl-teal/10 to-dl-teal/5 flex items-center justify-center flex-shrink-0">
+                                  <BookOpen size={24} className="text-dl-teal/40" />
                                 </div>
                               )}
                               <div className="flex-1 min-w-0">
-                                <h3 className="font-bold text-slate-900 text-lg">{tutorial.title}</h3>
+                                <h3 className="font-bold text-dl-ink text-lg">
+                                  <a {...spaLinkProps(`/how-to-use/${tutorial.slug}`)} className={STRETCHED_LINK}>
+                                    {tutorial.title}
+                                  </a>
+                                </h3>
                                 {tutorial.excerpt && (
-                                  <p className="text-sm text-slate-500 mt-1 line-clamp-2">{tutorial.excerpt}</p>
+                                  <p className="text-sm text-dl-muted mt-1 line-clamp-2">{tutorial.excerpt}</p>
                                 )}
                               </div>
-                              <ChevronRight size={20} className="text-slate-400 flex-shrink-0" />
+                              <ChevronRight size={20} className="text-dl-muted flex-shrink-0" />
                             </div>
 
                             {/* Children sub-links */}
                             {tutorialChildren.length > 0 && (
-                              <div className="border-t border-slate-100 bg-slate-50/50">
+                              <div className="border-t border-dl-hair-soft bg-dl-surface-2/50">
                                 {tutorialChildren.map(child => (
-                                  <button
+                                  <a
                                     key={child.id}
-                                    onClick={() => navigateToTutorial(child.slug)}
-                                    className="flex items-center gap-3 w-full text-left px-5 py-3 pl-14 hover:bg-slate-100 transition-colors border-b border-slate-100 last:border-b-0"
+                                    {...spaLinkProps(`/how-to-use/${child.slug}`)}
+                                    className="flex items-center gap-3 w-full text-left px-5 py-3 pl-14 hover:bg-dl-hair-soft transition-colors border-b border-dl-hair-soft last:border-b-0"
                                   >
-                                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300 flex-shrink-0" />
-                                    <span className="text-sm font-medium text-slate-700">{child.title}</span>
-                                    <ChevronRight size={14} className="text-slate-400 ml-auto flex-shrink-0" />
-                                  </button>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-dl-hair flex-shrink-0" />
+                                    <span className="text-sm font-medium text-dl-ink">{child.title}</span>
+                                    <ChevronRight size={14} className="text-dl-muted ml-auto flex-shrink-0" />
+                                  </a>
                                 ))}
                               </div>
                             )}
@@ -195,8 +193,8 @@ const TutorialsPage: React.FC<TutorialsPageProps> = ({ onBack, onRegisterClick }
               {/* Right Sidebar - Category Jump Links */}
               <div className="lg:w-72 flex-shrink-0">
                 <div className="lg:sticky lg:top-24">
-                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                    <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4">Categories</h4>
+                  <div className="bg-dl-surface rounded-dl-lg border border-dl-hair-soft shadow-dl-1 p-6">
+                    <h4 className="text-sm font-bold text-dl-ink uppercase tracking-wider mb-4">Categories</h4>
                     <nav className="space-y-2">
                       {categories.map(cat => (
                         <button
@@ -205,7 +203,7 @@ const TutorialsPage: React.FC<TutorialsPageProps> = ({ onBack, onRegisterClick }
                             const el = document.getElementById(`cat-${cat.toLowerCase().replace(/\s+/g, '-')}`);
                             el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                           }}
-                          className="block w-full text-left px-3 py-2 text-sm font-medium text-slate-600 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"
+                          className="block w-full text-left px-3 py-2 text-sm font-medium text-dl-muted hover:text-dl-teal hover:bg-dl-teal/5 rounded-dl-sm transition-colors"
                         >
                           {cat}
                         </button>

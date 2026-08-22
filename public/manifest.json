@@ -1,7 +1,7 @@
 
 {
   "id": "openhrapp",
-  "name": "Open HR App",
+  "name": "OpenHRApp",
   "short_name": "OpenHRApp",
   "description": "Smart Open-Source HR Management System",
   "start_url": "/",

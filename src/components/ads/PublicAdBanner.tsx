@@ -8,7 +8,34 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 interface PublicAdBannerProps {
   slot: AdSlot;
   className?: string;
+  /**
+   * Visible article text length, when the caller already knows it (a blog post knows its own
+   * body length). Falls back to measuring the rendered page when omitted.
+   */
+  contentLength?: number;
 }
+
+/**
+ * Minimum visible text required on a page before an ad slot is requested — plan item 28.
+ *
+ * AdSense policy prohibits ads on pages with little or no original content, and a thin page
+ * carrying ads is exactly the profile that draws a "Low value content" rejection. Index pages
+ * that are mostly navigation should not request a slot at all.
+ */
+export const MIN_CONTENT_CHARS = 1200;
+
+/**
+ * Slots that live on listing/index pages rather than on an article. These are exempt from the
+ * content-length guard because their host page is legitimately not an article — but they are
+ * still subject to every other policy check.
+ */
+const INDEX_PAGE_SLOTS: readonly string[] = ['landing-hero', 'landing-mid', 'blog-header', 'blog-feed'];
+
+const measureRenderedContentLength = (): number => {
+  if (typeof document === 'undefined') return 0;
+  const region = document.querySelector('article') ?? document.querySelector('main');
+  return region?.textContent?.trim().length ?? 0;
+};
 
 const SLOT_SIZES: Record<string, { width: number; height: number }> = {
   'landing-hero': { width: 728, height: 90 },
@@ -19,12 +46,22 @@ const SLOT_SIZES: Record<string, { width: number; height: number }> = {
   'blog-post-content': { width: 300, height: 250 },
 };
 
-export const PublicAdBanner: React.FC<PublicAdBannerProps> = ({ slot, className = '' }) => {
+export const PublicAdBanner: React.FC<PublicAdBannerProps> = ({ slot, className = '', contentLength }) => {
   const [adConfig, setAdConfig] = useState<AdConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadAdConfig = async () => {
+      // Thin-content guard (item 28). Checked before the fetch so a thin page never even
+      // requests a slot. Article slots only — index pages are exempt by design.
+      if (!INDEX_PAGE_SLOTS.includes(slot)) {
+        const measured = contentLength ?? measureRenderedContentLength();
+        if (measured < MIN_CONTENT_CHARS) {
+          setIsLoading(false);
+          return;
+        }
+      }
+
       try {
         const res = await fetch(
           `${SUPABASE_URL}/functions/v1/public-ad-config/${slot}`,
@@ -43,7 +80,7 @@ export const PublicAdBanner: React.FC<PublicAdBannerProps> = ({ slot, className 
     };
 
     loadAdConfig();
-  }, [slot]);
+  }, [slot, contentLength]);
 
   const size = SLOT_SIZES[slot] || { width: 728, height: 90 };
   const aspectRatio = size.width / size.height;
