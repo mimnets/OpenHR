@@ -73,6 +73,16 @@ export interface PreviewResult {
   sampleVars: Record<string, string>;
 }
 
+/** One row of OpenRouter's public catalogue, trimmed to what the picker needs. */
+export interface OpenRouterModel {
+  id: string;
+  name: string;
+  contextLength: number;
+  isFree: boolean;
+  /** Models that accept response_format follow "return JSON" far more reliably. */
+  supportsJson: boolean;
+}
+
 export const AUDIENCE_LABEL: Record<EmailAudience, string> = {
   UNCONFIRMED_ADMIN: 'Admins who never confirmed their email',
   NO_EMPLOYEES:      'Organizations with no employees added',
@@ -243,10 +253,60 @@ export const aiEmailService = {
     }
   },
 
-  /** Generates a preview. mode 'test-send' emails it to the caller only. */
-  async preview(templateKey: string, mode: 'preview' | 'test-send' = 'preview'): Promise<PreviewResult> {
+  /**
+   * The live OpenRouter catalogue.
+   *
+   * Fetched straight from the browser: the endpoint is public, unauthenticated
+   * and sends `Access-Control-Allow-Origin: *`, so proxying it through an edge
+   * function would only add a place for the list to go stale. Reading it live
+   * is the point — OpenRouter's free tier churns, and a slug hardcoded here
+   * would be wrong again within weeks.
+   */
+  async listOpenRouterModels(): Promise<OpenRouterModel[]> {
+    const res = await fetch('https://openrouter.ai/api/v1/models', {
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) throw new Error(`OpenRouter returned ${res.status} for its model list.`);
+
+    const body = await res.json();
+    const rows: any[] = Array.isArray(body?.data) ? body.data : [];
+
+    return rows
+      // Image and audio generators are in the same catalogue and cannot write an email.
+      .filter(m => (m?.architecture?.output_modalities ?? ['text']).includes('text'))
+      .map((m): OpenRouterModel => ({
+        id: String(m.id),
+        name: String(m.name ?? m.id),
+        contextLength: Number(m.context_length ?? m?.top_provider?.context_length ?? 0),
+        isFree:
+          Number(m?.pricing?.prompt ?? 1) === 0 &&
+          Number(m?.pricing?.completion ?? 1) === 0,
+        supportsJson: (m?.supported_parameters ?? []).includes('response_format'),
+      }))
+      .sort((a, b) =>
+        a.isFree === b.isFree
+          ? a.name.localeCompare(b.name)
+          : (a.isFree ? -1 : 1));
+  },
+
+  /**
+   * Generates a preview. mode 'test-send' emails it to the caller only.
+   *
+   * `overrides` lets the dashboard preview an unsaved provider/model pick, so a
+   * rate-limited model can be swapped and re-checked before anything is stored.
+   */
+  async preview(
+    templateKey: string,
+    mode: 'preview' | 'test-send' = 'preview',
+    overrides?: { provider?: EmailProvider; model?: string },
+  ): Promise<PreviewResult> {
     const { data, error } = await supabase.functions.invoke('ai-email-preview', {
-      body: { templateKey, mode },
+      body: {
+        templateKey,
+        mode,
+        provider: overrides?.provider,
+        model: overrides?.model?.trim() || undefined,
+      },
     });
     if (error) {
       let message = error.message;
