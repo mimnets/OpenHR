@@ -68,10 +68,14 @@ begin
   -- high-volume table like attendance a diff is a fraction of the row size.
   -- INSERT and DELETE keep the full row — there is no diff to take, and those
   -- are the cases where you want the whole record.
+  -- `updated` is maintained by a timestamp trigger, so it differs on every
+  -- touch. Counting it would mean a row that changed nothing still produces an
+  -- audit entry, which is all cost and no signal. Judge by the real columns.
   if TG_OP = 'UPDATE' then
     select array_agg(key order by key) into v_changed
     from jsonb_each(v_new)
-    where v_new -> key is distinct from v_old -> key;
+    where v_new -> key is distinct from v_old -> key
+      and key not in ('updated', 'created');
 
     if v_changed is null then
       return NEW;

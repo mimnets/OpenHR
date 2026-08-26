@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Building2, Users, Plus, Edit, Trash2, Eye, RefreshCw, X, Save,
   TrendingUp, Clock, AlertTriangle, CheckCircle2, UserCheck, Shield,
-  CreditCard, Monitor, HardDrive, FileText, Star, Share2, BookOpen, Bell, HelpCircle, Mail, Send
+  CreditCard, Monitor, HardDrive, FileText, Star, Share2, BookOpen, Bell, HelpCircle, Mail, Send, ScrollText
 } from 'lucide-react';
 import { superAdminService } from '../services/superadmin.service';
 import { upgradeService } from '../services/upgrade.service';
@@ -17,6 +17,7 @@ import NotificationRetention from '../components/superadmin/NotificationRetentio
 import GuideLinksManagement from '../components/superadmin/GuideLinksManagement';
 import BulkEmailManager from '../components/superadmin/BulkEmailManager';
 import PushBroadcast from '../components/superadmin/PushBroadcast';
+import AuditLog from '../components/superadmin/AuditLog';
 
 interface SuperAdminProps {
   user: User;
@@ -24,7 +25,7 @@ interface SuperAdminProps {
 }
 
 type ViewMode = 'list' | 'create' | 'edit' | 'users';
-type TabMode = 'organizations' | 'requests' | 'ads' | 'storage' | 'notifications' | 'bulk-email' | 'broadcast' | 'blog' | 'tutorials' | 'guides' | 'showcase' | 'social';
+type TabMode = 'organizations' | 'requests' | 'audit' | 'ads' | 'storage' | 'notifications' | 'bulk-email' | 'broadcast' | 'blog' | 'tutorials' | 'guides' | 'showcase' | 'social';
 
 const SuperAdmin: React.FC<SuperAdminProps> = () => {
   const [activeTab, setActiveTab] = useState<TabMode>('organizations');
@@ -320,6 +321,14 @@ const SuperAdmin: React.FC<SuperAdminProps> = () => {
               )}
             </button>
             <button
+              onClick={() => setActiveTab('audit')}
+              className={`py-3 px-1 sm:px-4 rounded-lg font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1 sm:gap-2 relative ${
+                activeTab === 'audit' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <ScrollText size={16} className="shrink-0" /> <span className="hidden sm:inline">Audit</span>
+            </button>
+            <button
               onClick={() => setActiveTab('ads')}
               className={`py-3 px-1 sm:px-4 rounded-lg font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1 sm:gap-2 ${
                 activeTab === 'ads' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'
@@ -408,6 +417,11 @@ const SuperAdmin: React.FC<SuperAdminProps> = () => {
           </div>
         </div>
       </div>
+
+      {/* Audit Trail Tab */}
+      {activeTab === 'audit' && (
+        <AuditLog organizations={organizations} />
+      )}
 
       {/* Upgrade Requests Tab */}
       {activeTab === 'requests' && (
