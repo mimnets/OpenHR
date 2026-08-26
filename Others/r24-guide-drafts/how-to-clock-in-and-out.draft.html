@@ -1,0 +1,91 @@
+<p>Clocking in records the start of your working day, along with where you were and — where your organization uses it — a selfie taken at that moment. This guide covers the everyday flow, the permissions you need to grant once, and what to do when something does not work.</p>
+
+<h2>Before your first check-in</h2>
+
+<p>Two browser permissions are requested the first time, and both are one-off:</p>
+
+<ul>
+  <li><strong>Camera</strong> — for the selfie, where your organization requires one.</li>
+  <li><strong>Location</strong> — to record where the punch happened.</li>
+</ul>
+
+<p>Grant them when asked. If you dismiss the prompt it does not come back on its own, and you will have to re-enable them in your browser's site settings for OpenHRApp — usually via the padlock icon in the address bar.</p>
+
+<p>Both require a secure connection, which the live site always has. They will not work over plain HTTP.</p>
+
+<h2>Clocking in</h2>
+
+<ol>
+  <li>Open <strong>Attendance</strong>.</li>
+  <li>Choose your <strong>duty type</strong> — Office or Factory.</li>
+  <li>Wait for the camera and location to become ready.</li>
+  <li>Take the selfie.</li>
+  <li>Confirm.</li>
+</ol>
+
+<p>The time is recorded when the punch is saved, not when you opened the screen, so a slow camera does not make you late.</p>
+
+<h3>Office or Factory — does it matter?</h3>
+
+<p>Yes, more than the labels suggest. <strong>Lateness is only calculated for Office punches.</strong> A Factory punch is always recorded as Present regardless of the time, and is tagged with a <code>[FACTORY]</code> marker in the remarks.</p>
+
+<p>That is deliberate — shift-based factory work is not measured against a fixed office start time — but it means choosing the wrong one changes your record. If you are unsure which applies to you, ask before your first punch rather than after a month of them.</p>
+
+<h2>Clocking out</h2>
+
+<p>Return to Attendance at the end of the day and check out. Your recorded hours run from your first punch to your last, so this is the half that decides whether the day counts properly.</p>
+
+<h3>What if I forget to check out?</h3>
+
+<p>The day is recorded with a check-in, no check-out, and <strong>0.0 hours</strong>. Nothing is lost, but nothing is calculated either, and it will not fix itself.</p>
+
+<p>The system closes forgotten sessions automatically rather than leaving them open indefinitely, and adds a remark saying it did so — that remark is the visible sign that the time was not recorded by you. Ask an administrator to correct the actual departure time; only Admin and HR can edit a record, which is why it is worth mentioning the same day while you still remember it.</p>
+
+<p>Building the habit of checking out is much easier than the correction workflow.</p>
+
+<h2>Location and geofencing</h2>
+
+<p>Your position is captured at punch time and stored with the record. Where your organization has configured office locations with a radius, your punch is matched against them so the record shows a recognisable place name rather than raw coordinates.</p>
+
+<p>Location accuracy varies, and a reading a few hundred metres off is normal indoors, in basements, or between tall buildings. That is expected and is not treated as dishonesty — see <a href="/how-to-use/attendance-admin-audit">attendance audit</a> for how administrators are advised to read it.</p>
+
+<h2>What the selfie is for</h2>
+
+<p>It ties the punch to a person. Without it, a recorded check-in only proves that someone with your password was at a location — the practice of one colleague punching in for another is exactly what the photo prevents.</p>
+
+<p>It is taken at the moment of the punch and cannot be added or replaced afterwards. Photos are stored with the attendance record and visible to those who can view your attendance: you, your manager, and Admin and HR.</p>
+
+<h2>When something does not work</h2>
+
+<h3>The camera does not start</h3>
+
+<ul>
+  <li>Check the padlock icon in your address bar and confirm camera access is allowed.</li>
+  <li>Close other apps or tabs using the camera — most devices only allow one at a time.</li>
+  <li>On an installed app on iPhone or iPad, permissions are stricter than in the browser. If it works in Safari but not in the installed app, grant it again there.</li>
+</ul>
+
+<h3>Location will not resolve</h3>
+
+<ul>
+  <li>Allow location for the site, then reload.</li>
+  <li>Move near a window. Indoor readings are slow and sometimes fail entirely.</li>
+  <li>Turn on device location services if they are off system-wide — a site permission cannot override that.</li>
+</ul>
+
+<h3>I am marked Late but I arrived on time</h3>
+
+<p>Check your assigned shift on <a href="/how-to-use/managing-profile-settings">your profile</a> before anything else. Lateness is measured against your shift's start time plus its grace period, so a wrong shift produces wrong statuses on every day at once. Fixing the shift is the fix; correcting individual days is not.</p>
+
+<h3>I punched twice by mistake</h3>
+
+<p>No harm done. Multiple punches in a day are consolidated into one record using the earliest check-in and the latest check-out, so an extra punch cannot shorten your day.</p>
+
+<h2>Related guides</h2>
+
+<ul>
+  <li><a href="/how-to-use/understanding-attendance-logs">Understanding your attendance logs</a> — reading what your punches produced</li>
+  <li><a href="/how-to-use/install-openhrapp-pwa">Installing OpenHRApp</a> — clocking in from your home screen</li>
+  <li><a href="/how-to-use/managing-profile-settings">Managing your profile</a> — checking your assigned shift</li>
+  <li><a href="/features/attendance-tracking">Attendance tracking</a> — how the feature works</li>
+</ul>

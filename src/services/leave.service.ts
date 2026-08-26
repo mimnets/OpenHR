@@ -50,8 +50,10 @@ export const leaveService = {
           .gte('applied_date', since)
           .order('applied_date', { ascending: false });
 
-        if (orgId && apiClient.getAuthRole() !== 'ADMIN' && apiClient.getAuthRole() !== 'HR')
-          query = query.eq('organization_id', orgId);
+        // Always scope to the caller's organization. RLS enforces this too, but
+        // the filter must not depend on role: ADMIN/HR are org-bound like everyone
+        // else. Only SUPER_ADMIN (who has no organization_id) sees across orgs.
+        if (orgId) query = query.eq('organization_id', orgId);
 
         const { data, error } = await query;
         if (error) throw error;
@@ -138,8 +140,17 @@ export const leaveService = {
     } else {
       update.approver_remarks = remarks;
     }
-    const { error } = await supabase.from('leaves').update(update).eq('id', id.trim());
+    // .select() matters here. A write refused by a row-level policy is not an
+    // error — PostgREST reports success having changed zero rows. Without
+    // asking for the affected rows back, a reviewer acting on a record they
+    // cannot touch sees a success toast and no change, which is precisely what
+    // made the August 2026 rejections so hard to reason about.
+    const { data: updated, error } = await supabase
+      .from('leaves').update(update).eq('id', id.trim()).select('id');
     if (error) throw new Error('Access Denied');
+    if (!updated || updated.length === 0) {
+      throw new Error('This request could not be updated. It may belong to another organization, or it may have already been actioned.');
+    }
     leaveService.clearCache();
     apiClient.notify();
 
@@ -226,16 +237,24 @@ export const leaveService = {
     if (data.managerRemarks !== undefined) update.manager_remarks = data.managerRemarks;
     if (data.approverRemarks !== undefined) update.approver_remarks = data.approverRemarks;
 
-    const { error } = await supabase.from('leaves').update(update).eq('id', id.trim());
+    const { data: updated, error } = await supabase
+      .from('leaves').update(update).eq('id', id.trim()).select('id');
     if (error) throw new Error('Failed to update leave record');
+    if (!updated || updated.length === 0) {
+      throw new Error('This record could not be updated. It may belong to another organization.');
+    }
     leaveService.clearCache();
     apiClient.notify();
   },
 
   async adminDeleteLeave(id: string) {
     if (!isSupabaseConfigured()) return;
-    const { error } = await supabase.from('leaves').delete().eq('id', id.trim());
+    const { data: deleted, error } = await supabase
+      .from('leaves').delete().eq('id', id.trim()).select('id');
     if (error) throw new Error('Failed to delete leave record');
+    if (!deleted || deleted.length === 0) {
+      throw new Error('This record could not be deleted. It may belong to another organization.');
+    }
     leaveService.clearCache();
     apiClient.notify();
   },

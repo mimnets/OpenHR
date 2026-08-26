@@ -838,8 +838,43 @@ async function buildSitemap(): Promise<string | null> {
   );
 }
 
+/**
+ * Retired content, and where it went.
+ *
+ * Archiving a guide removes it from the sitemap and from resolveTutorial, which
+ * makes the middleware fall through to the SPA — and the SPA renders its
+ * not-found state with a 200. That is a soft 404: the URL keeps its place in
+ * the index while serving nothing, and any authority it had is thrown away
+ * rather than passed on.
+ *
+ * A permanent redirect to the guide that absorbed the content fixes both. Add a
+ * line here whenever a published guide is archived rather than replaced.
+ *
+ * theme-customization documented three features removed in 0508e82 ("one brand
+ * colour, remove selectable accent themes"): a fourteen-palette picker, an
+ * organization default theme, and a claim that the preference syncs across
+ * devices. What survives is light/dark/system, which now lives in
+ * managing-profile-settings.
+ */
+const RETIRED_PATHS: Record<string, string> = {
+  '/how-to-use/theme-customization': '/how-to-use/managing-profile-settings',
+};
+
 export default async function middleware(request: Request): Promise<Response | undefined> {
   const { pathname } = new URL(request.url);
+
+  // Before everything else: a retired URL must never reach the SPA, or it
+  // answers 200 with a not-found page.
+  const retiredTarget = RETIRED_PATHS[pathname.replace(/\/+$/, '') || '/'];
+  if (retiredTarget) {
+    return new Response(null, {
+      status: 301,
+      headers: {
+        Location: retiredTarget,
+        'Cache-Control': 'public, max-age=3600',
+      },
+    });
+  }
 
   // Handled before the user-agent check: a sitemap is served to everyone who
   // asks, and Search Console fetches it without a crawler UA.

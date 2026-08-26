@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Building2, User, Mail, Lock, ArrowRight, Loader2, ArrowLeft, CheckCircle2, Globe, MapPin, Upload } from 'lucide-react';
 import { hrService } from '../services/hrService';
 import { RegistrationVerificationPage } from '../components/registration/RegistrationVerificationPage';
+import Turnstile from '../components/shared/Turnstile';
 import { COUNTRIES, getFlagEmoji } from '../data/countries';
 
 interface Props {
@@ -25,6 +26,10 @@ const RegisterOrganization: React.FC<Props> = ({ onBack }) => {
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileReset, setTurnstileReset] = useState(0);
+
+  const captchaEnabled = Boolean(import.meta.env.VITE_TURNSTILE_SITE_KEY);
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -57,6 +62,10 @@ const RegisterOrganization: React.FC<Props> = ({ onBack }) => {
       setError("Password must be at least 8 characters.");
       return;
     }
+    if (captchaEnabled && !turnstileToken) {
+      setError("Please complete the anti-spam check.");
+      return;
+    }
 
     setIsSubmitting(true);
     setError(null);
@@ -68,7 +77,8 @@ const RegisterOrganization: React.FC<Props> = ({ onBack }) => {
       password: formData.password,
       country: formData.country,
       address: formData.address,
-      logo: formData.logo
+      logo: formData.logo,
+      turnstileToken
     });
 
     if (result.success) {
@@ -76,6 +86,10 @@ const RegisterOrganization: React.FC<Props> = ({ onBack }) => {
     } else {
       setError(result.error || "Registration failed.");
       setIsSubmitting(false);
+      // Turnstile tokens are single-use — the spent one cannot be replayed on
+      // retry, so force a fresh challenge before the user submits again.
+      setTurnstileToken('');
+      setTurnstileReset(n => n + 1);
     }
   };
 
@@ -195,7 +209,13 @@ const RegisterOrganization: React.FC<Props> = ({ onBack }) => {
             </div>
           </div>
 
-          <button type="submit" disabled={isSubmitting} className="w-full py-5 bg-primary text-white rounded-xl font-semibold uppercase text-xs tracking-widest shadow-xl flex items-center justify-center gap-3 hover:bg-primary-hover transition-all disabled:opacity-50">
+          <Turnstile
+            onVerify={setTurnstileToken}
+            resetSignal={turnstileReset}
+            className="flex justify-center"
+          />
+
+          <button type="submit" disabled={isSubmitting || (captchaEnabled && !turnstileToken)} className="w-full py-5 bg-primary text-white rounded-xl font-semibold uppercase text-xs tracking-widest shadow-xl flex items-center justify-center gap-3 hover:bg-primary-hover transition-all disabled:opacity-50">
             {isSubmitting ? <Loader2 className="animate-spin" size={20}/> : <>Complete Registration <ArrowRight size={20}/></>}
           </button>
         </form>

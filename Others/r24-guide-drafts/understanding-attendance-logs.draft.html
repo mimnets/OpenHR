@@ -1,0 +1,89 @@
+<p>Your attendance history is the record of when you started and finished work each day. It is what leave balances, payroll and any later dispute are all built on, so it is worth understanding exactly how OpenHRApp turns your check-ins into the rows you see.</p>
+
+<h2>How to open your attendance history</h2>
+
+<p>Go to <strong>Attendance Logs</strong> in the sidebar. The heading tells you which view you are in:</p>
+
+<ul>
+  <li><strong>My Attendance History</strong> — your own records. This is what every employee sees.</li>
+  <li><strong>Team Attendance</strong> — a manager looking at their team.</li>
+  <li><strong>Attendance Audit</strong> — an admin or HR user looking at the whole organization.</li>
+</ul>
+
+<p>Managers and admins can switch between their own history and the wider view; employees only ever see their own.</p>
+
+<h2>Why is there one row per day when I punched several times?</h2>
+
+<p>Because the list is <strong>consolidated</strong>. Every punch you make is stored, but the screen groups them into one row per person per day rather than showing each punch separately.</p>
+
+<p>Within a day the rule is simple and worth memorising:</p>
+
+<ul>
+  <li><strong>Check-in is your earliest punch of the day.</strong> A later check-in never replaces an earlier one.</li>
+  <li><strong>Check-out is your latest punch of the day.</strong> A later check-out always replaces an earlier one.</li>
+  <li><strong>Remarks are joined together</strong>, separated by a vertical bar, so no note is lost.</li>
+</ul>
+
+<p>This is often called first-in / last-out. If you check in at 09:00, step out at 13:00, come back at 14:00 and leave at 18:00, your row shows <strong>09:00 – 18:00</strong>, not two separate blocks. It is the shape most payroll and compliance processes expect, and it means an extra punch cannot accidentally shorten your recorded day.</p>
+
+<p>The consequence to be aware of: <strong>breaks are not deducted</strong>. The hours figure is the span from first punch to last, so a long lunch is inside your total rather than removed from it.</p>
+
+<h2>What each field means</h2>
+
+<ul>
+  <li><strong>Date</strong> — the working day the record belongs to.</li>
+  <li><strong>Check-In</strong> — your earliest punch that day, or a dash if none was recorded.</li>
+  <li><strong>Check-Out</strong> — your latest punch that day, or a dash if you never checked out.</li>
+  <li><strong>Hours</strong> — check-out minus check-in, to one decimal place. It shows <code>0.0</code> when either end is missing, so an incomplete day is visibly incomplete rather than quietly counted as zero-length.</li>
+  <li><strong>Status</strong> — see below.</li>
+  <li><strong>Remarks</strong> — any notes attached to the punches, joined together.</li>
+</ul>
+
+<h2>What do the status badges mean?</h2>
+
+<ul>
+  <li><strong>Present</strong> — you checked in on time, or within your shift's grace period.</li>
+  <li><strong>Late</strong> — your first check-in was after your shift start <em>plus</em> the grace period.</li>
+  <li><strong>Absent</strong> — no attendance was recorded for a day you were expected.</li>
+  <li><strong>Leave</strong> — an approved leave request covers the day, so it is not counted as absence.</li>
+  <li><strong>Early Out</strong> — you checked out before your shift was due to end.</li>
+  <li><strong>Half Day</strong> — the day is recorded as a half day.</li>
+</ul>
+
+<h3>How is "late" actually decided?</h3>
+
+<p>Purely by comparison against your assigned shift, in whole minutes. If your shift starts at 09:00 with a 10-minute grace period, a 09:10 check-in is <strong>Present</strong> and 09:11 is <strong>Late</strong>. The grace period is set per shift by your administrator, not per person, so two people on different shifts can punch at the same moment and get different statuses.</p>
+
+<p>If you have no shift assigned, there is nothing to be late against and the record stays Present. You can see which shift you are on in <a href="/how-to-use/managing-profile-settings">your profile</a>.</p>
+
+<h2>Sorting and filtering</h2>
+
+<p>The list is newest first by default. You can narrow it by date range to pull a particular month, which is the usual way to check a payroll period, and admins and managers can additionally filter by employee in the wider views.</p>
+
+<p>Whatever you filter to is what you see — so if a day looks missing, widen the range before assuming the record is gone.</p>
+
+<h2>A day looks wrong. What should I do?</h2>
+
+<p>Work through these in order, because the first two explain most cases:</p>
+
+<ul>
+  <li><strong>No check-out and 0.0 hours.</strong> You almost certainly forgot to check out. The day is not lost — an administrator can correct it.</li>
+  <li><strong>Marked Late when you arrived on time.</strong> Check which shift you are assigned to. Being on the wrong shift is a far more common cause than a mis-recorded punch.</li>
+  <li><strong>The day is missing entirely.</strong> Check your date filter first. If it is genuinely absent, the punch did not reach the server — this can happen if you checked in with no connection and closed the app before it synced.</li>
+  <li><strong>An unexpected extra day.</strong> Consolidation groups by calendar date, so a punch just after midnight belongs to the new day, not the shift you were finishing.</li>
+</ul>
+
+<p>Employees cannot edit their own attendance, by design — a record you can change yourself is not evidence of anything. Corrections go through an administrator, who can amend the record; the change is theirs to make and theirs to justify.</p>
+
+<h2>Who can see your attendance?</h2>
+
+<p>Your own records are visible to you, to your manager, and to admin and HR users. Other employees cannot see them. Managers see the people they manage rather than the whole organization, and the audit view is limited to admin and HR.</p>
+
+<h2>Related guides</h2>
+
+<ul>
+  <li><a href="/how-to-use/how-to-clock-in-and-out">How to clock in and out</a> — making the punches this page records</li>
+  <li><a href="/how-to-use/attendance-admin-audit">Attendance audit for admins</a> — reviewing and correcting records across the organization</li>
+  <li><a href="/how-to-use/generating-reports">Generating reports</a> — turning attendance into monthly figures</li>
+  <li><a href="/features/attendance-tracking">Attendance tracking</a> — how the feature works</li>
+</ul>

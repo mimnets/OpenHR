@@ -3,6 +3,7 @@
 // Deno runtime (Supabase Edge Functions)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { verifyTurnstile, callerIp } from '../_shared/turnstile.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -295,6 +296,31 @@ Deno.serve(async (req: Request) => {
     const country   = (formData.get('country')?.toString()?.trim().toUpperCase() ?? 'BD');
     const address   = formData.get('address')?.toString()?.trim() ?? '';
     const logoFile  = formData.get('logo') instanceof File ? formData.get('logo') as File : null;
+    const tsToken   = formData.get('turnstileToken')?.toString() ?? '';
+
+    // ── Anti-spam gate ────────────────────────────────────────────────────
+    // Runs before any validation or database work so bot traffic costs us a
+    // single outbound call and nothing else.
+    const ip = callerIp(req);
+    // 'register' must match the action the widget is rendered with, so a token
+    // minted for a different surface cannot be replayed here.
+    const ts = await verifyTurnstile(tsToken, ip, 'register');
+    if (!ts.ok) {
+      console.warn(`[REGISTER] Turnstile rejected registration from ${ip ?? 'unknown IP'}`);
+      return jsonError(400, ts.message ?? 'Anti-spam check failed.');
+    }
+
+    // ── Rate limit ────────────────────────────────────────────────────────
+    // Turnstile stops commodity bots; this stops a human or headless browser
+    // farming organizations one at a time.
+    const { data: allowed, error: rlErr } = await supabase
+      .rpc('check_registration_rate_limit', { p_email: email, p_ip: ip });
+    if (rlErr) {
+      console.error('[REGISTER] Rate-limit check failed:', rlErr.message);
+    } else if (allowed === false) {
+      console.warn(`[REGISTER] Rate limit hit for ${email} / ${ip ?? 'unknown IP'}`);
+      return jsonError(429, 'Too many registration attempts. Please try again later.');
+    }
 
     // ── Validate ──────────────────────────────────────────────────────────
     if (!orgName || !email || !password) {
@@ -308,9 +334,16 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── Check email duplicate ─────────────────────────────────────────────
-    const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const emailExists = existingUsers?.users?.some(u => u.email?.toLowerCase() === email);
-    if (emailExists) {
+    // This used to call auth.admin.listUsers(), which returns only the FIRST
+    // PAGE (50 users) — so past that threshold the check silently passed for
+    // every address. Look the address up directly instead; auth.users still has
+    // a unique constraint on email, so createUser below is the final authority.
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+    if (existingProfile) {
       return jsonError(400, 'Email already in use.');
     }
 

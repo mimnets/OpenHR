@@ -100,6 +100,7 @@ export const authService = {
     country: string;
     address?: string;
     logo?: File | null;
+    turnstileToken?: string;
   }): Promise<{ success: boolean; error?: string }> {
     if (!isSupabaseConfigured()) return { success: false, error: 'System offline' };
 
@@ -112,6 +113,7 @@ export const authService = {
       formData.append('country', data.country);
       if (data.address) formData.append('address', data.address);
       if (data.logo) formData.append('logo', data.logo);
+      if (data.turnstileToken) formData.append('turnstileToken', data.turnstileToken);
 
       // Calls the Supabase Edge Function (Phase 4 will create this)
       const { data: result, error } = await supabase.functions.invoke('register', {

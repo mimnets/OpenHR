@@ -65,3 +65,7 @@ Others/import-backups/
 
 # OMC operational state
 .omc/
+
+# Content backups written by scripts/relativize-internal-links.mjs --apply.
+# These are full dumps of live article content; they stay local.
+scripts/.backups/

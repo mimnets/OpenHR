@@ -15,6 +15,50 @@ export interface ChangelogRelease {
 
 export const changelog: ChangelogRelease[] = [
   {
+    date: '2026-08-26',
+    title: 'Closed a cross-organization data leak, added a full audit trail, and put anti-spam on registration',
+    entries: [
+      { type: 'security', description: 'Fixed a serious tenant-isolation fault: any account holding the ADMIN or HR role could read every leave and attendance record in the database, not just their own organization\'s. It was introduced by a change that granted those roles cross-organization visibility for reporting; the resulting policy had a branch with no organization filter at all. At the time of the fix this affected 168 accounts across 163 organizations. The visible symptom was an HR approval queue listing other companies\' employees — one organization saw 17 pending requests where it should have seen 6 — each with a working Approve and Reject button. Reading across organizations is now reserved for the platform operator, as it always should have been. Approve, reject, edit and delete were never affected: those checks were correct throughout, so no organization was ever able to change another\'s records.' },
+      { type: 'security', description: 'Every leave, attendance, profile, organization and settings change is now recorded in an audit log: who made it, when, and the exact before and after values. This was prompted by two leave requests that were rejected with nobody able to say who did it — the database simply held no record of the actor. The log is written by the database itself rather than by the app, so it captures the change no matter which screen or tool made it, and it cannot be edited or deleted through the app by anyone. Your own organization\'s admins and HR can read their organization\'s history.' },
+      { type: 'security', description: 'Added Cloudflare Turnstile to organization registration, along with a rate limit of 3 attempts per hour per email address and 5 per hour per network address. Registration was previously open with no bot protection of any kind: 130 of 163 organizations had a single user and no activity at all, and 41 had appeared in the last 30 days. The check runs before any database work, so bot traffic no longer costs anything to serve.' },
+      { type: 'fix', description: 'Fixed a duplicate-email check that had been silently failing. Registration asked Supabase for the list of existing users to see whether an address was taken, but that call returns only the first 50 users — so once the platform passed 50 accounts, the check quietly approved every address it was given. It now looks the address up directly.' },
+      { type: 'feature', description: 'Added an Audit tab to the super admin dashboard. It shows every recorded change with who made it, when, which organization it belonged to, and an expandable before-and-after for each field that changed. Filter by organization, record type, action or time period, and search by person, field or record ID. Changes made by scheduled jobs are labelled as automated rather than attributed to a person. The trail only covers changes made after it was switched on — it cannot reconstruct history from before that.' },
+      { type: 'improvement', description: 'The audit trail now ignores the automatic last-modified timestamp when deciding whether a record actually changed. Without that, saving a record without editing anything still produced an audit entry, which is storage spent on no information.' },
+      { type: 'fix', description: 'Approving, rejecting, editing or deleting a leave request that you are not allowed to touch now tells you so. Previously the database refused the change but the app treated that refusal as success, showed a confirmation and refreshed — so the record simply did not change and nobody was told why. This is the behaviour that made the two disputed rejections so hard to explain: a reviewer working through a queue could press a button, see it succeed, and have nothing happen.' },
+      { type: 'improvement', description: 'Added a build-time check that reads every database migration in order, works out which access rules are actually in force, and fails the build if any rule grants access to a table without also restricting it to one organization. This is the exact mistake behind the leak above — a rule listing several alternatives, one of which forgot the organization check. Verified by reintroducing the original fault and confirming the check catches it and names the file and the offending line.' },
+      { type: 'security', description: 'Two email endpoints checked that the caller was signed in but not who they were. One would email any leave request\'s full details — employee name, dates, reason and remarks — to anyone who asked for it by ID, regardless of which organization it belonged to. The other accepted a subject line and message body from the caller and sent them, from the OpenHR address, to any organization\'s administrators. Both now verify that the caller belongs to the organization concerned.' },
+    ],
+  },
+  {
+    date: '2026-08-22',
+    title: 'Cover images for the 23 articles that still have none — corrected to the new palette first',
+    entries: [
+      { type: 'fix', description: 'The cover image prompts were still written around the old app colours — indigo on pale slate. Since the public pages moved to the new design, a cover generated from those prompts would have been the wrong colour on every card carrying it. Regenerated in the current teal-and-white palette, with an explicit instruction not to introduce a third colour.' },
+      { type: 'improvement', description: 'Regenerated the prompt sheet against the current articles, so it reflects the rewritten guide titles and excludes the theme guide that is being retired. 23 articles need a cover: 22 guides and one blog post.' },
+      { type: 'feature', description: 'Added a bulk uploader. Save the finished images into one folder named after each article, run one command, and every cover is resized, converted and attached in one pass. It matches files to articles by name and refuses anything it cannot match rather than guessing, does a dry run by default, and applies exactly the same conversion the app does when you upload a cover by hand — including rejecting WebP, which is the format that produces blank preview cards when a link is shared.' },
+    ],
+  },
+  {
+    date: '2026-08-22',
+    title: 'Rewrote every how-to guide, and found several that described features we no longer have',
+    entries: [
+      { type: 'improvement', description: 'Rewrote all 24 how-to guides. Between them they went from 9,536 words to 19,922 — the shortest guide was 226 words and is now 681, and none is under 600 any more. The additions are the parts that were missing rather than padding: what each screen actually shows, what to do when something does not work, and how each feature interacts with shifts, holidays and permissions.' },
+      { type: 'fix', description: 'The theme guide described a grid of 14 colour themes, an organization-wide default theme, and a preference that synced across your devices. None of those has existed since we moved to a single brand colour. What remains — light, dark and follow-your-device — is now covered properly in the profile guide, and the old page redirects there rather than leaving a dead link.' },
+      { type: 'fix', description: 'The leave feature guide told people they could cancel a request, described a team calendar, and said employees could book half days. None of the three is true: requests cannot be withdrawn once submitted, there is no calendar view, and only HR or an admin can enter a half day. All three are corrected.' },
+      { type: 'fix', description: 'The notification guide described SMTP settings and a retention control that organizations do not have — retention is a platform-level setting. The performance review guide listed two of the five rating labels incorrectly.' },
+      { type: 'improvement', description: 'Added question-style headings across the guides and five articles, so that a page answering "why is my export missing people?" says so in the heading. This is how search engines and assistants match a page to a question, and it also makes the guides easier to skim.' },
+      { type: 'improvement', description: 'Documented two behaviours that were not written down anywhere: lateness is only calculated for Office check-ins, so a Factory punch is always recorded as present whatever the time; and leave requests automatically exclude both your non-working days and public holidays, with the breakdown shown as you pick the dates.' },
+    ],
+  },
+  {
+    date: '2026-08-22',
+    title: 'Internal links across every article now point straight at the page instead of bouncing through a redirect',
+    entries: [
+      { type: 'improvement', description: 'Converted 410 internal links across all 44 published guides and articles from full web addresses to site-relative ones. Every one of them previously pointed at the www address, which now forwards to the main one — so each link a reader or a search engine followed took an extra hop. They now go straight to the page. The link text, the destinations and the article content are all completely unchanged; only the addresses in the links were shortened.' },
+      { type: 'improvement', description: 'Because the links no longer name a host at all, they cannot break again if the site address ever changes. Every one of the 53 distinct destinations was checked to confirm it loads before anything was rewritten, and a full backup of the original content was taken first.' },
+    ],
+  },
+  {
     date: '2026-08-22',
     title: 'Day 15 no longer switches your account off, and you can now choose to be featured on our homepage',
     entries: [

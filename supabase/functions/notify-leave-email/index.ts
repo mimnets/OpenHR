@@ -396,6 +396,24 @@ Deno.serve(async (req: Request) => {
 
     const leaveRecord: LeaveRecord = leave as any;
 
+    // The caller's JWT was verified above, but that only proves they are *some*
+    // logged-in user. Without this check any authenticated account could pass an
+    // arbitrary leaveId and have another organization's leave details — employee
+    // name, dates, reason, remarks — emailed out. Bind the record to the caller.
+    const { data: callerProfile } = await adminClient
+      .from('profiles')
+      .select('role, organization_id')
+      .eq('id', caller.id)
+      .maybeSingle();
+
+    if (callerProfile?.role !== 'SUPER_ADMIN' &&
+        callerProfile?.organization_id !== leaveRecord.organization_id) {
+      console.warn(`[NotifyLeaveEmail] Cross-org attempt by ${caller.id} on leave ${leaveId}`);
+      return new Response(JSON.stringify({ message: 'Forbidden' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // ── Resolve profiles ────────────────────────────────────────────────────
 
     // Employee
