@@ -50,8 +50,24 @@ declare
   v_actorg   uuid;
   v_recid    text;
 begin
-  -- On UPDATE, record only the fields that actually differ. Skip no-op writes
-  -- so refresh loops and idempotent saves don't flood the log.
+  -- Identify the row and its tenant from the FULL images, before any narrowing
+  -- below: id and organization_id rarely change, so they are absent from a diff.
+  -- `organizations` itself has no organization_id column — its own id is the
+  -- tenant key.
+  if TG_TABLE_NAME = 'organizations' then
+    v_org := coalesce((v_new ->> 'id')::uuid, (v_old ->> 'id')::uuid);
+  else
+    v_org := coalesce((v_new ->> 'organization_id')::uuid, (v_old ->> 'organization_id')::uuid);
+  end if;
+
+  v_recid := coalesce(v_new ->> 'id', v_old ->> 'id');
+
+  -- On UPDATE, record only the fields that actually differ, and store only
+  -- those fields' values rather than both full rows. Two reasons: no-op writes
+  -- (refresh loops, idempotent saves) are dropped entirely, and on a
+  -- high-volume table like attendance a diff is a fraction of the row size.
+  -- INSERT and DELETE keep the full row — there is no diff to take, and those
+  -- are the cases where you want the whole record.
   if TG_OP = 'UPDATE' then
     select array_agg(key order by key) into v_changed
     from jsonb_each(v_new)
@@ -60,17 +76,10 @@ begin
     if v_changed is null then
       return NEW;
     end if;
-  end if;
 
-  -- The organization the affected row belongs to. `organizations` itself has no
-  -- organization_id column — its own id is the tenant key.
-  if TG_TABLE_NAME = 'organizations' then
-    v_org := coalesce((v_new ->> 'id')::uuid, (v_old ->> 'id')::uuid);
-  else
-    v_org := coalesce((v_new ->> 'organization_id')::uuid, (v_old ->> 'organization_id')::uuid);
+    v_old := (select jsonb_object_agg(k, v_old -> k) from unnest(v_changed) as k);
+    v_new := (select jsonb_object_agg(k, v_new -> k) from unnest(v_changed) as k);
   end if;
-
-  v_recid := coalesce(v_new ->> 'id', v_old ->> 'id');
 
   if v_actor is not null then
     select role, organization_id into v_role, v_actorg
@@ -122,3 +131,21 @@ create policy "audit_logs_select" on public.audit_logs for select using (
 -- No INSERT/UPDATE/DELETE policies: with RLS enabled and no permissive policy,
 -- every direct client write is rejected. The security-definer trigger is the
 -- only writer, and nobody can rewrite history through the API.
+
+-- ── Retention ───────────────────────────────────────────────────────────────
+-- Audit value decays; storage cost does not. Trim to 24 months by default.
+-- Schedule alongside the other pg_cron jobs, or call manually.
+create or replace function public.prune_audit_logs(p_keep_months int default 24)
+returns bigint
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare v_deleted bigint;
+begin
+  delete from public.audit_logs
+  where occurred_at < now() - make_interval(months => p_keep_months);
+  get diagnostics v_deleted = row_count;
+  return v_deleted;
+end;
+$$;
