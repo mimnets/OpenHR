@@ -73,6 +73,18 @@ Deno.serve(async (req: Request) => {
       .from('email_templates').select('*').eq('key', templateKey).maybeSingle();
     if (!tpl) return json(404, { message: `No template named ${templateKey}` });
 
+    // The dashboard may preview a provider/model the template has not been
+    // saved with yet. That is the whole point of the picker: when a free model
+    // is rate-limited upstream you need to try another one *before* committing
+    // it. Nothing here is persisted — the stored template is untouched unless
+    // the super admin saves it separately.
+    const useProvider = (typeof body.provider === 'string' && body.provider
+      ? body.provider
+      : tpl.provider) as LlmProvider;
+    const useModel = typeof body.model === 'string' && body.model.trim()
+      ? body.model.trim().slice(0, 200)
+      : tpl.model;
+
     // A real organization matching this template's audience makes the preview
     // honest. Falling back to placeholders is better than refusing to render.
     const { data: sampleOrg } = await admin
@@ -113,8 +125,8 @@ Deno.serve(async (req: Request) => {
       ].join('\n');
 
       const result = await generate({
-        provider: tpl.provider as LlmProvider,
-        model: tpl.model,
+        provider: useProvider,
+        model: useModel,
         system: SYSTEM_PROMPT,
         user: userPrompt,
       });
@@ -172,8 +184,8 @@ Deno.serve(async (req: Request) => {
         recipient_email: `test:${to}:${Date.now()}`,
         recipient_id: caller.id,
         status: 'PREVIEW',
-        provider: tpl.provider,
-        model: tpl.model,
+        provider: useProvider,
+        model: useModel,
         subject,
         ai_used: aiUsed,
       });
@@ -189,8 +201,8 @@ Deno.serve(async (req: Request) => {
       aiError,
       sent,
       sentTo: sent ? (callerProfile.email ?? caller.email) : null,
-      provider: tpl.provider,
-      model: tpl.model,
+      provider: useProvider,
+      model: useModel,
       availableProviders: availableProviders(),
       sampleVars: vars,
     });
