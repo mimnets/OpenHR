@@ -50,8 +50,10 @@ export const leaveService = {
           .gte('applied_date', since)
           .order('applied_date', { ascending: false });
 
-        if (orgId && apiClient.getAuthRole() !== 'ADMIN' && apiClient.getAuthRole() !== 'HR')
-          query = query.eq('organization_id', orgId);
+        // Always scope to the caller's organization. RLS enforces this too, but
+        // the filter must not depend on role: ADMIN/HR are org-bound like everyone
+        // else. Only SUPER_ADMIN (who has no organization_id) sees across orgs.
+        if (orgId) query = query.eq('organization_id', orgId);
 
         const { data, error } = await query;
         if (error) throw error;

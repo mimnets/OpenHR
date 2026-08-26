@@ -70,6 +70,35 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // ── Authorize the caller ─────────────────────────────────────────────
+    // subject and html come straight from the request body and are sent from
+    // the OpenHR domain. Verifying only that the caller holds a valid JWT would
+    // let any account mail arbitrary HTML to any organization's admins — a
+    // cross-tenant phishing channel wearing our own From: address.
+    const { data: callerProfile } = await adminClient
+      .from('profiles')
+      .select('role, organization_id')
+      .eq('id', caller.id)
+      .maybeSingle();
+
+    const role = callerProfile?.role ?? '';
+    const isSuper = role === 'SUPER_ADMIN';
+
+    // SUPER_ADMINS: org admins raise upgrade/donation requests this way, so any
+    // org ADMIN/HR may reach the platform operators. That audience is us.
+    // ORG_ADMINS: restricted to the org itself, or a platform operator. This is
+    // the branch that was cross-tenant.
+    const allowed = target === 'SUPER_ADMINS'
+      ? (isSuper || ['ADMIN', 'HR'].includes(role))
+      : (isSuper || (['ADMIN', 'HR'].includes(role) && callerProfile?.organization_id === orgId));
+
+    if (!allowed) {
+      console.warn(`[NotifyAdminsEmail] Unauthorized ${target} send attempted by ${caller.id}`);
+      return new Response(JSON.stringify({ message: 'Forbidden' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // ── Resolve target profiles ──────────────────────────────────────────
     let profiles: Array<{ id: string; email: string | null }> = [];
 

@@ -15,6 +15,17 @@ export interface ChangelogRelease {
 
 export const changelog: ChangelogRelease[] = [
   {
+    date: '2026-08-26',
+    title: 'Closed a cross-organization data leak, added a full audit trail, and put anti-spam on registration',
+    entries: [
+      { type: 'security', description: 'Fixed a serious tenant-isolation fault: any account holding the ADMIN or HR role could read every leave and attendance record in the database, not just their own organization\'s. It was introduced by a change that granted those roles cross-organization visibility for reporting; the resulting policy had a branch with no organization filter at all. At the time of the fix this affected 168 accounts across 163 organizations. The visible symptom was an HR approval queue listing other companies\' employees — one organization saw 17 pending requests where it should have seen 6 — each with a working Approve and Reject button. Reading across organizations is now reserved for the platform operator, as it always should have been. Approve, reject, edit and delete were never affected: those checks were correct throughout, so no organization was ever able to change another\'s records.' },
+      { type: 'security', description: 'Every leave, attendance, profile, organization and settings change is now recorded in an audit log: who made it, when, and the exact before and after values. This was prompted by two leave requests that were rejected with nobody able to say who did it — the database simply held no record of the actor. The log is written by the database itself rather than by the app, so it captures the change no matter which screen or tool made it, and it cannot be edited or deleted through the app by anyone. Your own organization\'s admins and HR can read their organization\'s history.' },
+      { type: 'security', description: 'Added Cloudflare Turnstile to organization registration, along with a rate limit of 3 attempts per hour per email address and 5 per hour per network address. Registration was previously open with no bot protection of any kind: 130 of 163 organizations had a single user and no activity at all, and 41 had appeared in the last 30 days. The check runs before any database work, so bot traffic no longer costs anything to serve.' },
+      { type: 'fix', description: 'Fixed a duplicate-email check that had been silently failing. Registration asked Supabase for the list of existing users to see whether an address was taken, but that call returns only the first 50 users — so once the platform passed 50 accounts, the check quietly approved every address it was given. It now looks the address up directly.' },
+      { type: 'security', description: 'Two email endpoints checked that the caller was signed in but not who they were. One would email any leave request\'s full details — employee name, dates, reason and remarks — to anyone who asked for it by ID, regardless of which organization it belonged to. The other accepted a subject line and message body from the caller and sent them, from the OpenHR address, to any organization\'s administrators. Both now verify that the caller belongs to the organization concerned.' },
+    ],
+  },
+  {
     date: '2026-08-22',
     title: 'Cover images for the 23 articles that still have none — corrected to the new palette first',
     entries: [
