@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — Initial Schema Migration
+-- OpenHRApp — Initial Schema Migration
 -- Migrated from PocketBase → Supabase (PostgreSQL)
 -- 0001_initial_schema.sql
 -- ============================================================

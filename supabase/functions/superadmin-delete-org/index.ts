@@ -1,4 +1,4 @@
-// OpenHR — Super Admin Delete Organization Edge Function
+// OpenHRApp — Super Admin Delete Organization Edge Function
 // Deletes org cascade: profiles + auth.users + all child rows via ON DELETE CASCADE.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';

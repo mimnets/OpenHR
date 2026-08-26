@@ -1,4 +1,4 @@
-// OpenHR — Create Employee Edge Function
+// OpenHRApp — Create Employee Edge Function
 // Requires ADMIN or HR caller. Uses service role to create auth.users + profile.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';

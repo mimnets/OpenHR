@@ -1,4 +1,4 @@
-// OpenHR — Auto Close Sessions Cron
+// OpenHRApp — Auto Close Sessions Cron
 // Schedule: 3-59/5 * * * * (every 5 min, offset to avoid peak traffic)
 //
 // FROZEN function — mirrors auto_close_sessions from pb_hooks/cron.pb.js exactly.

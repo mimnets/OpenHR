@@ -1,14 +1,95 @@
-// OpenHR — Registration Edge Function
+// OpenHRApp — Registration Edge Function
 // Ports: Others/pb_hooks/main.pb.js → POST /api/openhr/register
 // Deno runtime (Supabase Edge Functions)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { verifyTurnstile, callerIp } from '../_shared/turnstile.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// ── Cloudflare Turnstile verification ───────────────────────────────────────
+// Deliberately inlined rather than imported from ../_shared/. The Docker-less
+// API deploy path failed to boot with a cross-directory relative import, and a
+// registration endpoint that will not start is worse than a duplicated helper.
+//
+// siteverify returning success only proves the token is a real, unspent
+// Turnstile token — not that it came from our widget on our site. `action` and
+// `hostname` are what bind it to this surface; without them the token is a
+// bearer credential anyone can farm against the same sitekey.
+
+const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+const TURNSTILE_TIMEOUT_MS = 10000;
+const TURNSTILE_MAX_TOKEN = 2048;
+const TURNSTILE_DEFAULT_HOSTS = ['openhrapp.com', 'www.openhrapp.com'];
+
+function callerIp(req: Request): string | null {
+  return req.headers.get('cf-connecting-ip')
+    ?? req.headers.get('x-forwarded-for')?.split(',')[0].trim()
+    ?? null;
+}
+
+async function verifyTurnstile(
+  token: string | null | undefined,
+  remoteIp?: string | null,
+  expectedAction = 'register',
+): Promise<{ ok: boolean; message?: string }> {
+  const secret = Deno.env.get('TURNSTILE_SECRET_KEY');
+  if (!secret) {
+    console.warn('[turnstile] TURNSTILE_SECRET_KEY not set — verification skipped');
+    return { ok: true };
+  }
+
+  if (typeof token !== 'string' || token.length === 0) {
+    return { ok: false, message: 'Please complete the anti-spam check.' };
+  }
+  if (token.length > TURNSTILE_MAX_TOKEN) {
+    console.warn(`[turnstile] oversized token rejected (${token.length} chars)`);
+    return { ok: false, message: 'Anti-spam check failed. Please try again.' };
+  }
+
+  const body = new URLSearchParams({ secret, response: token });
+  if (remoteIp) body.set('remoteip', remoteIp);
+
+  let data: { success: boolean; action?: string; hostname?: string; 'error-codes'?: string[] };
+  try {
+    const res = await fetch(TURNSTILE_VERIFY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+      signal: AbortSignal.timeout(TURNSTILE_TIMEOUT_MS),
+    });
+    if (!res.ok) throw new Error(`siteverify ${res.status}`);
+    data = await res.json();
+  } catch (e) {
+    // Fail closed: a Cloudflare outage must not reopen the endpoint spam targets.
+    console.error('[turnstile] siteverify failed:', e instanceof Error ? e.message : e);
+    return { ok: false, message: 'Anti-spam check unavailable. Please try again shortly.' };
+  }
+
+  if (!data.success) {
+    console.warn('[turnstile] rejected:', data['error-codes']?.join(',') ?? 'unknown');
+    return { ok: false, message: 'Anti-spam check failed. Please try again.' };
+  }
+  if (data.action !== expectedAction) {
+    console.warn(`[turnstile] action mismatch: got "${data.action}", expected "${expectedAction}"`);
+    return { ok: false, message: 'Anti-spam check failed. Please try again.' };
+  }
+
+  const rawHosts = Deno.env.get('TURNSTILE_ALLOWED_HOSTNAMES');
+  const allowed = new Set(
+    rawHosts
+      ? rawHosts.split(',').map((h) => h.trim().toLowerCase()).filter(Boolean)
+      : TURNSTILE_DEFAULT_HOSTS,
+  );
+  if (!data.hostname || !allowed.has(data.hostname.toLowerCase())) {
+    console.warn(`[turnstile] hostname "${data.hostname}" not in allowlist`);
+    return { ok: false, message: 'Anti-spam check failed. Please try again.' };
+  }
+
+  return { ok: true };
+}
 
 // ── Country defaults ────────────────────────────────────────────────────────
 function getCountryDefaults(code: string) {
@@ -213,7 +294,7 @@ async function sendSuperAdminRegistrationEmail(
     return;
   }
 
-  const FROM_EMAIL = 'OpenHR <noreply@openhrapp.com>';
+  const FROM_EMAIL = 'OpenHRApp <noreply@openhrapp.com>';
 
   // Filter to super admins who have an email in their profile.
   // We use profiles.email directly (backfilled by migration 0013 + handle_new_user trigger)
@@ -229,7 +310,7 @@ async function sendSuperAdminRegistrationEmail(
   const subject = `New org registered: ${orgName}`;
   const html = `
     <h2>New Organization Registration</h2>
-    <p>A new organization has registered on OpenHR:</p>
+    <p>A new organization has registered on OpenHRApp:</p>
     <table style="border-collapse:collapse;width:100%;max-width:500px">
       <tr><td style="padding:6px 12px;font-weight:bold">Organization</td><td>${orgName}</td></tr>
       <tr><td style="padding:6px 12px;font-weight:bold">Admin</td><td>${adminName}</td></tr>
@@ -304,10 +385,13 @@ Deno.serve(async (req: Request) => {
     const ip = callerIp(req);
     // 'register' must match the action the widget is rendered with, so a token
     // minted for a different surface cannot be replayed here.
-    const ts = await verifyTurnstile(tsToken, ip, 'register');
-    if (!ts.ok) {
+    // NOT named `ts` — the admin-ID builder further down already declares a
+    // `const ts`, and a second const of the same name in this scope is a parse
+    // error, which the edge runtime surfaces only as an opaque BOOT_ERROR.
+    const turnstileResult = await verifyTurnstile(tsToken, ip, 'register');
+    if (!turnstileResult.ok) {
       console.warn(`[REGISTER] Turnstile rejected registration from ${ip ?? 'unknown IP'}`);
-      return jsonError(400, ts.message ?? 'Anti-spam check failed.');
+      return jsonError(400, turnstileResult.message ?? 'Anti-spam check failed.');
     }
 
     // ── Rate limit ────────────────────────────────────────────────────────

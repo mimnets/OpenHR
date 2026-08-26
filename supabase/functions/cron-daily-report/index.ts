@@ -1,4 +1,4 @@
-// OpenHR — Daily Attendance Report Cron
+// OpenHRApp — Daily Attendance Report Cron
 // Schedule: 0 23 * * * (daily 11 PM UTC)
 //
 // For each org with dailyReportEnabled in app_config:
@@ -8,7 +8,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const FROM_EMAIL = 'OpenHR <noreply@openhrapp.com>';
+const FROM_EMAIL = 'OpenHRApp <noreply@openhrapp.com>';
 
 function jsonResponse(status: number, body: unknown) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -130,7 +130,7 @@ Deno.serve(async (req: Request) => {
            <tr><td style="padding:12px;border:1px solid #ddd;color:#3b82f6;">On Leave</td><td style="padding:12px;border:1px solid #ddd;text-align:center;">${leaveCount}</td></tr>
            <tr style="background:#f8f9fa;"><td style="padding:12px;border:1px solid #ddd;"><strong>Total Tracked</strong></td><td style="padding:12px;border:1px solid #ddd;text-align:center;"><strong>${total}</strong></td></tr>
          </table>
-         <p style="margin-top:16px;color:#6b7280;font-size:12px;">Automated daily report from OpenHR.</p>`,
+         <p style="margin-top:16px;color:#6b7280;font-size:12px;">Automated daily report from OpenHRApp.</p>`,
       );
       reportsSent++;
     }

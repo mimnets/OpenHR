@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — Row Level Security Policies
+-- OpenHRApp — Row Level Security Policies
 -- Mirrors PocketBase listRule / viewRule / createRule / updateRule / deleteRule
 -- 0002_rls_policies.sql
 -- ============================================================

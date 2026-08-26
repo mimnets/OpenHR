@@ -1,4 +1,4 @@
-// OpenHR — End of the ad-free period
+// OpenHRApp — End of the ad-free period
 // Schedule: 0 0 * * * (daily midnight UTC)
 //
 // 1. Finds orgs where subscription_status = 'TRIAL' and trial_end_date < now() →
@@ -22,7 +22,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const FROM_EMAIL = 'OpenHR <noreply@openhrapp.com>';
+const FROM_EMAIL = 'OpenHRApp <noreply@openhrapp.com>';
 
 function jsonResponse(status: number, body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -133,7 +133,7 @@ Deno.serve(async (req: Request) => {
         `<h2>Your ad-free period has ended</h2>
          <p>Dear ${adm.name || 'Admin'},</p>
          <p>The first 14 days for <strong>${org.name}</strong> are up, so you will start seeing
-            ads in OpenHR from today.</p>
+            ads in OpenHRApp from today.</p>
          <p><strong>Nothing else changes.</strong> OpenHRApp is free forever — every feature
             stays available, there are no employee limits, and nothing has been switched off.</p>
          <p>If you would rather not see ads, a donation removes them for your whole

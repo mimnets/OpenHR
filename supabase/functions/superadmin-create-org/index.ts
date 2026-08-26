@@ -1,4 +1,4 @@
-// OpenHR — Super Admin Create Organization Edge Function
+// OpenHRApp — Super Admin Create Organization Edge Function
 // Only callable by SUPER_ADMIN. Uses service role to create auth user + org.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';

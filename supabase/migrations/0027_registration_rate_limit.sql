@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — Registration rate limiting + email lookup index
+-- OpenHRApp — Registration rate limiting + email lookup index
 -- 0027_registration_rate_limit.sql
 --
 -- /register is public and unauthenticated. Turnstile (added alongside this
@@ -27,7 +27,16 @@ alter table public.registration_attempts enable row level security;
 
 -- The duplicate-email check in the register function looks up profiles by
 -- email; without this it is a sequential scan on every registration.
-create index if not exists profiles_email_idx on public.profiles (lower(email));
+--
+-- Indexed on the bare column, not lower(email): the lookup is
+-- `.eq('email', email)`, and a functional index on lower(email) would never be
+-- used by that predicate. The register function lowercases the address before
+-- storing and before querying, and every stored address is already lowercase,
+-- so the plain index is both usable and correct. Dropped first because an
+-- earlier revision created this name over lower(email), and
+-- `create index if not exists` would silently keep the wrong one.
+drop index if exists public.profiles_email_idx;
+create index if not exists profiles_email_idx on public.profiles (email);
 
 -- ── Rate-limit check ────────────────────────────────────────────────────────
 -- Records the attempt and reports whether it should be allowed. Deliberately

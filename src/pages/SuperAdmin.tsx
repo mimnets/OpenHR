@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Building2, Users, Plus, Edit, Trash2, Eye, RefreshCw, X, Save,
   TrendingUp, Clock, AlertTriangle, CheckCircle2, UserCheck, Shield,
-  CreditCard, Monitor, HardDrive, FileText, Star, Share2, BookOpen, Bell, HelpCircle, Mail, Send, ScrollText
+  CreditCard, Monitor, HardDrive, FileText, Star, Share2, BookOpen, Bell, HelpCircle, Send, ScrollText, ShieldAlert, Sparkles
 } from 'lucide-react';
 import { superAdminService } from '../services/superadmin.service';
 import { upgradeService } from '../services/upgrade.service';
@@ -15,9 +15,10 @@ import ShowcaseManagement from '../components/superadmin/ShowcaseManagement';
 import SocialLinksManagement from '../components/superadmin/SocialLinksManagement';
 import NotificationRetention from '../components/superadmin/NotificationRetention';
 import GuideLinksManagement from '../components/superadmin/GuideLinksManagement';
-import BulkEmailManager from '../components/superadmin/BulkEmailManager';
 import PushBroadcast from '../components/superadmin/PushBroadcast';
 import AuditLog from '../components/superadmin/AuditLog';
+import OrgHygienePanel from '../components/superadmin/OrgHygiene';
+import AIEmail from '../components/superadmin/AIEmail';
 
 interface SuperAdminProps {
   user: User;
@@ -25,7 +26,7 @@ interface SuperAdminProps {
 }
 
 type ViewMode = 'list' | 'create' | 'edit' | 'users';
-type TabMode = 'organizations' | 'requests' | 'audit' | 'ads' | 'storage' | 'notifications' | 'bulk-email' | 'broadcast' | 'blog' | 'tutorials' | 'guides' | 'showcase' | 'social';
+type TabMode = 'organizations' | 'requests' | 'hygiene' | 'audit' | 'ai-email' | 'ads' | 'storage' | 'notifications' | 'broadcast' | 'blog' | 'tutorials' | 'guides' | 'showcase' | 'social';
 
 const SuperAdmin: React.FC<SuperAdminProps> = () => {
   const [activeTab, setActiveTab] = useState<TabMode>('organizations');
@@ -321,12 +322,28 @@ const SuperAdmin: React.FC<SuperAdminProps> = () => {
               )}
             </button>
             <button
+              onClick={() => setActiveTab('hygiene')}
+              className={`py-3 px-1 sm:px-4 rounded-lg font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1 sm:gap-2 relative ${
+                activeTab === 'hygiene' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <ShieldAlert size={16} className="shrink-0" /> <span className="hidden sm:inline">Review</span>
+            </button>
+            <button
               onClick={() => setActiveTab('audit')}
               className={`py-3 px-1 sm:px-4 rounded-lg font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1 sm:gap-2 relative ${
                 activeTab === 'audit' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'
               }`}
             >
               <ScrollText size={16} className="shrink-0" /> <span className="hidden sm:inline">Audit</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('ai-email')}
+              className={`py-3 px-1 sm:px-4 rounded-lg font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1 sm:gap-2 relative ${
+                activeTab === 'ai-email' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <Sparkles size={16} className="shrink-0" /> <span className="hidden sm:inline">Email</span>
             </button>
             <button
               onClick={() => setActiveTab('ads')}
@@ -352,14 +369,7 @@ const SuperAdmin: React.FC<SuperAdminProps> = () => {
             >
               <Bell size={16} className="shrink-0" /> <span className="hidden sm:inline">Notifs</span>
             </button>
-            <button
-              onClick={() => setActiveTab('bulk-email')}
-              className={`py-3 px-1 sm:px-4 rounded-lg font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1 sm:gap-2 ${
-                activeTab === 'bulk-email' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              <Mail size={16} className="shrink-0" /> <span className="hidden sm:inline">Email</span>
-            </button>
+
             <button
               onClick={() => setActiveTab('broadcast')}
               className={`py-3 px-1 sm:px-4 rounded-lg font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1 sm:gap-2 ${
@@ -417,6 +427,16 @@ const SuperAdmin: React.FC<SuperAdminProps> = () => {
           </div>
         </div>
       </div>
+
+      {/* AI Email Tab */}
+      {activeTab === 'ai-email' && (
+        <AIEmail />
+      )}
+
+      {/* Organization Review Tab */}
+      {activeTab === 'hygiene' && (
+        <OrgHygienePanel />
+      )}
 
       {/* Audit Trail Tab */}
       {activeTab === 'audit' && (
@@ -523,9 +543,6 @@ const SuperAdmin: React.FC<SuperAdminProps> = () => {
       )}
 
       {/* Bulk Email Tab */}
-      {activeTab === 'bulk-email' && (
-        <BulkEmailManager onMessage={setMessage} />
-      )}
 
       {/* Push Broadcast Tab */}
       {activeTab === 'broadcast' && (

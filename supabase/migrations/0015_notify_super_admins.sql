@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — Notify Super Admins RPC Function
+-- OpenHRApp — Notify Super Admins RPC Function
 -- Allows client code to create notifications for all SUPER_ADMIN
 -- users without needing to bypass RLS on the profiles table.
 -- ============================================================

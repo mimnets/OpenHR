@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — Add status column to profiles
+-- OpenHRApp — Add status column to profiles
 -- Enables employee lifecycle management: ACTIVE / INACTIVE / ON_LEAVE
 -- 0023_add_profile_status.sql
 -- ============================================================

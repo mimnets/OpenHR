@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — Allow employees to update their own attendance rows
+-- OpenHRApp — Allow employees to update their own attendance rows
 -- 0007_attendance_self_update.sql
 --
 -- Bug: original attendance_update policy (0002) only allowed

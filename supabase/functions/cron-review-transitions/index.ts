@@ -1,4 +1,4 @@
-// OpenHR — Review Cycle Transition Cron
+// OpenHRApp — Review Cycle Transition Cron
 // Schedule: 0 0 * * * (daily midnight UTC)
 //
 // 1. Opens cycles where start_date <= today and is_active = false → sets is_active = true.
@@ -10,7 +10,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const FROM_EMAIL = 'OpenHR <noreply@openhrapp.com>';
+const FROM_EMAIL = 'OpenHRApp <noreply@openhrapp.com>';
 
 function jsonResponse(status: number, body: unknown) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });

@@ -1,4 +1,4 @@
-// OpenHR — Notify Admins Email Edge Function
+// OpenHRApp — Notify Admins Email Edge Function
 // Sends email notifications to SUPER_ADMINS or ORG_ADMINS.
 // Called from client-side upgrade.service.ts (which cannot access RESEND_API_KEY).
 // Deno runtime (Supabase Edge Functions)
@@ -10,7 +10,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const FROM_EMAIL = 'OpenHR <noreply@openhrapp.com>';
+const FROM_EMAIL = 'OpenHRApp <noreply@openhrapp.com>';
 
 // ── Main handler ────────────────────────────────────────────────────────────
 Deno.serve(async (req: Request) => {
@@ -72,7 +72,7 @@ Deno.serve(async (req: Request) => {
 
     // ── Authorize the caller ─────────────────────────────────────────────
     // subject and html come straight from the request body and are sent from
-    // the OpenHR domain. Verifying only that the caller holds a valid JWT would
+    // the OpenHRApp domain. Verifying only that the caller holds a valid JWT would
     // let any account mail arbitrary HTML to any organization's admins — a
     // cross-tenant phishing channel wearing our own From: address.
     const { data: callerProfile } = await adminClient

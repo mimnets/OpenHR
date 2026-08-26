@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — Auth Hook: Custom JWT Claims
+-- OpenHRApp — Auth Hook: Custom JWT Claims
 -- Injects role + organization_id into app_metadata so RLS
 -- helper functions (auth_role, auth_org_id) can read them
 -- without a DB round-trip on every query.

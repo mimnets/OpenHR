@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — Cron Job Setup
+-- OpenHRApp — Cron Job Setup
 -- 0009_cron_setup.sql
 --
 -- Enables pg_net (HTTP from SQL) for Edge Function triggers.

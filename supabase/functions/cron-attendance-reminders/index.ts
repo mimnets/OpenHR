@@ -1,4 +1,4 @@
-// OpenHR — Attendance Reminders Cron
+// OpenHRApp — Attendance Reminders Cron
 // Schedule: 3-59/5 * * * * (every 5 min, offset)
 //
 // 1. Checkout reminders: employees with check_in today but no check_out,
