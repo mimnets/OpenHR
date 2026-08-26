@@ -107,7 +107,14 @@ Deno.serve(async (req: Request) => {
     });
 
     if (!gen.ok || !gen.text) {
-      return json(502, { message: gen.error ?? 'Could not generate a query', availableProviders: availableProviders() });
+      // A rate limit is the model being busy, not a bad gateway. Saying 429
+      // makes the browser console self-explanatory instead of looking like a
+      // broken deployment, which is exactly how the 502 read.
+      return json(gen.status === 429 ? 429 : 502, {
+        message: gen.error ?? 'Could not generate a query',
+        retryable: gen.retryable ?? false,
+        availableProviders: availableProviders(),
+      });
     }
 
     let sql = '';

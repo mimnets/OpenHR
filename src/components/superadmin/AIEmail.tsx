@@ -9,12 +9,11 @@ import {
   OpenRouterModel,
 } from '../../services/aiEmail.service';
 import BulkEmailManager from './BulkEmailManager';
+import ModelPicker from './ModelPicker';
 import EmailComposer from './EmailComposer';
 import { useToast } from '../../context/ToastContext';
 
 type Tab = 'templates' | 'ask' | 'history' | 'suppressions' | 'bulk';
-
-const PROVIDERS: EmailProvider[] = ['openrouter', 'deepseek', 'openai', 'anthropic'];
 
 const statusStyle = (s: EmailSend['status']) => {
   switch (s) {
@@ -52,10 +51,15 @@ const AIEmail: React.FC = () => {
   const [models, setModels] = useState<OpenRouterModel[]>([]);
   const [modelsError, setModelsError] = useState<string | null>(null);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
-  const [freeOnly, setFreeOnly] = useState(true);
-  const [manualModel, setManualModel] = useState(false);
 
-  // Ask panel
+  // Ask panel. Its model is its own, not the selected template's: asking a
+  // question about the customer base has nothing to do with which model writes
+  // the onboarding email. The choice is remembered because free models get
+  // rate-limited often enough that re-picking on every reload would grate.
+  const [askProvider, setAskProvider] = useState<EmailProvider>(
+    () => (localStorage.getItem('openhr.ask.provider') as EmailProvider) || 'openrouter');
+  const [askModel, setAskModel] = useState(
+    () => localStorage.getItem('openhr.ask.model') || 'google/gemma-4-31b-it:free');
   const [question, setQuestion] = useState('');
   const [report, setReport] = useState<ReportResult | null>(null);
   const [isAsking, setIsAsking] = useState(false);
@@ -91,6 +95,11 @@ const AIEmail: React.FC = () => {
   };
 
   useEffect(() => { load(); loadModels(); }, []);
+
+  useEffect(() => {
+    localStorage.setItem('openhr.ask.provider', askProvider);
+    localStorage.setItem('openhr.ask.model', askModel);
+  }, [askProvider, askModel]);
 
   useEffect(() => {
     if (tab === 'history') aiEmailService.getSends().then(setSends).catch(() => showToast('Could not load history', 'error'));
@@ -180,11 +189,6 @@ const AIEmail: React.FC = () => {
       showToast(e?.message || 'Could not delete', 'error');
     }
   };
-
-  const visibleModels = freeOnly ? models.filter(m => m.isFree) : models;
-  const freeModels = visibleModels.filter(m => m.isFree);
-  const paidModels = visibleModels.filter(m => !m.isFree);
-  const selectedModel = models.find(m => m.id === draft?.model) ?? null;
 
   const runPreview = async (mode: 'preview' | 'test-send') => {
     if (!draft) return;
@@ -428,105 +432,15 @@ const AIEmail: React.FC = () => {
                 </label>
 
                 <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Provider</label>
-                    <select
-                      className={inputCls}
-                      value={draft.provider}
-                      onChange={e => setDraft({ ...draft, provider: e.target.value as EmailProvider })}
-                    >
-                      {PROVIDERS.map(p => <option key={p} value={p}>{p}</option>)}
-                    </select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between gap-2 min-h-[18px]">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Model</label>
-                      {draft.provider === 'openrouter' && (
-                        <div className="flex items-center gap-3">
-                          <label className="flex items-center gap-1 cursor-pointer" title="Show only models that cost nothing to run">
-                            <input
-                              type="checkbox"
-                              checked={freeOnly}
-                              onChange={e => setFreeOnly(e.target.checked)}
-                              className="w-3 h-3 accent-primary"
-                            />
-                            <span className="text-[10px] font-bold text-slate-500">Free only</span>
-                          </label>
-                          <button
-                            type="button"
-                            onClick={loadModels}
-                            disabled={isLoadingModels}
-                            title="Refresh the list from OpenRouter"
-                            className="text-slate-400 hover:text-primary transition-colors disabled:opacity-40"
-                          >
-                            <RefreshCw size={11} className={isLoadingModels ? 'animate-spin' : ''} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {draft.provider === 'openrouter' && !manualModel && models.length > 0 ? (
-                      <select
-                        className={inputCls}
-                        value={draft.model}
-                        onChange={e => setDraft({ ...draft, model: e.target.value })}
-                      >
-                        {/* A saved slug that has since left the catalogue must stay
-                            visible, or opening the template would silently change it. */}
-                        {!visibleModels.some(m => m.id === draft.model) && (
-                          <option value={draft.model}>
-                            {draft.model}
-                            {models.some(m => m.id === draft.model)
-                              ? ' — hidden by the free filter'
-                              : ' — no longer listed'}
-                          </option>
-                        )}
-                        <optgroup label={`Free (${freeModels.length})`}>
-                          {freeModels.map(m => (
-                            <option key={m.id} value={m.id}>
-                              {m.id}{m.supportsJson ? '' : ' — no JSON mode'}
-                            </option>
-                          ))}
-                        </optgroup>
-                        {!freeOnly && (
-                          <optgroup label={`Paid (${paidModels.length})`}>
-                            {paidModels.map(m => (
-                              <option key={m.id} value={m.id}>
-                                {m.id}{m.supportsJson ? '' : ' — no JSON mode'}
-                              </option>
-                            ))}
-                          </optgroup>
-                        )}
-                      </select>
-                    ) : (
-                      <input
-                        className={inputCls}
-                        value={draft.model}
-                        onChange={e => setDraft({ ...draft, model: e.target.value })}
-                        placeholder="provider/model-slug"
-                      />
-                    )}
-
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      {modelsError ? (
-                        <span className="text-[10px] font-bold text-amber-600">{modelsError}</span>
-                      ) : selectedModel ? (
-                        <span className="text-[10px] font-bold text-slate-400">
-                          {selectedModel.isFree ? 'Free' : 'Paid'} · {Math.round(selectedModel.contextLength / 1000)}k context
-                          {selectedModel.supportsJson ? '' : ' · no JSON mode, may fall back more often'}
-                        </span>
-                      ) : null}
-                      {draft.provider === 'openrouter' && models.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => setManualModel(!manualModel)}
-                          className="text-[10px] font-bold text-slate-400 hover:text-primary underline transition-colors"
-                        >
-                          {manualModel ? 'pick from the list' : 'type a slug instead'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                  <ModelPicker
+                    provider={draft.provider}
+                    model={draft.model}
+                    onChange={next => setDraft({ ...draft, ...next })}
+                    models={models}
+                    modelsError={modelsError}
+                    isLoadingModels={isLoadingModels}
+                    onRefresh={loadModels}
+                  />
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                       Send on days — {AUDIENCE_TIMING[draft.audience].toLowerCase()}
@@ -702,12 +616,24 @@ const AIEmail: React.FC = () => {
               ))}
             </div>
 
+            <div className="grid sm:grid-cols-2 gap-4">
+              <ModelPicker
+                provider={askProvider}
+                model={askModel}
+                onChange={next => { setAskProvider(next.provider); setAskModel(next.model); }}
+                models={models}
+                modelsError={modelsError}
+                isLoadingModels={isLoadingModels}
+                onRefresh={loadModels}
+              />
+            </div>
+
             <form
               onSubmit={e => {
                 e.preventDefault();
                 if (!question.trim() || isAsking) return;
                 setIsAsking(true); setAskError(null); setReport(null);
-                aiEmailService.askReport(question.trim(), draft?.provider, draft?.model)
+                aiEmailService.askReport(question.trim(), askProvider, askModel)
                   .then(setReport)
                   .catch((err: any) => setAskError(err?.message || 'The report failed'))
                   .finally(() => setIsAsking(false));
@@ -733,7 +659,16 @@ const AIEmail: React.FC = () => {
           {askError && (
             <div className="flex items-start gap-3 p-4 bg-rose-50 border border-rose-100 rounded-2xl">
               <AlertTriangle size={16} className="text-rose-500 flex-shrink-0 mt-0.5" />
-              <p className="text-xs font-bold text-rose-700">{askError}</p>
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-rose-700">{askError}</p>
+                {/* Same story as the email preview: a busy free model is normal. */}
+                {/429|rate.?limit/i.test(askError) && (
+                  <p className="text-[11px] font-bold text-rose-600">
+                    That model is queued behind other free users upstream, not misconfigured.
+                    Pick another from the Model list above and ask again.
+                  </p>
+                )}
+              </div>
             </div>
           )}
 

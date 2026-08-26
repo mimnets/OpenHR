@@ -25,6 +25,14 @@ export interface LlmResult {
   text?: string;
   /** Operator-facing. Safe to log, not to show a customer verbatim. */
   error?: string;
+  /** The upstream HTTP status, when the provider answered with one. */
+  status?: number;
+  /**
+   * True when the failure is transient — a rate limit, an upstream 5xx or a
+   * timeout. Callers use this to pick an honest status code instead of
+   * pattern-matching the error string.
+   */
+  retryable?: boolean;
 }
 
 const TIMEOUT_MS = 45_000;
@@ -93,7 +101,12 @@ export async function generate(req: LlmRequest): Promise<LlmResult> {
       });
 
       if (!res.ok) {
-        return { ok: false, error: `anthropic ${res.status}: ${(await res.text()).slice(0, 300)}` };
+        return {
+          ok: false,
+          error: `anthropic ${res.status}: ${(await res.text()).slice(0, 300)}`,
+          status: res.status,
+          retryable: res.status === 429 || res.status >= 500,
+        };
       }
       const data = await res.json();
       const text = (data?.content ?? [])
@@ -134,9 +147,19 @@ export async function generate(req: LlmRequest): Promise<LlmResult> {
       // OpenRouter's free tier queues and rate-limits; surface that distinctly
       // so the caller can fall back rather than treating it as a hard failure.
       if (res.status === 429) {
-        return { ok: false, error: `${provider} rate-limited (429). Free models queue under load. ${body}` };
+        return {
+          ok: false,
+          error: `${provider} rate-limited (429). Free models queue under load. ${body}`,
+          status: 429,
+          retryable: true,
+        };
       }
-      return { ok: false, error: `${provider} ${res.status}: ${body}` };
+      return {
+        ok: false,
+        error: `${provider} ${res.status}: ${body}`,
+        status: res.status,
+        retryable: res.status >= 500,
+      };
     }
 
     const data = await res.json();
@@ -144,6 +167,7 @@ export async function generate(req: LlmRequest): Promise<LlmResult> {
     return text ? { ok: true, text } : { ok: false, error: `${provider} returned no text` };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    return { ok: false, error: `${provider} request failed: ${msg}` };
+    // Aborts and network faults are transient by nature.
+    return { ok: false, error: `${provider} request failed: ${msg}`, retryable: true };
   }
 }
