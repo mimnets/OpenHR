@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — Correct the default OpenRouter model slug
+-- OpenHRApp — Correct the default OpenRouter model slug
 -- 0030_fix_default_llm_model.sql
 --
 -- 0029 shipped with 'deepseek/deepseek-chat-v3-0324:free', which does not exist

@@ -1,4 +1,4 @@
-// OpenHR — Demo Login Edge Function
+// OpenHRApp — Demo Login Edge Function
 // Returns session tokens for a demo organization user.
 // Called by the "Try Live Demo" button on the landing page.
 //

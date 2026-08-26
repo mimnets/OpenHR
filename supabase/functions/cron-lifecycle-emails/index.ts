@@ -1,4 +1,4 @@
-// OpenHR — AI lifecycle email sender
+// OpenHRApp — AI lifecycle email sender
 // Schedule: 0 9 * * * (daily, 09:00 UTC)
 //
 // Walks every ACTIVE template, resolves its audience, works out which stage
@@ -17,7 +17,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { generate, LlmProvider } from '../_shared/llm.ts';
 import { signUnsubscribe } from '../_shared/unsubscribe.ts';
 
-const FROM_EMAIL = 'OpenHR <noreply@openhrapp.com>';
+const FROM_EMAIL = 'OpenHRApp <noreply@openhrapp.com>';
 const APP_URL = 'https://openhrapp.com';
 
 function json(status: number, body: unknown) {
@@ -31,7 +31,7 @@ function render(tpl: string, vars: Record<string, string>): string {
 }
 
 const SYSTEM_PROMPT = [
-  'You write short transactional emails for OpenHR, an HR and attendance product.',
+  'You write short transactional emails for OpenHRApp, an HR and attendance product.',
   'Return ONLY a JSON object with exactly two string keys: "subject" and "body_html".',
   'body_html must be simple HTML using only <p>, <strong>, <em>, <a>, <ul>, <li>. No styles, scripts, images, head or body tags.',
   'Never invent features, prices, deadlines, statistics or discounts. If unsure whether something exists, leave it out.',
@@ -174,7 +174,7 @@ Deno.serve(async (req: Request) => {
       const fullHtml =
         `${html}<hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">` +
         `<p style="color:#6b7280;font-size:12px;line-height:1.5">` +
-        `You are receiving this because you created an OpenHR account. ` +
+        `You are receiving this because you created an OpenHRApp account. ` +
         `<a href="${unsubUrl}" style="color:#6b7280">Unsubscribe</a>.</p>`;
 
       if (dryRun) {

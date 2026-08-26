@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — Push Notification Subscriptions
+-- OpenHRApp — Push Notification Subscriptions
 -- 0011_push_subscriptions.sql
 --
 -- Stores Web Push (VAPID) subscriptions per user.

@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — Fix RLS Helper Functions
+-- OpenHRApp — Fix RLS Helper Functions
 -- Replaces JWT app_metadata approach (requires Pro plan hook)
 -- with direct profiles table lookup — works on free tier.
 -- 0004_fix_rls_helpers.sql

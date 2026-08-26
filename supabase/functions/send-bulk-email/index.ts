@@ -1,4 +1,4 @@
-// OpenHR — Super Admin Bulk Email Edge Function
+// OpenHRApp — Super Admin Bulk Email Edge Function
 // Resolves recipients from auth.users (service role), personalises per-recipient,
 // sends via Resend batch API, records results in reports_queue.
 //
@@ -16,7 +16,7 @@ const corsHeaders = {
 const BULK_CAMPAIGN_PREFIX = 'BULK_CAMPAIGN_';
 const MAX_BULK_RECIPIENTS = 5000;
 const SEND_BATCH_SIZE = 100;
-const FROM_EMAIL = 'OpenHR <noreply@openhrapp.com>';
+const FROM_EMAIL = 'OpenHRApp <noreply@openhrapp.com>';
 
 type BulkEmailFilter =
   | { kind: 'ALL_ADMINS' }

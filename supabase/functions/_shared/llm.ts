@@ -42,7 +42,7 @@ const OPENAI_COMPATIBLE: Record<string, ProviderConfig> = {
     baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
     extraHeaders: {
       'HTTP-Referer': 'https://openhrapp.com',
-      'X-Title': 'OpenHR',
+      'X-Title': 'OpenHRApp',
     },
   },
   deepseek: {

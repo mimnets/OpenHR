@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — Storage Buckets + RLS Policies
+-- OpenHRApp — Storage Buckets + RLS Policies
 -- 0005_storage_buckets.sql
 -- ============================================================
 

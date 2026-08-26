@@ -158,6 +158,62 @@ export const aiEmailService = {
     }
   },
 
+  /**
+   * Creates a template. It arrives inactive regardless of what is passed —
+   * a new template should never start sending the moment it is saved.
+   */
+  async createTemplate(t: {
+    key: string;
+    name: string;
+    description?: string;
+    audience: EmailAudience;
+    subjectTemplate: string;
+    bodyTemplate: string;
+    aiPrompt?: string;
+    aiEnabled?: boolean;
+    provider?: EmailProvider;
+    model?: string;
+    sendAfterDays?: number[];
+    dailyCap?: number;
+  }): Promise<EmailTemplate> {
+    const key = t.key.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+    if (!/^[a-z][a-z0-9_]{2,49}$/.test(key)) {
+      throw new Error('The template ID must start with a letter and use only lowercase letters, numbers and underscores.');
+    }
+
+    const { data, error } = await supabase.from('email_templates').insert({
+      key,
+      name: t.name.trim(),
+      description: t.description?.trim() || null,
+      audience: t.audience,
+      subject_template: t.subjectTemplate,
+      body_template: t.bodyTemplate,
+      ai_prompt: t.aiPrompt ?? null,
+      ai_enabled: t.aiEnabled ?? true,
+      provider: t.provider ?? 'openrouter',
+      model: t.model ?? 'google/gemma-4-31b-it:free',
+      send_after_days: t.sendAfterDays?.length ? t.sendAfterDays : [1],
+      daily_cap: t.dailyCap ?? 50,
+      is_active: false,
+    }).select('*').single();
+
+    if (error) {
+      if (error.code === '23505') throw new Error(`A template with the ID "${key}" already exists.`);
+      throw new Error(error.message);
+    }
+    return mapTemplate(data);
+  },
+
+  /** Removes a template. The record of what it already sent is kept. */
+  async deleteTemplate(id: string): Promise<void> {
+    const { data, error } = await supabase
+      .from('email_templates').delete().eq('id', id).select('id');
+    if (error) throw new Error(error.message);
+    if (!data || data.length === 0) {
+      throw new Error('That template was not deleted. Only a super admin can remove templates.');
+    }
+  },
+
   /** Generates a preview. mode 'test-send' emails it to the caller only. */
   async preview(templateKey: string, mode: 'preview' | 'test-send' = 'preview'): Promise<PreviewResult> {
     const { data, error } = await supabase.functions.invoke('ai-email-preview', {

@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — Add email column to profiles
+-- OpenHRApp — Add email column to profiles
 -- Email is stored in auth.users but not in profiles, so admin
 -- views of employee profiles show an empty work email.
 -- 0013_add_email_to_profiles.sql

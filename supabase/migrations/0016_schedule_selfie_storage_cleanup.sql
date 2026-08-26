@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — pg_net Extension for Selfie Storage Cleanup
+-- OpenHRApp — pg_net Extension for Selfie Storage Cleanup
 -- 0016_schedule_selfie_storage_cleanup.sql
 --
 -- Enables pg_net so the cron-selfie-storage-cleanup Edge Function

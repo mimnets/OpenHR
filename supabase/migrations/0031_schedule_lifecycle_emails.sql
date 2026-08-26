@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — Schedule for cron-lifecycle-emails
+-- OpenHRApp — Schedule for cron-lifecycle-emails
 -- 0031_schedule_lifecycle_emails.sql
 --
 -- pg_net is already enabled by 0016. As with the other cron jobs, the schedule

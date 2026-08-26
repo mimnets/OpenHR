@@ -1,4 +1,4 @@
-// OpenHR — Push Check-In Reminder Cron
+// OpenHRApp — Push Check-In Reminder Cron
 // Schedule: * * * * * (every minute)
 //
 // Sends Web Push notifications to employees who:

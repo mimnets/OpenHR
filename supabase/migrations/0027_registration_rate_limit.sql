@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — Registration rate limiting + email lookup index
+-- OpenHRApp — Registration rate limiting + email lookup index
 -- 0027_registration_rate_limit.sql
 --
 -- /register is public and unauthenticated. Turnstile (added alongside this

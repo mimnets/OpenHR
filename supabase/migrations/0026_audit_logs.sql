@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — Tamper-resistant audit trail
+-- OpenHRApp — Tamper-resistant audit trail
 -- 0026_audit_logs.sql
 --
 -- Written after an incident in which two leave requests in one organization

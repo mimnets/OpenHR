@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — Run AI report queries as the caller, not as the owner
+-- OpenHRApp — Run AI report queries as the caller, not as the owner
 -- 0033_ai_query_runs_as_caller.sql
 --
 -- 0032 made ai_admin_query SECURITY DEFINER and tried to contain it by switching

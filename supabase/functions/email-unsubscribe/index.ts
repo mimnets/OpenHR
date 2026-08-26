@@ -1,4 +1,4 @@
-// OpenHR — one-click unsubscribe
+// OpenHRApp — one-click unsubscribe
 //
 // Public by design: an unsubscribe link that requires a login is not an
 // unsubscribe link. The token is HMAC-signed, so the only thing a visitor can
@@ -16,10 +16,10 @@ function page(title: string, message: string, ok: boolean): Response {
     `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
-<title>${title} — OpenHR</title></head>
+<title>${title} — OpenHRApp</title></head>
 <body style="margin:0;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:#f6f9f8;color:#0e1e1c">
 <main style="max-width:34rem;margin:0 auto;padding:4rem 1.5rem">
-  <p style="font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:#6b807d;margin:0 0 1rem">OpenHR</p>
+  <p style="font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:#6b807d;margin:0 0 1rem">OpenHRApp</p>
   <h1 style="font-size:1.6rem;line-height:1.2;margin:0 0 .75rem;color:${accent}">${title}</h1>
   <p style="line-height:1.6;color:#3c4f4d;margin:0">${message}</p>
 </main></body></html>`,

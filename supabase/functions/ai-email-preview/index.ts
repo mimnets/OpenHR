@@ -1,4 +1,4 @@
-// OpenHR — AI email preview / test send
+// OpenHRApp — AI email preview / test send
 //
 // Super admin only. Renders a template for a real (or sample) recipient, runs
 // the configured model over the super admin's instruction, and returns the
@@ -14,7 +14,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const FROM_EMAIL = 'OpenHR <noreply@openhrapp.com>';
+const FROM_EMAIL = 'OpenHRApp <noreply@openhrapp.com>';
 const APP_URL = 'https://openhrapp.com';
 
 function json(status: number, body: unknown) {
@@ -30,7 +30,7 @@ function render(tpl: string, vars: Record<string, string>): string {
 }
 
 const SYSTEM_PROMPT = [
-  'You write short transactional emails for OpenHR, an HR and attendance product.',
+  'You write short transactional emails for OpenHRApp, an HR and attendance product.',
   'Return ONLY a JSON object with exactly two string keys: "subject" and "body_html".',
   'body_html must be simple HTML using only <p>, <strong>, <em>, <a>, <ul>, <li>. No styles, no scripts, no images, no head or body tags.',
   'Never invent features, prices, deadlines, statistics or discounts. If you are unsure whether something exists, leave it out.',
@@ -150,7 +150,7 @@ Deno.serve(async (req: Request) => {
           from: FROM_EMAIL,
           to: [to],
           subject: `[TEST] ${subject}`,
-          html: `${html}<hr><p style="color:#6b7280;font-size:12px">Test send from the OpenHR dashboard. Template: ${tpl.key}. Not sent to any customer.</p>`,
+          html: `${html}<hr><p style="color:#6b7280;font-size:12px">Test send from the OpenHRApp dashboard. Template: ${tpl.key}. Not sent to any customer.</p>`,
         }),
       });
       if (!res.ok) {

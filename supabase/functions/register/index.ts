@@ -1,4 +1,4 @@
-// OpenHR — Registration Edge Function
+// OpenHRApp — Registration Edge Function
 // Ports: Others/pb_hooks/main.pb.js → POST /api/openhr/register
 // Deno runtime (Supabase Edge Functions)
 
@@ -294,7 +294,7 @@ async function sendSuperAdminRegistrationEmail(
     return;
   }
 
-  const FROM_EMAIL = 'OpenHR <noreply@openhrapp.com>';
+  const FROM_EMAIL = 'OpenHRApp <noreply@openhrapp.com>';
 
   // Filter to super admins who have an email in their profile.
   // We use profiles.email directly (backfilled by migration 0013 + handle_new_user trigger)
@@ -310,7 +310,7 @@ async function sendSuperAdminRegistrationEmail(
   const subject = `New org registered: ${orgName}`;
   const html = `
     <h2>New Organization Registration</h2>
-    <p>A new organization has registered on OpenHR:</p>
+    <p>A new organization has registered on OpenHRApp:</p>
     <table style="border-collapse:collapse;width:100%;max-width:500px">
       <tr><td style="padding:6px 12px;font-weight:bold">Organization</td><td>${orgName}</td></tr>
       <tr><td style="padding:6px 12px;font-weight:bold">Admin</td><td>${adminName}</td></tr>

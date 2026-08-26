@@ -1,4 +1,4 @@
-// OpenHR — Auto Absent Check Cron
+// OpenHRApp — Auto Absent Check Cron
 // Schedule: * * * * * (every minute)
 //
 // For each org with autoAbsentEnabled in app_config:

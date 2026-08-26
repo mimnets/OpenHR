@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — AI admin reporting: curated views + a contained query runner
+-- OpenHRApp — AI admin reporting: curated views + a contained query runner
 -- 0032_ai_admin_reports.sql
 --
 -- Lets a super admin ask questions in plain English and have a model turn them

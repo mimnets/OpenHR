@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — Sync profiles.verified when email is confirmed
+-- OpenHRApp — Sync profiles.verified when email is confirmed
 -- When a user clicks the confirmation link, Supabase Auth sets
 -- auth.users.email_confirmed_at but nothing propagates that to
 -- public.profiles.verified.  This trigger closes that gap so

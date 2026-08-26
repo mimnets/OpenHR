@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — Organization hygiene report
+-- OpenHRApp — Organization hygiene report
 -- 0028_org_hygiene_report.sql
 --
 -- Backs the super-admin spam review screen. At the time of writing, 130 of 163

@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — Fix attendance_update RLS: employee_id is text, auth.uid() is uuid
+-- OpenHRApp — Fix attendance_update RLS: employee_id is text, auth.uid() is uuid
 -- 0008_attendance_self_update_text_cast.sql
 --
 -- Migration 0007 used `employee_id = auth.uid()` but employee_id is `text`

@@ -26,7 +26,7 @@ const ChangelogPage: React.FC<ChangelogPageProps> = ({ onBack }) => {
   useEffect(() => {
     window.scrollTo(0, 0);
     updatePageMeta(
-      'Changelog — What\'s New in OpenHR | OpenHRApp',
+      'Changelog — What\'s New in OpenHRApp | OpenHRApp',
       'See all the latest updates, new features, bug fixes, and improvements to OpenHRApp. Track our development progress and stay up to date.',
       'https://openhrapp.com/changelog'
     );

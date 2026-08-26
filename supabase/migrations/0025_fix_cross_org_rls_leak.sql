@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — SECURITY FIX: restore tenant isolation on leaves + attendance
+-- OpenHRApp — SECURITY FIX: restore tenant isolation on leaves + attendance
 -- 0025_fix_cross_org_rls_leak.sql
 --
 -- Migration 0014 added a bare `auth_role() in ('ADMIN','HR')` branch to the

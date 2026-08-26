@@ -1,4 +1,4 @@
-// OpenHR — Demo Credentials Edge Function
+// OpenHRApp — Demo Credentials Edge Function
 // Returns demo account details (emails, names, roles) and the shared password
 // for display in the DemoLoginModal on the landing page.
 //

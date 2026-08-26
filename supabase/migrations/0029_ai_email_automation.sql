@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — AI lifecycle email automation
+-- OpenHRApp — AI lifecycle email automation
 -- 0029_ai_email_automation.sql
 --
 -- Templates a super admin can edit, an AI instruction per template, a send
@@ -115,7 +115,7 @@ values
   'For admins who registered but never clicked the confirmation link.',
   'UNCONFIRMED_ADMIN',
   'Confirm your email to finish setting up {{org_name}}',
-  '<p>Hi {{admin_name}},</p><p>You started setting up <strong>{{org_name}}</strong> on OpenHR but have not confirmed your email address yet. Until you do, you will not be able to sign in.</p><p><a href="{{app_url}}">Open OpenHR</a></p>',
+  '<p>Hi {{admin_name}},</p><p>You started setting up <strong>{{org_name}}</strong> on OpenHRApp but have not confirmed your email address yet. Until you do, you will not be able to sign in.</p><p><a href="{{app_url}}">Open OpenHRApp</a></p>',
   'Write a short, warm reminder that the admin has not confirmed their email address yet. Two short paragraphs at most. Mention their organization name naturally. Do not invent features, deadlines or discounts. No exclamation marks. End with one clear action: confirm the email address.',
   '{1,3,7}',
   50
@@ -133,11 +133,11 @@ values
 ),
 (
   'how_to_use',
-  'How to use OpenHR',
+  'How to use OpenHRApp',
   'For organizations with employees but no attendance recorded yet.',
   'NO_ATTENDANCE',
-  'How your team checks in on OpenHR',
-  '<p>Hi {{admin_name}},</p><p>Your team is on <strong>{{org_name}}</strong> but nobody has checked in yet. Employees check in from their own dashboard; you can see everything under Attendance.</p><p><a href="{{app_url}}">Open OpenHR</a></p>',
+  'How your team checks in on OpenHRApp',
+  '<p>Hi {{admin_name}},</p><p>Your team is on <strong>{{org_name}}</strong> but nobody has checked in yet. Employees check in from their own dashboard; you can see everything under Attendance.</p><p><a href="{{app_url}}">Open OpenHRApp</a></p>',
   'Explain in plain language how employees check in and where the admin sees attendance. Three short paragraphs at most. Assume the reader is not technical. Do not describe features that are not mentioned in the fallback text.',
   '{3,10}',
   50
@@ -147,8 +147,8 @@ values
   'Trial ending',
   'For organizations whose trial is about to end. Coordinate with cron-expire-trials before enabling.',
   'TRIAL_ENDING',
-  'Your OpenHR trial for {{org_name}} ends soon',
-  '<p>Hi {{admin_name}},</p><p>The trial for <strong>{{org_name}}</strong> ends on {{trial_end}}.</p><p><a href="{{app_url}}">Open OpenHR</a></p>',
+  'Your OpenHRApp trial for {{org_name}} ends soon',
+  '<p>Hi {{admin_name}},</p><p>The trial for <strong>{{org_name}}</strong> ends on {{trial_end}}.</p><p><a href="{{app_url}}">Open OpenHRApp</a></p>',
   'Write a factual, unpushy note that the trial is ending, including the date. Two short paragraphs. Do not use urgency language, countdowns or pressure. State what happens next plainly.',
   '{3}',
   50

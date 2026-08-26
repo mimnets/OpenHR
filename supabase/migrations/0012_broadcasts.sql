@@ -1,5 +1,5 @@
 -- ============================================================
--- OpenHR — Broadcast Audit Log
+-- OpenHRApp — Broadcast Audit Log
 -- 0012_broadcasts.sql
 --
 -- Records every Super Admin push broadcast: who sent it, target,

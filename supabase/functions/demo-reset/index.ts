@@ -1,4 +1,4 @@
-// OpenHR — Demo Reset Cron Edge Function
+// OpenHRApp — Demo Reset Cron Edge Function
 // Runs daily at midnight UTC via pg_cron → net.http_post()
 // Wipes and re-seeds the demo organization with fresh sample data.
 //

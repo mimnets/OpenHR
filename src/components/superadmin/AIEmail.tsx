@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
   Sparkles, RefreshCw, Save, Eye, Send, AlertTriangle, Loader2,
-  Power, Ban, Plus, Trash2, MessageSquare, Database, Mail,
+  Power, Ban, Plus, Trash2, MessageSquare, Database, Mail, FilePlus2,
 } from 'lucide-react';
 import {
   aiEmailService, EmailTemplate, EmailSend, EmailSuppression,
-  EmailProvider, AUDIENCE_LABEL, PreviewResult, ReportResult,
+  EmailProvider, EmailAudience, AUDIENCE_LABEL, PreviewResult, ReportResult,
 } from '../../services/aiEmail.service';
 import BulkEmailManager from './BulkEmailManager';
 import { useToast } from '../../context/ToastContext';
@@ -44,6 +44,7 @@ const AIEmail: React.FC = () => {
   const [sends, setSends] = useState<EmailSend[]>([]);
   const [suppressions, setSuppressions] = useState<EmailSuppression[]>([]);
   const [newSuppression, setNewSuppression] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   // Ask panel
   const [question, setQuestion] = useState('');
@@ -73,25 +74,86 @@ const AIEmail: React.FC = () => {
   }, [tab]);
 
   const select = (t: EmailTemplate) => {
+    setIsCreating(false);
     setSelectedId(t.id);
     setDraft(t);
     setPreview(null);
     setPreviewError(null);
   };
 
+  const startNewTemplate = () => {
+    setIsCreating(true);
+    setSelectedId(null);
+    setPreview(null);
+    setPreviewError(null);
+    setDraft({
+      id: '',
+      key: '',
+      name: '',
+      description: '',
+      audience: 'NO_EMPLOYEES',
+      subjectTemplate: 'A message about {{org_name}}',
+      bodyTemplate: '<p>Hi {{admin_name}},</p><p>Write the plain version here. This is what sends if the model is unavailable.</p><p><a href="{{app_url}}">Open OpenHRApp</a></p>',
+      aiEnabled: true,
+      aiPrompt: '',
+      provider: 'openrouter',
+      model: 'google/gemma-4-31b-it:free',
+      sendAfterDays: [1],
+      dailyCap: 50,
+      isActive: false,
+      updated: new Date().toISOString(),
+    });
+  };
+
   const save = async () => {
     if (!draft) return;
     setIsSaving(true);
     try {
-      await aiEmailService.updateTemplate(draft.id, draft);
-      showToast('Template saved.', 'success');
-      const t = await aiEmailService.getTemplates();
-      setTemplates(t);
-      setDraft(t.find(x => x.id === draft.id) ?? draft);
+      if (isCreating) {
+        if (!draft.name.trim()) throw new Error('Give the template a name.');
+        const created = await aiEmailService.createTemplate({
+          key: draft.key.trim() || draft.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 40),
+          name: draft.name,
+          description: draft.description ?? undefined,
+          audience: draft.audience,
+          subjectTemplate: draft.subjectTemplate,
+          bodyTemplate: draft.bodyTemplate,
+          aiPrompt: draft.aiPrompt ?? undefined,
+          aiEnabled: draft.aiEnabled,
+          provider: draft.provider,
+          model: draft.model,
+          sendAfterDays: draft.sendAfterDays,
+          dailyCap: draft.dailyCap,
+        });
+        showToast('Template created. It is off until you turn it on.', 'success');
+        setIsCreating(false);
+        setSelectedId(created.id);
+        setTemplates(await aiEmailService.getTemplates());
+        setDraft(created);
+      } else {
+        await aiEmailService.updateTemplate(draft.id, draft);
+        showToast('Template saved.', 'success');
+        const t = await aiEmailService.getTemplates();
+        setTemplates(t);
+        setDraft(t.find(x => x.id === draft.id) ?? draft);
+      }
     } catch (e: any) {
       showToast(e?.message || 'Save failed', 'error');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const removeTemplate = async (t: EmailTemplate) => {
+    if (!window.confirm(`Delete "${t.name}"? Messages it already sent stay in the history.`)) return;
+    try {
+      await aiEmailService.deleteTemplate(t.id);
+      showToast('Template deleted.', 'success');
+      const list = await aiEmailService.getTemplates();
+      setTemplates(list);
+      if (draft?.id === t.id) { setDraft(list[0] ?? null); setSelectedId(list[0]?.id ?? null); }
+    } catch (e: any) {
+      showToast(e?.message || 'Could not delete', 'error');
     }
   };
 
@@ -188,6 +250,14 @@ const AIEmail: React.FC = () => {
         <div className="grid lg:grid-cols-[18rem_1fr] gap-5">
           {/* List */}
           <div className="space-y-2">
+            <button
+              onClick={startNewTemplate}
+              className={`w-full py-3 rounded-xl font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 transition-colors ${
+                isCreating ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              <FilePlus2 size={14} /> New template
+            </button>
             {templates.map(t => (
               <div
                 key={t.id}
@@ -209,16 +279,27 @@ const AIEmail: React.FC = () => {
                     Days {t.sendAfterDays.join(', ')} · cap {t.dailyCap}/day
                   </p>
                 </button>
-                <button
-                  onClick={() => toggleActive(t)}
-                  className={`mt-3 w-full py-2 rounded-lg font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-1.5 transition-colors ${
-                    t.isActive
-                      ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                  }`}
-                >
-                  <Power size={12} /> {t.isActive ? 'Pause' : 'Turn on'}
-                </button>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    onClick={() => toggleActive(t)}
+                    className={`flex-1 py-2 rounded-lg font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-1.5 transition-colors ${
+                      t.isActive
+                        ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                    }`}
+                  >
+                    <Power size={12} /> {t.isActive ? 'Pause' : 'Turn on'}
+                  </button>
+                  <button
+                    onClick={() => removeTemplate(t)}
+                    disabled={t.isActive}
+                    title={t.isActive ? 'Pause it before deleting' : 'Delete this template'}
+                    className="px-3 py-2 rounded-lg bg-slate-100 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-30 disabled:hover:text-slate-400 disabled:hover:bg-slate-100"
+                    aria-label={`Delete ${t.name}`}
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -227,10 +308,62 @@ const AIEmail: React.FC = () => {
           {draft && (
             <div className="space-y-5">
               <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-4">
-                <div>
-                  <h4 className="font-semibold text-slate-900">{draft.name}</h4>
-                  <p className="text-xs font-bold text-slate-400 mt-0.5">{draft.description}</p>
-                </div>
+                {isCreating ? (
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-slate-900">New template</h4>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Name</label>
+                        <input
+                          className={inputCls}
+                          value={draft.name}
+                          onChange={e => setDraft({ ...draft, name: e.target.value })}
+                          placeholder="Welcome back"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                          ID (optional)
+                        </label>
+                        <input
+                          className={inputCls}
+                          value={draft.key}
+                          onChange={e => setDraft({ ...draft, key: e.target.value })}
+                          placeholder="derived from the name"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Who it goes to</label>
+                      <select
+                        className={inputCls}
+                        value={draft.audience}
+                        onChange={e => setDraft({ ...draft, audience: e.target.value as EmailAudience })}
+                      >
+                        {(Object.keys(AUDIENCE_LABEL) as EmailAudience[]).map(a => (
+                          <option key={a} value={a}>{AUDIENCE_LABEL[a]}</option>
+                        ))}
+                      </select>
+                      <p className="text-[10px] font-bold text-slate-400">
+                        Audiences are worked out by the daily job. Pick the group this message is for.
+                      </p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Description</label>
+                      <input
+                        className={inputCls}
+                        value={draft.description ?? ''}
+                        onChange={e => setDraft({ ...draft, description: e.target.value })}
+                        placeholder="A note to yourself about when this is used"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <h4 className="font-semibold text-slate-900">{draft.name}</h4>
+                    <p className="text-xs font-bold text-slate-400 mt-0.5">{draft.description}</p>
+                  </div>
+                )}
 
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
@@ -341,14 +474,14 @@ const AIEmail: React.FC = () => {
                   </button>
                   <button
                     onClick={() => runPreview('preview')}
-                    disabled={isPreviewing}
+                    disabled={isPreviewing || isCreating}
                     className="px-5 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-slate-200 transition-colors disabled:opacity-50"
                   >
                     {isPreviewing ? <Loader2 size={14} className="animate-spin" /> : <Eye size={14} />} Preview
                   </button>
                   <button
                     onClick={() => runPreview('test-send')}
-                    disabled={isPreviewing}
+                    disabled={isPreviewing || isCreating}
                     className="px-5 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-slate-200 transition-colors disabled:opacity-50"
                   >
                     <Send size={14} /> Send test to me

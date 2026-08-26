@@ -1,4 +1,4 @@
-// OpenHR — Admin Verify Employee Edge Function
+// OpenHRApp — Admin Verify Employee Edge Function
 // Requires ADMIN / HR / SUPER_ADMIN caller. Manually activates an employee account:
 // confirms the email in auth (so they can log in) and flips profiles.verified.
 
