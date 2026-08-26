@@ -78,7 +78,10 @@ const Turnstile: React.FC<Props> = ({ onVerify, resetSignal = 0, className = '' 
           callback: (token: string) => onVerifyRef.current(token),
           'expired-callback': () => onVerifyRef.current(''),
           'error-callback': () => onVerifyRef.current(''),
-          theme: 'light',
+          // 'auto' follows the viewer's system theme, so the widget doesn't sit
+          // as a white block on the app's dark mode.
+          theme: 'auto',
+          // Must match the expectedAction the edge function verifies against.
           action: 'register',
         });
       })
