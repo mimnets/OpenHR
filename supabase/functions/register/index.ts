@@ -302,7 +302,9 @@ Deno.serve(async (req: Request) => {
     // Runs before any validation or database work so bot traffic costs us a
     // single outbound call and nothing else.
     const ip = callerIp(req);
-    const ts = await verifyTurnstile(tsToken, ip);
+    // 'register' must match the action the widget is rendered with, so a token
+    // minted for a different surface cannot be replayed here.
+    const ts = await verifyTurnstile(tsToken, ip, 'register');
     if (!ts.ok) {
       console.warn(`[REGISTER] Turnstile rejected registration from ${ip ?? 'unknown IP'}`);
       return jsonError(400, ts.message ?? 'Anti-spam check failed.');
