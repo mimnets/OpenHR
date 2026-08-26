@@ -135,18 +135,63 @@ export const BUTTON_COLORS: Record<string, string> = {
  * table-with-bgcolor construction email needs — Outlook renders padding on an
  * anchor as a thin unclickable strip, so a styled <a> is not an option.
  */
-function expandButtons(html: string): string {
-  return html.replace(
-    /<a\b([^>]*\bdata-btn\b[^>]*)>([\s\S]*?)<\/a>/gi,
-    (whole, attrs: string, label: string) => {
-      const href = /href\s*=\s*["']([^"']+)["']/i.exec(attrs)?.[1];
-      if (!href) return whole;
-      const key = /data-btn\s*=\s*["']([^"']*)["']/i.exec(attrs)?.[1]?.toLowerCase() ?? 'teal';
-      const bg = BUTTON_COLORS[key] ?? BUTTON_COLORS.teal;
-      const text = label.replace(/<[^>]+>/g, '').trim() || 'Open';
-      return ctaButton(text, href, bg);
-    },
-  );
+const BUTTON_ANCHOR = /<a\b([^>]*\bdata-btn\b[^>]*)>([\s\S]*?)<\/a>/gi;
+/** A button that is the entire contents of a paragraph. */
+const BUTTON_PARAGRAPH = /<p>\s*(<a\b[^>]*\bdata-btn\b[^>]*>[\s\S]*?<\/a>)\s*<\/p>/gi;
+
+function buildButton(tag: string): string | null {
+  const m = /<a\b([^>]*)>([\s\S]*?)<\/a>/i.exec(tag);
+  if (!m) return null;
+  const [, attrs, label] = m;
+  const href = /href\s*=\s*["']([^"']+)["']/i.exec(attrs)?.[1];
+  if (!href) return null;
+  const key = /data-btn\s*=\s*["']([^"']*)["']/i.exec(attrs)?.[1]?.toLowerCase() ?? 'teal';
+  const bg = BUTTON_COLORS[key] ?? BUTTON_COLORS.teal;
+  const text = label.replace(/<[^>]+>/g, '').trim() || 'Open';
+  return ctaButton(text, href, bg);
+}
+
+/**
+ * Lifts every button out of the content, leaving an HTML comment in its place.
+ *
+ * A comment is used as the marker because none of the tag rules below can match
+ * one, DOMPurify has already stripped any comment a person could have written,
+ * and it keeps the source plain ASCII — an earlier version used NUL bytes,
+ * which made the file register as binary to git and grep.
+ *
+ * Extracting rather than expanding in place is the whole point. The tag rules
+ * in styleInlineContent are blunt string replacements, and an earlier version
+ * expanded buttons first — so the generic `<a ` rule then prepended a SECOND
+ * style attribute to the finished button. HTML keeps the first style attribute
+ * and discards the duplicate, so the label inherited the link colour and
+ * rendered teal on a teal background: a button with invisible text.
+ *
+ * A marker cannot be matched by any of those rules, so finished markup stays
+ * finished no matter what is added to the pipeline later.
+ *
+ * A button alone in a paragraph consumes the paragraph too, because the
+ * expansion is a <table> and a table inside a <p> is invalid — some clients
+ * close the paragraph early and strand the button outside the layout.
+ */
+function extractButtons(html: string): { html: string; buttons: string[] } {
+  const buttons: string[] = [];
+  const mark = () => `<!--BTN${buttons.length - 1}-->`;
+
+  let out = html.replace(BUTTON_PARAGRAPH, (whole, anchor: string) => {
+    const built = buildButton(anchor);
+    if (!built) return whole;
+    buttons.push(built);
+    return mark();
+  });
+
+  out = out.replace(BUTTON_ANCHOR, (whole) => {
+    const built = buildButton(whole);
+    if (!built) return whole;
+    buttons.push(built);
+    return mark();
+  });
+
+  return { html: out, buttons };
 }
 
 /**
@@ -159,9 +204,12 @@ function expandButtons(html: string): string {
  */
 export function styleInlineContent(html: string): string {
   const font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
-  // Buttons first: they are anchors, and the <a> rule below would otherwise
-  // paint link styling onto markup that is about to become a table.
-  return expandButtons(html)
+
+  // Buttons come out first and go back in last. Everything between is blunt
+  // string replacement that must not touch already-finished markup.
+  const { html: work, buttons } = extractButtons(html);
+
+  const styled = work
     .replace(/<p>/g, `<p style="margin:0 0 16px 0;font-family:${font};font-size:15px;line-height:24px;color:${INK};">`)
     .replace(/<h1>/g, `<h1 style="margin:0 0 16px 0;font-family:${font};font-size:22px;line-height:30px;font-weight:700;color:${INK};">`)
     .replace(/<h2>/g, `<h2 style="margin:24px 0 12px 0;font-family:${font};font-size:18px;line-height:26px;font-weight:700;color:${INK};">`)
@@ -170,6 +218,9 @@ export function styleInlineContent(html: string): string {
     .replace(/<li>/g, `<li style="margin:0 0 6px 0;">`)
     .replace(/<a /g, `<a style="color:${ACCENT};text-decoration:underline;" `)
     .replace(/<blockquote>/g, `<blockquote style="margin:0 0 16px 0;padding:12px 16px;border-left:3px solid ${RULE};color:${MUTED};font-family:${font};font-size:15px;line-height:24px;">`);
+
+  // Put the finished buttons back, untouched by any of the above.
+  return styled.replace(/<!--BTN(\d+)-->/g, (whole, i: string) => buttons[Number(i)] ?? whole);
 }
 
 /**
