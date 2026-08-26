@@ -1,0 +1,492 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Sparkles, RefreshCw, Save, Eye, Send, AlertTriangle, Loader2,
+  Power, Ban, Plus, Trash2,
+} from 'lucide-react';
+import {
+  aiEmailService, EmailTemplate, EmailSend, EmailSuppression,
+  EmailProvider, AUDIENCE_LABEL, PreviewResult,
+} from '../../services/aiEmail.service';
+import { useToast } from '../../context/ToastContext';
+
+type Tab = 'templates' | 'history' | 'suppressions';
+
+const PROVIDERS: EmailProvider[] = ['openrouter', 'deepseek', 'openai', 'anthropic'];
+
+const statusStyle = (s: EmailSend['status']) => {
+  switch (s) {
+    case 'SENT':    return 'bg-emerald-100 text-emerald-700';
+    case 'FAILED':  return 'bg-rose-100 text-rose-700';
+    case 'PREVIEW': return 'bg-indigo-100 text-indigo-700';
+    default:        return 'bg-slate-100 text-slate-600';
+  }
+};
+
+const inputCls =
+  'w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-4 focus:ring-primary-light transition-all';
+
+const AIEmail: React.FC = () => {
+  const { showToast } = useToast();
+  const [tab, setTab] = useState<Tab>('templates');
+
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<EmailTemplate | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [preview, setPreview] = useState<PreviewResult | null>(null);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+
+  const [sends, setSends] = useState<EmailSend[]>([]);
+  const [suppressions, setSuppressions] = useState<EmailSuppression[]>([]);
+  const [newSuppression, setNewSuppression] = useState('');
+
+  const load = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const t = await aiEmailService.getTemplates();
+      setTemplates(t);
+      if (t.length && !selectedId) { setSelectedId(t[0].id); setDraft(t[0]); }
+    } catch (e: any) {
+      setError(e?.message || 'Could not load the email automation settings.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    if (tab === 'history') aiEmailService.getSends().then(setSends).catch(() => showToast('Could not load history', 'error'));
+    if (tab === 'suppressions') aiEmailService.getSuppressions().then(setSuppressions).catch(() => showToast('Could not load suppressions', 'error'));
+  }, [tab]);
+
+  const select = (t: EmailTemplate) => {
+    setSelectedId(t.id);
+    setDraft(t);
+    setPreview(null);
+    setPreviewError(null);
+  };
+
+  const save = async () => {
+    if (!draft) return;
+    setIsSaving(true);
+    try {
+      await aiEmailService.updateTemplate(draft.id, draft);
+      showToast('Template saved.', 'success');
+      const t = await aiEmailService.getTemplates();
+      setTemplates(t);
+      setDraft(t.find(x => x.id === draft.id) ?? draft);
+    } catch (e: any) {
+      showToast(e?.message || 'Save failed', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const runPreview = async (mode: 'preview' | 'test-send') => {
+    if (!draft) return;
+    setIsPreviewing(true);
+    setPreviewError(null);
+    setPreview(null);
+    try {
+      const r = await aiEmailService.preview(draft.key, mode);
+      setPreview(r);
+      if (r.sent) showToast(`Test sent to ${r.sentTo}`, 'success');
+    } catch (e: any) {
+      setPreviewError(e?.message || 'Preview failed');
+    } finally {
+      setIsPreviewing(false);
+    }
+  };
+
+  const toggleActive = async (t: EmailTemplate) => {
+    try {
+      await aiEmailService.updateTemplate(t.id, { isActive: !t.isActive });
+      showToast(t.isActive ? `${t.name} paused.` : `${t.name} is now live and will send on the next run.`, 'success');
+      const list = await aiEmailService.getTemplates();
+      setTemplates(list);
+      if (draft?.id === t.id) setDraft(list.find(x => x.id === t.id) ?? draft);
+    } catch (e: any) {
+      showToast(e?.message || 'Could not change status', 'error');
+    }
+  };
+
+  const activeCount = templates.filter(t => t.isActive).length;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <Sparkles size={20} className="text-primary" />
+            <h3 className="text-xl font-semibold text-slate-900">AI Email</h3>
+          </div>
+          <p className="text-xs font-bold text-slate-400 mt-1">
+            Onboarding and reminder email, written by a model from your instructions
+          </p>
+        </div>
+        <button
+          onClick={load}
+          disabled={isLoading}
+          className="p-3 bg-white border border-slate-100 rounded-2xl shadow-sm text-slate-400 hover:text-primary transition-colors disabled:opacity-50"
+          aria-label="Refresh"
+        >
+          <RefreshCw size={20} className={isLoading ? 'animate-spin' : ''} />
+        </button>
+      </div>
+
+      {/* Standing warning while anything is live */}
+      {activeCount > 0 && (
+        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+          <AlertTriangle size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
+          <p className="text-xs font-bold text-amber-800">
+            {activeCount} template{activeCount === 1 ? ' is' : 's are'} live. The daily job will send to real
+            customers. Every message carries a one-click unsubscribe, and nobody receives the same stage twice.
+          </p>
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-fit">
+        {([['templates', 'Templates'], ['history', 'Sent'], ['suppressions', 'Do not email']] as const).map(([k, label]) => (
+          <button
+            key={k}
+            onClick={() => setTab(k)}
+            className={`py-2 px-4 rounded-lg font-bold text-xs transition-all ${
+              tab === k ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {error && (
+        <div className="flex items-start gap-3 p-5 bg-rose-50 border border-rose-100 rounded-2xl">
+          <AlertTriangle size={18} className="text-rose-500 flex-shrink-0 mt-0.5" />
+          <p className="text-xs font-bold text-rose-700">{error}</p>
+        </div>
+      )}
+
+      {isLoading && <p className="text-center py-12 text-xs font-bold text-slate-400 uppercase tracking-widest">Loading…</p>}
+
+      {/* ── Templates ── */}
+      {tab === 'templates' && !isLoading && !error && (
+        <div className="grid lg:grid-cols-[18rem_1fr] gap-5">
+          {/* List */}
+          <div className="space-y-2">
+            {templates.map(t => (
+              <div
+                key={t.id}
+                className={`bg-white rounded-xl border p-4 shadow-sm ${
+                  selectedId === t.id ? 'border-primary ring-2 ring-primary-light' : 'border-slate-100'
+                }`}
+              >
+                <button onClick={() => select(t)} className="w-full text-left">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold text-slate-800 text-sm">{t.name}</span>
+                    <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wide ${
+                      t.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      {t.isActive ? 'Live' : 'Paused'}
+                    </span>
+                  </div>
+                  <p className="text-[10px] font-bold text-slate-400 mt-1">{AUDIENCE_LABEL[t.audience]}</p>
+                  <p className="text-[10px] font-bold text-slate-400 mt-0.5">
+                    Days {t.sendAfterDays.join(', ')} · cap {t.dailyCap}/day
+                  </p>
+                </button>
+                <button
+                  onClick={() => toggleActive(t)}
+                  className={`mt-3 w-full py-2 rounded-lg font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-1.5 transition-colors ${
+                    t.isActive
+                      ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  }`}
+                >
+                  <Power size={12} /> {t.isActive ? 'Pause' : 'Turn on'}
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Editor */}
+          {draft && (
+            <div className="space-y-5">
+              <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-4">
+                <div>
+                  <h4 className="font-semibold text-slate-900">{draft.name}</h4>
+                  <p className="text-xs font-bold text-slate-400 mt-0.5">{draft.description}</p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                    What the model should write
+                  </label>
+                  <textarea
+                    rows={5}
+                    className={`${inputCls} resize-y font-medium`}
+                    value={draft.aiPrompt ?? ''}
+                    onChange={e => setDraft({ ...draft, aiPrompt: e.target.value })}
+                    placeholder="Tone, length, what to mention, what to avoid…"
+                  />
+                  <p className="text-[10px] font-bold text-slate-400">
+                    The model is already told never to invent features, prices or links. This is where you set tone and emphasis.
+                  </p>
+                </div>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={draft.aiEnabled}
+                    onChange={e => setDraft({ ...draft, aiEnabled: e.target.checked })}
+                    className="w-4 h-4 accent-primary"
+                  />
+                  <span className="text-xs font-bold text-slate-600">
+                    Use AI. When off — or whenever generation fails — the plain version below is sent instead.
+                  </span>
+                </label>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Provider</label>
+                    <select
+                      className={inputCls}
+                      value={draft.provider}
+                      onChange={e => setDraft({ ...draft, provider: e.target.value as EmailProvider })}
+                    >
+                      {PROVIDERS.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Model</label>
+                    <input
+                      className={inputCls}
+                      value={draft.model}
+                      onChange={e => setDraft({ ...draft, model: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                      Send on days (after they qualify)
+                    </label>
+                    <input
+                      className={inputCls}
+                      value={draft.sendAfterDays.join(', ')}
+                      onChange={e => setDraft({
+                        ...draft,
+                        sendAfterDays: e.target.value.split(',')
+                          .map(s => parseInt(s.trim(), 10)).filter(n => Number.isFinite(n) && n >= 0),
+                      })}
+                      placeholder="1, 3, 7"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Most per day</label>
+                    <input
+                      type="number" min={1} max={500}
+                      className={inputCls}
+                      value={draft.dailyCap}
+                      onChange={e => setDraft({ ...draft, dailyCap: Number(e.target.value) })}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                    Plain subject (fallback)
+                  </label>
+                  <input
+                    className={inputCls}
+                    value={draft.subjectTemplate}
+                    onChange={e => setDraft({ ...draft, subjectTemplate: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                    Plain body (fallback HTML)
+                  </label>
+                  <textarea
+                    rows={5}
+                    className={`${inputCls} resize-y font-mono text-xs`}
+                    value={draft.bodyTemplate}
+                    onChange={e => setDraft({ ...draft, bodyTemplate: e.target.value })}
+                  />
+                  <p className="text-[10px] font-bold text-slate-400">
+                    Available placeholders: {'{{org_name}}'}, {'{{admin_name}}'}, {'{{app_url}}'}, {'{{trial_end}}'}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-3 pt-1">
+                  <button
+                    onClick={save}
+                    disabled={isSaving}
+                    className="px-5 py-3 bg-primary text-white rounded-xl font-bold text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-primary-hover transition-colors disabled:opacity-50"
+                  >
+                    {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save
+                  </button>
+                  <button
+                    onClick={() => runPreview('preview')}
+                    disabled={isPreviewing}
+                    className="px-5 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-slate-200 transition-colors disabled:opacity-50"
+                  >
+                    {isPreviewing ? <Loader2 size={14} className="animate-spin" /> : <Eye size={14} />} Preview
+                  </button>
+                  <button
+                    onClick={() => runPreview('test-send')}
+                    disabled={isPreviewing}
+                    className="px-5 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-slate-200 transition-colors disabled:opacity-50"
+                  >
+                    <Send size={14} /> Send test to me
+                  </button>
+                </div>
+              </div>
+
+              {previewError && (
+                <div className="flex items-start gap-3 p-4 bg-rose-50 border border-rose-100 rounded-2xl">
+                  <AlertTriangle size={16} className="text-rose-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs font-bold text-rose-700">{previewError}</p>
+                </div>
+              )}
+
+              {preview && (
+                <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h4 className="font-semibold text-slate-900 text-sm">Preview</h4>
+                    <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wide ${
+                      preview.aiUsed ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {preview.aiUsed ? `Written by ${preview.model}` : 'Plain version'}
+                    </span>
+                    {preview.availableProviders?.length > 0 && (
+                      <span className="text-[10px] font-bold text-slate-400">
+                        keys configured: {preview.availableProviders.join(', ')}
+                      </span>
+                    )}
+                  </div>
+
+                  {preview.aiError && (
+                    <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                      <AlertTriangle size={13} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                      <p className="text-[11px] font-bold text-amber-800">{preview.aiError}</p>
+                    </div>
+                  )}
+
+                  <div className="border border-slate-200 rounded-xl overflow-hidden">
+                    <div className="px-4 py-2 bg-slate-50 border-b border-slate-200">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Subject</p>
+                      <p className="text-sm font-semibold text-slate-800">{preview.subject}</p>
+                    </div>
+                    <div
+                      className="p-4 text-sm text-slate-700 prose-sm max-w-none [&_a]:text-primary [&_p]:mb-2"
+                      dangerouslySetInnerHTML={{ __html: preview.html }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Sent ── */}
+      {tab === 'history' && (
+        <div className="space-y-2">
+          {sends.length === 0 && (
+            <p className="text-center py-12 text-xs font-bold text-slate-400">
+              Nothing sent yet. Turning a template on lets the daily job send on its next run.
+            </p>
+          )}
+          {sends.map(s => (
+            <div key={s.id} className="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wide ${statusStyle(s.status)}`}>
+                  {s.status}
+                </span>
+                <span className="font-semibold text-slate-800 text-sm truncate">{s.recipientEmail}</span>
+                <span className="text-[10px] font-bold text-slate-400">{s.templateKey} · day {s.stage}</span>
+                {s.aiUsed && <span className="text-[10px] font-bold text-indigo-600">AI</span>}
+              </div>
+              <p className="text-[11px] font-bold text-slate-500 mt-1 truncate">{s.subject}</p>
+              <p className="text-[10px] font-bold text-slate-400 mt-0.5">{new Date(s.created).toLocaleString()}</p>
+              {s.error && <p className="text-[10px] font-bold text-rose-600 mt-1">{s.error}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Suppressions ── */}
+      {tab === 'suppressions' && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-3">
+            <p className="text-xs font-bold text-slate-500">
+              Nobody on this list receives automated email. Unsubscribes land here automatically.
+            </p>
+            <div className="flex gap-2">
+              <input
+                className={inputCls}
+                placeholder="name@company.com"
+                value={newSuppression}
+                onChange={e => setNewSuppression(e.target.value)}
+              />
+              <button
+                onClick={async () => {
+                  if (!newSuppression.trim()) return;
+                  try {
+                    await aiEmailService.addSuppression(newSuppression, 'MANUAL');
+                    setNewSuppression('');
+                    setSuppressions(await aiEmailService.getSuppressions());
+                    showToast('Added.', 'success');
+                  } catch (e: any) { showToast(e?.message || 'Could not add', 'error'); }
+                }}
+                className="px-5 py-3 bg-primary text-white rounded-xl font-bold text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-primary-hover transition-colors whitespace-nowrap"
+              >
+                <Plus size={14} /> Add
+              </button>
+            </div>
+          </div>
+
+          {suppressions.length === 0 && (
+            <p className="text-center py-8 text-xs font-bold text-slate-400">Nobody is suppressed.</p>
+          )}
+          {suppressions.map(s => (
+            <div key={s.email} className="bg-white rounded-xl border border-slate-100 p-4 shadow-sm flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Ban size={13} className="text-slate-400 flex-shrink-0" />
+                  <span className="font-semibold text-slate-800 text-sm truncate">{s.email}</span>
+                  <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[9px] font-bold uppercase tracking-wide">
+                    {s.reason.replace('_', ' ')}
+                  </span>
+                </div>
+                <p className="text-[10px] font-bold text-slate-400 mt-0.5">{new Date(s.created).toLocaleString()}</p>
+              </div>
+              <button
+                onClick={async () => {
+                  try {
+                    await aiEmailService.removeSuppression(s.email);
+                    setSuppressions(await aiEmailService.getSuppressions());
+                    showToast('Removed.', 'success');
+                  } catch (e: any) { showToast(e?.message || 'Could not remove', 'error'); }
+                }}
+                className="p-2 text-slate-300 hover:text-rose-500 transition-colors flex-shrink-0"
+                aria-label={`Remove ${s.email}`}
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AIEmail;

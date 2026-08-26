@@ -1,0 +1,36 @@
+-- ============================================================
+-- OpenHR — Schedule for cron-lifecycle-emails
+-- 0031_schedule_lifecycle_emails.sql
+--
+-- pg_net is already enabled by 0016. As with the other cron jobs, the schedule
+-- itself cannot be created from a migration — Supabase restricts cron.schedule()
+-- during db push, and the statement embeds CRON_SECRET, which does not belong in
+-- version control. Run this once in the SQL Editor, substituting the secret:
+--
+--   select cron.schedule(
+--     'lifecycle-emails',
+--     '0 9 * * *',
+--     $$
+--       select net.http_post(
+--         url := 'https://cixryuwtlwbofabctrkk.supabase.co/functions/v1/cron-lifecycle-emails',
+--         headers := '{"Authorization": "Bearer <CRON_SECRET>", "Content-Type": "application/json"}'::jsonb,
+--         body := '{}'::jsonb
+--       );
+--     $$
+--   );
+--
+-- Scheduling it is safe before you are ready to send: every template ships
+-- inactive, so the job wakes up, finds nothing active, and exits. Turning a
+-- template on in the AI Email tab is the single switch that starts delivery.
+--
+-- To rehearse without sending, add ?dryRun=1 to the URL. The job resolves the
+-- audience and generates the copy but sends nothing and writes no send records.
+--
+-- To stop it:  select cron.unschedule('lifecycle-emails');
+-- To inspect:  select * from cron.job where jobname = 'lifecycle-emails';
+-- ============================================================
+
+-- Nothing to apply. pg_net comes from 0016; this file documents the manual step
+-- so the schedule is discoverable in the repo rather than only in someone's
+-- browser history.
+select 1;
