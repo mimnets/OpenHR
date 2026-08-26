@@ -134,6 +134,10 @@ Deno.serve(async (req: Request) => {
       let subject = render(tpl.subject_template, vars);
       let html    = render(tpl.body_template, vars);
       let aiUsed  = false;
+      // Why this message went out plain. Recorded in the ledger below, because
+      // a send that quietly degraded looks identical to one from a template
+      // with AI switched off, and the difference is the thing worth knowing.
+      let aiError: string | null = null;
 
       if (tpl.ai_enabled && tpl.ai_prompt) {
         const result = await generate({
@@ -165,9 +169,11 @@ Deno.serve(async (req: Request) => {
               aiUsed = true;
             }
           } catch {
+            aiError = 'generation: model output was not JSON';
             console.warn(`[lifecycle] ${tpl.key}: model output was not JSON, using plain template`);
           }
         } else {
+          aiError = `generation: ${result.error ?? 'failed'}`.slice(0, 300);
           console.warn(`[lifecycle] ${tpl.key}: generation failed — ${result.error}`);
         }
       }
@@ -219,7 +225,7 @@ Deno.serve(async (req: Request) => {
         model: tpl.model,
         subject,
         ai_used: aiUsed,
-        error: errMsg,
+        error: [aiError, errMsg].filter(Boolean).join(' | ') || null,
       });
 
       if (ok) { sent++; } else { failed++; console.error(`[lifecycle] ${tpl.key} -> ${c.email}: ${errMsg}`); }
