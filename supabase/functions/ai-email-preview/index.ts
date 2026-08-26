@@ -8,6 +8,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { generate, availableProviders, LlmProvider } from '../_shared/llm.ts';
+import { renderEmail, styleInlineContent } from '../_shared/emailLayout.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -32,7 +33,9 @@ function render(tpl: string, vars: Record<string, string>): string {
 const SYSTEM_PROMPT = [
   'You write short transactional emails for OpenHRApp, an HR and attendance product.',
   'Return ONLY a JSON object with exactly two string keys: "subject" and "body_html".',
-  'body_html must be simple HTML using only <p>, <strong>, <em>, <a>, <ul>, <li>. No styles, no scripts, no images, no head or body tags.',
+  'body_html must use only <p>, <strong>, <em>, <a>, <ul>, <ol>, <li>, <h2>, <blockquote>. No styles, scripts, images, head or body tags.',
+  'For the main action write a button: <a href="THE_URL" data-btn="teal">Short label</a>. Colours: teal, blue, green, amber, rose, slate. At most one button, and only when there is a clear single next step.',
+  'Button labels name the action, never the product: "Open your dashboard", "Add your team", "Confirm my email". Never write "Open OpenHRApp" — the brand is already in the email header, so repeating it is redundant.',
   'Never invent features, prices, deadlines, statistics or discounts. If you are unsure whether something exists, leave it out.',
   'Never fabricate a link. Use only the URL given to you, exactly as given.',
   'Write plainly. No marketing superlatives, no exclamation marks, no pressure language.',
@@ -150,7 +153,12 @@ Deno.serve(async (req: Request) => {
           from: FROM_EMAIL,
           to: [to],
           subject: `[TEST] ${subject}`,
-          html: `${html}<hr><p style="color:#6b7280;font-size:12px">Test send from the OpenHRApp dashboard. Template: ${tpl.key}. Not sent to any customer.</p>`,
+          html: renderEmail({
+            content: styleInlineContent(html),
+            preheader: vars.org_name,
+            isTest: true,
+            testNote: `Template: ${tpl.key}. No customer received this.`,
+          }),
         }),
       });
       if (!res.ok) {
@@ -174,6 +182,9 @@ Deno.serve(async (req: Request) => {
     return json(200, {
       subject,
       html,
+      // The framed version is what actually lands in an inbox; the dashboard
+      // renders this so the preview is not prettier than the real thing.
+      framedHtml: renderEmail({ content: styleInlineContent(html), preheader: vars.org_name }),
       aiUsed,
       aiError,
       sent,

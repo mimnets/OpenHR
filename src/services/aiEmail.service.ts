@@ -7,7 +7,16 @@ import { supabase, isSupabaseConfigured } from './supabase';
 // delivery record you can edit is not a record.
 
 export type EmailProvider = 'openrouter' | 'deepseek' | 'openai' | 'anthropic';
-export type EmailAudience = 'UNCONFIRMED_ADMIN' | 'NO_EMPLOYEES' | 'NO_ATTENDANCE' | 'TRIAL_ENDING';
+export type EmailAudience =
+  | 'UNCONFIRMED_ADMIN'
+  | 'NO_EMPLOYEES'
+  | 'NO_ATTENDANCE'
+  | 'TRIAL_ENDING'
+  | 'TRIAL_EXPIRED'
+  | 'WELCOME'
+  | 'SETUP_INCOMPLETE'
+  | 'DORMANT'
+  | 'ACTIVE_ENGAGED';
 
 export interface EmailTemplate {
   id: string;
@@ -52,6 +61,8 @@ export interface EmailSuppression {
 export interface PreviewResult {
   subject: string;
   html: string;
+  /** The message inside the branded frame — what actually lands in an inbox. */
+  framedHtml?: string;
   aiUsed: boolean;
   aiError: string | null;
   sent: boolean;
@@ -66,7 +77,25 @@ export const AUDIENCE_LABEL: Record<EmailAudience, string> = {
   UNCONFIRMED_ADMIN: 'Admins who never confirmed their email',
   NO_EMPLOYEES:      'Organizations with no employees added',
   NO_ATTENDANCE:     'Organizations that have never checked in',
-  TRIAL_ENDING:      'Organizations whose trial is ending',
+  SETUP_INCOMPLETE:  'Organizations that never finished setup',
+  TRIAL_ENDING:      'Organizations whose trial is ending soon',
+  TRIAL_EXPIRED:     'Organizations whose trial has already lapsed',
+  WELCOME:           'Organizations that are set up and running',
+  DORMANT:           'Organizations that were active and went quiet',
+  ACTIVE_ENGAGED:    'Healthy, active organizations (product news)',
+};
+
+/** What the stage numbers mean for each audience — they are not all "days since signup". */
+export const AUDIENCE_TIMING: Record<EmailAudience, string> = {
+  UNCONFIRMED_ADMIN: 'Days since they registered',
+  NO_EMPLOYEES:      'Days since the organization was created',
+  NO_ATTENDANCE:     'Days since the organization was created',
+  SETUP_INCOMPLETE:  'Days since the organization was created',
+  TRIAL_ENDING:      'Days REMAINING before the trial ends',
+  TRIAL_EXPIRED:     'Days since the trial lapsed',
+  WELCOME:           'Days since the organization was created',
+  DORMANT:           'Days since their last check-in',
+  ACTIVE_ENGAGED:    'Days since the organization was created',
 };
 
 const mapTemplate = (r: any): EmailTemplate => ({

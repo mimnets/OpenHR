@@ -5,9 +5,10 @@ import {
 } from 'lucide-react';
 import {
   aiEmailService, EmailTemplate, EmailSend, EmailSuppression,
-  EmailProvider, EmailAudience, AUDIENCE_LABEL, PreviewResult, ReportResult,
+  EmailProvider, EmailAudience, AUDIENCE_LABEL, AUDIENCE_TIMING, PreviewResult, ReportResult,
 } from '../../services/aiEmail.service';
 import BulkEmailManager from './BulkEmailManager';
+import EmailComposer from './EmailComposer';
 import { useToast } from '../../context/ToastContext';
 
 type Tab = 'templates' | 'ask' | 'history' | 'suppressions' | 'bulk';
@@ -93,7 +94,7 @@ const AIEmail: React.FC = () => {
       description: '',
       audience: 'NO_EMPLOYEES',
       subjectTemplate: 'A message about {{org_name}}',
-      bodyTemplate: '<p>Hi {{admin_name}},</p><p>Write the plain version here. This is what sends if the model is unavailable.</p><p><a href="{{app_url}}">Open OpenHRApp</a></p>',
+      bodyTemplate: '<p>Hi {{admin_name}},</p><p>Write the plain version here. This is what sends if the model is unavailable.</p><p><a href="{{app_url}}" data-btn="teal">Open your dashboard</a></p>',
       aiEnabled: true,
       aiPrompt: '',
       provider: 'openrouter',
@@ -414,7 +415,7 @@ const AIEmail: React.FC = () => {
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                      Send on days (after they qualify)
+                      Send on days — {AUDIENCE_TIMING[draft.audience].toLowerCase()}
                     </label>
                     <input
                       className={inputCls}
@@ -451,16 +452,16 @@ const AIEmail: React.FC = () => {
 
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                    Plain body (fallback HTML)
+                    Plain body (the fallback)
                   </label>
-                  <textarea
-                    rows={5}
-                    className={`${inputCls} resize-y font-mono text-xs`}
+                  <EmailComposer
                     value={draft.bodyTemplate}
-                    onChange={e => setDraft({ ...draft, bodyTemplate: e.target.value })}
+                    onChange={h => setDraft({ ...draft, bodyTemplate: h })}
+                    placeholders={['{{admin_name}}', '{{org_name}}', '{{app_url}}', '{{trial_end}}']}
                   />
                   <p className="text-[10px] font-bold text-slate-400">
-                    Available placeholders: {'{{org_name}}'}, {'{{admin_name}}'}, {'{{app_url}}'}, {'{{trial_end}}'}
+                    Write the message only. The header, footer, spacing and unsubscribe link are added
+                    automatically when it sends, so every email looks the same.
                   </p>
                 </div>
 
@@ -524,10 +525,21 @@ const AIEmail: React.FC = () => {
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Subject</p>
                       <p className="text-sm font-semibold text-slate-800">{preview.subject}</p>
                     </div>
-                    <div
-                      className="p-4 text-sm text-slate-700 prose-sm max-w-none [&_a]:text-primary [&_p]:mb-2"
-                      dangerouslySetInnerHTML={{ __html: preview.html }}
-                    />
+                    {preview.framedHtml ? (
+                      // Rendered in an iframe so the email's own styles cannot
+                      // leak into the dashboard, and so what is shown is exactly
+                      // the document that gets sent.
+                      <iframe
+                        title="Email preview"
+                        srcDoc={preview.framedHtml}
+                        className="w-full h-[32rem] border-0 bg-white"
+                      />
+                    ) : (
+                      <div
+                        className="p-4 text-sm text-slate-700 max-w-none [&_a]:text-primary [&_p]:mb-2"
+                        dangerouslySetInnerHTML={{ __html: preview.html }}
+                      />
+                    )}
                   </div>
                 </div>
               )}

@@ -16,6 +16,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { generate, LlmProvider } from '../_shared/llm.ts';
 import { signUnsubscribe } from '../_shared/unsubscribe.ts';
+import { renderEmail, styleInlineContent } from '../_shared/emailLayout.ts';
 
 const FROM_EMAIL = 'OpenHRApp <noreply@openhrapp.com>';
 const APP_URL = 'https://openhrapp.com';
@@ -33,7 +34,9 @@ function render(tpl: string, vars: Record<string, string>): string {
 const SYSTEM_PROMPT = [
   'You write short transactional emails for OpenHRApp, an HR and attendance product.',
   'Return ONLY a JSON object with exactly two string keys: "subject" and "body_html".',
-  'body_html must be simple HTML using only <p>, <strong>, <em>, <a>, <ul>, <li>. No styles, scripts, images, head or body tags.',
+  'body_html must use only <p>, <strong>, <em>, <a>, <ul>, <ol>, <li>, <h2>, <blockquote>. No styles, scripts, images, head or body tags.',
+  'For the main action write a button: <a href="THE_URL" data-btn="teal">Short label</a>. Colours: teal, blue, green, amber, rose, slate. At most one button, and only when there is a clear single next step.',
+  'Button labels name the action, never the product: "Open your dashboard", "Add your team", "Confirm my email". Never write "Open OpenHRApp" — the brand is already in the email header, so repeating it is redundant.',
   'Never invent features, prices, deadlines, statistics or discounts. If unsure whether something exists, leave it out.',
   'Never fabricate a link. Use only the URL given to you, exactly as given.',
   'Write plainly. No marketing superlatives, no exclamation marks, no pressure language.',
@@ -171,11 +174,11 @@ Deno.serve(async (req: Request) => {
 
       const unsubToken = await signUnsubscribe(c.email, cronSecret);
       const unsubUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/email-unsubscribe?token=${unsubToken}`;
-      const fullHtml =
-        `${html}<hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">` +
-        `<p style="color:#6b7280;font-size:12px;line-height:1.5">` +
-        `You are receiving this because you created an OpenHRApp account. ` +
-        `<a href="${unsubUrl}" style="color:#6b7280">Unsubscribe</a>.</p>`;
+      const fullHtml = renderEmail({
+        content: styleInlineContent(html),
+        preheader: vars.org_name,
+        unsubscribeUrl: unsubUrl,
+      });
 
       if (dryRun) {
         summary.push({ template: tpl.key, stage, to: c.email, subject, aiUsed, dryRun: true });
@@ -238,7 +241,7 @@ async function resolveAudience(admin: any, audience: string): Promise<Candidate[
 
   const { data: orgs } = await admin
     .from('organizations')
-    .select('id, name, created, trial_end_date, is_demo')
+    .select('id, name, created, trial_end_date, is_demo, subscription_status')
     .neq('is_demo', true);
   if (!orgs?.length) return out;
 
@@ -255,10 +258,22 @@ async function resolveAudience(admin: any, audience: string): Promise<Candidate[
     byOrg.get(p.organization_id)!.push(p);
   }
 
-  // Which organizations have ever recorded attendance. One query, not one per org.
+  // Which organizations have ever recorded attendance, and when they last did.
+  // One query rather than one per organization.
   const { data: attRows } = await admin
-    .from('attendance').select('organization_id').in('organization_id', orgIds).limit(20000);
-  const orgsWithAttendance = new Set((attRows ?? []).map((r: any) => r.organization_id));
+    .from('attendance').select('organization_id, created').in('organization_id', orgIds).limit(20000);
+  const orgsWithAttendance = new Set<string>();
+  const lastAttendanceByOrg = new Map<string, string>();
+  for (const r of attRows ?? []) {
+    orgsWithAttendance.add(r.organization_id);
+    const prev = lastAttendanceByOrg.get(r.organization_id);
+    if (!prev || r.created > prev) lastAttendanceByOrg.set(r.organization_id, r.created);
+  }
+
+  // Organizations that saved any settings, i.e. got past onboarding.
+  const { data: setRows } = await admin
+    .from('settings').select('organization_id').in('organization_id', orgIds).limit(20000);
+  const orgsWithSettings = new Set((setRows ?? []).map((r: any) => r.organization_id));
 
   for (const org of orgs) {
     const members = byOrg.get(org.id) ?? [];
@@ -300,6 +315,52 @@ async function resolveAudience(admin: any, audience: string): Promise<Candidate[
         if (org.trial_end_date) {
           const left = daysUntil(org.trial_end_date);
           if (left >= 0) out.push({ ...base, age: left });
+        }
+        break;
+
+      case 'TRIAL_EXPIRED':
+        // Already past the end date and still not upgraded. `age` counts days
+        // since it lapsed, so stages like {1, 14} read naturally.
+        if (org.trial_end_date
+            && daysUntil(org.trial_end_date) < 0
+            && (org.subscription_status ?? 'TRIAL') === 'TRIAL') {
+          out.push({ ...base, age: Math.abs(daysUntil(org.trial_end_date)) });
+        }
+        break;
+
+      case 'WELCOME':
+        // Confirmed and actually using it. Deliberately excludes the accounts
+        // the other templates chase, so nobody gets a cheerful welcome and a
+        // "you never finished setting up" note in the same week.
+        if (adminProfile.verified === true && members.length > 1) {
+          out.push({ ...base, age: daysSince(org.created) });
+        }
+        break;
+
+      case 'SETUP_INCOMPLETE':
+        if (adminProfile.verified === true && !orgsWithSettings.has(org.id)) {
+          out.push({ ...base, age: daysSince(org.created) });
+        }
+        break;
+
+      case 'DORMANT': {
+        // Was used and then stopped. `age` counts days since the last check-in,
+        // so a stage of 30 means "quiet for a month". Organizations that never
+        // started are NO_ATTENDANCE's problem, not this one.
+        const last = lastAttendanceByOrg.get(org.id);
+        if (adminProfile.verified === true && last) {
+          out.push({ ...base, age: daysSince(last) });
+        }
+        break;
+      }
+
+      case 'ACTIVE_ENGAGED':
+        // Healthy and in use — for product news. `age` counts days since
+        // registration, so pick stage numbers that suit an announcement.
+        if (adminProfile.verified === true
+            && members.length > 1
+            && orgsWithAttendance.has(org.id)) {
+          out.push({ ...base, age: daysSince(org.created) });
         }
         break;
     }
