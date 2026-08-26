@@ -87,7 +87,45 @@ const mapTemplate = (r: any): EmailTemplate => ({
   updated: r.updated,
 });
 
+export interface ReportResult {
+  question: string;
+  /** The generated SQL, surfaced so it can be read before it is trusted. */
+  sql: string;
+  explanation: string;
+  rows: Record<string, unknown>[];
+  rowCount: number;
+  truncated?: boolean;
+  queryError: string | null;
+  summary: string | null;
+  provider: string;
+  model: string;
+  availableProviders?: EmailProvider[];
+}
+
 export const aiEmailService = {
+  /**
+   * Asks a question about the customer base in plain English.
+   *
+   * The generated SQL runs with the caller's own database privileges and is
+   * capped at 200 rows, so it can never return more than the super admin could
+   * already read. The SQL comes back with the answer on purpose — a generated
+   * query you cannot inspect is a query you cannot check.
+   */
+  async askReport(question: string, provider?: EmailProvider, model?: string): Promise<ReportResult> {
+    const { data, error } = await supabase.functions.invoke('ai-admin-report', {
+      body: { question, provider, model },
+    });
+    if (error) {
+      let message = error.message;
+      try {
+        const body = await (error as any).context?.json?.();
+        if (body?.message) message = body.message;
+      } catch { /* keep the original */ }
+      throw new Error(message);
+    }
+    return data as ReportResult;
+  },
+
   async getTemplates(): Promise<EmailTemplate[]> {
     if (!isSupabaseConfigured()) return [];
     const { data, error } = await supabase

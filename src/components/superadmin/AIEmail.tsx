@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import {
   Sparkles, RefreshCw, Save, Eye, Send, AlertTriangle, Loader2,
-  Power, Ban, Plus, Trash2,
+  Power, Ban, Plus, Trash2, MessageSquare, Database, Mail,
 } from 'lucide-react';
 import {
   aiEmailService, EmailTemplate, EmailSend, EmailSuppression,
-  EmailProvider, AUDIENCE_LABEL, PreviewResult,
+  EmailProvider, AUDIENCE_LABEL, PreviewResult, ReportResult,
 } from '../../services/aiEmail.service';
+import BulkEmailManager from './BulkEmailManager';
 import { useToast } from '../../context/ToastContext';
 
-type Tab = 'templates' | 'history' | 'suppressions';
+type Tab = 'templates' | 'ask' | 'history' | 'suppressions' | 'bulk';
 
 const PROVIDERS: EmailProvider[] = ['openrouter', 'deepseek', 'openai', 'anthropic'];
 
@@ -43,6 +44,12 @@ const AIEmail: React.FC = () => {
   const [sends, setSends] = useState<EmailSend[]>([]);
   const [suppressions, setSuppressions] = useState<EmailSuppression[]>([]);
   const [newSuppression, setNewSuppression] = useState('');
+
+  // Ask panel
+  const [question, setQuestion] = useState('');
+  const [report, setReport] = useState<ReportResult | null>(null);
+  const [isAsking, setIsAsking] = useState(false);
+  const [askError, setAskError] = useState<string | null>(null);
 
   const load = async () => {
     setIsLoading(true);
@@ -125,10 +132,10 @@ const AIEmail: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <Sparkles size={20} className="text-primary" />
-            <h3 className="text-xl font-semibold text-slate-900">AI Email</h3>
+            <h3 className="text-xl font-semibold text-slate-900">Email</h3>
           </div>
           <p className="text-xs font-bold text-slate-400 mt-1">
-            Onboarding and reminder email, written by a model from your instructions
+            Automated onboarding email, one-off campaigns, and answers about who to send to
           </p>
         </div>
         <button
@@ -154,7 +161,7 @@ const AIEmail: React.FC = () => {
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-fit">
-        {([['templates', 'Templates'], ['history', 'Sent'], ['suppressions', 'Do not email']] as const).map(([k, label]) => (
+        {([['templates', 'Templates'], ['ask', 'Ask AI'], ['history', 'Sent'], ['suppressions', 'Do not email'], ['bulk', 'Bulk email']] as const).map(([k, label]) => (
           <button
             key={k}
             onClick={() => setTab(k)}
@@ -396,6 +403,138 @@ const AIEmail: React.FC = () => {
         </div>
       )}
 
+      {/* Ask AI */}
+      {tab === 'ask' && (
+        <div className="space-y-5">
+          <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm space-y-4">
+            <div className="flex items-start gap-3">
+              <Database size={16} className="text-primary flex-shrink-0 mt-0.5" />
+              <p className="text-xs font-bold text-slate-500">
+                Ask about your organizations, people and past sends in plain English. The question is turned
+                into a read-only query that runs with your own permissions and returns at most 200 rows.
+                The query is shown with the answer so you can check it.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {[
+                'Which organizations never confirmed their admin email?',
+                'Organizations with employees but no attendance, oldest first',
+                'Trials ending in the next 7 days',
+                'Which addresses are on the suppression list and why?',
+              ].map(q => (
+                <button
+                  key={q}
+                  onClick={() => setQuestion(q)}
+                  className="px-3 py-2 bg-slate-100 text-slate-600 rounded-lg font-bold text-[11px] hover:bg-slate-200 transition-colors text-left"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+
+            <form
+              onSubmit={e => {
+                e.preventDefault();
+                if (!question.trim() || isAsking) return;
+                setIsAsking(true); setAskError(null); setReport(null);
+                aiEmailService.askReport(question.trim(), draft?.provider, draft?.model)
+                  .then(setReport)
+                  .catch((err: any) => setAskError(err?.message || 'The report failed'))
+                  .finally(() => setIsAsking(false));
+              }}
+              className="flex gap-2"
+            >
+              <input
+                className={inputCls}
+                placeholder="e.g. organizations that registered this month and never added an employee"
+                value={question}
+                onChange={e => setQuestion(e.target.value)}
+              />
+              <button
+                type="submit"
+                disabled={isAsking || !question.trim()}
+                className="px-5 py-3 bg-primary text-white rounded-xl font-bold text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-primary-hover transition-colors disabled:opacity-50 whitespace-nowrap"
+              >
+                {isAsking ? <Loader2 size={14} className="animate-spin" /> : <MessageSquare size={14} />} Ask
+              </button>
+            </form>
+          </div>
+
+          {askError && (
+            <div className="flex items-start gap-3 p-4 bg-rose-50 border border-rose-100 rounded-2xl">
+              <AlertTriangle size={16} className="text-rose-500 flex-shrink-0 mt-0.5" />
+              <p className="text-xs font-bold text-rose-700">{askError}</p>
+            </div>
+          )}
+
+          {report && (
+            <div className="space-y-4">
+              {report.summary && (
+                <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Answer</p>
+                  <p className="text-sm text-slate-700 leading-relaxed">{report.summary}</p>
+                </div>
+              )}
+
+              <details className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+                <summary className="text-[10px] font-bold text-slate-400 uppercase tracking-widest cursor-pointer">
+                  Query used{report.explanation ? ' — ' + report.explanation : ''}
+                </summary>
+                <pre className="mt-3 text-[11px] bg-slate-50 rounded-xl p-4 overflow-x-auto text-slate-600 whitespace-pre-wrap">{report.sql}</pre>
+              </details>
+
+              {report.queryError && (
+                <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+                  <AlertTriangle size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-bold text-amber-800">The query was refused</p>
+                    <p className="text-[11px] font-bold text-amber-700 mt-1">{report.queryError}</p>
+                  </div>
+                </div>
+              )}
+
+              {report.rows.length > 0 && (
+                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                  <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      {report.rowCount} row{report.rowCount === 1 ? '' : 's'}
+                    </p>
+                    {report.truncated && (
+                      <p className="text-[10px] font-bold text-amber-600">Capped at 200 — narrow the question for the full set</p>
+                    )}
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead className="bg-slate-50">
+                        <tr>
+                          {Object.keys(report.rows[0]).map(h => (
+                            <th key={h} className="text-left px-4 py-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                              {h.replace(/_/g, ' ')}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {report.rows.map((r, i) => (
+                          <tr key={i} className="border-t border-slate-50">
+                            {Object.values(r).map((v, j) => (
+                              <td key={j} className="px-4 py-2 text-slate-700 whitespace-nowrap max-w-xs truncate">
+                                {v === null || v === undefined ? '—' : String(v)}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Sent ── */}
       {tab === 'history' && (
         <div className="space-y-2">
@@ -483,6 +622,20 @@ const AIEmail: React.FC = () => {
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Bulk email, moved in from its own top-level tab */}
+      {tab === 'bulk' && (
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+            <Mail size={16} className="text-slate-400 flex-shrink-0 mt-0.5" />
+            <p className="text-xs font-bold text-slate-500">
+              One-off campaigns you write and send yourself. The automated templates are separate:
+              those send on a schedule and stop on unsubscribe.
+            </p>
+          </div>
+          <BulkEmailManager onMessage={m => showToast(m.text, m.type)} />
         </div>
       )}
     </div>
